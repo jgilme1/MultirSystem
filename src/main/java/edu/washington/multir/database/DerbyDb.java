@@ -14,7 +14,7 @@ public class DerbyDb {
 * @param url The URL of the database (e.g., localhost:1527://path/to/db)
 */
     public DerbyDb(String dbName) {
-        String connectionUrl = PROTOCOL + dbName;
+        String connectionUrl = PROTOCOL + dbName+";create=true";
         try {
             Class.forName(DRIVER);
             connection = DriverManager.getConnection(connectionUrl);
