@@ -20,6 +20,8 @@ public abstract class Corpus {
 	private static String documentColumnName = "DOCNAME";
 	private static String sentIDColumnName = "SENTID";
 	
+
+	//required sentence level annotations
     public static class SentGlobalID implements CoreAnnotation<Integer>{
 		@Override
 		public Class<Integer> getType() {
@@ -31,6 +33,14 @@ public abstract class Corpus {
 		public Class<String> getType() {
 			return String.class;
 		}
+    }
+    
+    public List<Class<? extends CoreAnnotation>> getAnnotations(){
+    	List<Class <? extends CoreAnnotation>> coreAnnotations= new ArrayList<>();
+    	coreAnnotations.add(SentGlobalID.class);
+    	coreAnnotations.add(SentDocName.class);
+    	
+    	
     }
 	
 	protected Corpus(SentInformationI[] sentenceInformationTypes, boolean load, boolean train) throws SQLException{
@@ -73,8 +83,6 @@ public abstract class Corpus {
 			    System.out.println("Has one sentence");
 				sentences.add(parseSentence(sentenceResults));
 		}
-
-		
 			
 		return sentences;
 	}
@@ -186,7 +194,7 @@ public abstract class Corpus {
     	
     }
     
-    private static void printAnnotation(Annotation a){
+    private static void printAnnotation(Annotation a){	
     	Set<Class<?>> keys = a.keySet();
     	System.out.println("KEYS:");
     	for(Class k : keys){
@@ -196,6 +204,13 @@ public abstract class Corpus {
     	for(Class k : keys){
     		System.out.println("Key: "+ k.getName());
     		System.out.println("Value: " + a.get(k));
+    	}
+    }
+    
+    
+    public void printAnnotationKeys(){
+    	for(SentInformationI si : sentenceInformationTypes){
+    		System.out.println(si.getAnnotationKey());
     	}
     }
 }
