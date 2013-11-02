@@ -12,8 +12,9 @@ public class DerbyDb {
 * Creates a new Derby DB connection.
 *
 * @param url The URL of the database (e.g., localhost:1527://path/to/db)
+     * @throws SQLException 
 */
-    public DerbyDb(String dbName) {
+    public DerbyDb(String dbName, boolean load) throws SQLException {
         String connectionUrl = PROTOCOL + dbName+";create=true";
         try {
             Class.forName(DRIVER);

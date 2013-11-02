@@ -19,14 +19,14 @@ public final class CorpusDatabase {
 		this.name = name;
 		this.db =db;
 	}
-	public static CorpusDatabase loadCorpusDatabase(boolean train){
+	public static CorpusDatabase loadCorpusDatabase(boolean train) throws SQLException{
 		String databaseName = train ? trainingDatabaseName : testDatabaseName;
-		DerbyDb db = new DerbyDb(databaseName);
+		DerbyDb db = new DerbyDb(databaseName,true);
 		return new CorpusDatabase(databaseName,db);
 	}
 	public static CorpusDatabase newCorpusDatabase(String sentenceTableSQLSpecification, String documentTableSQLSpecification, boolean train) throws SQLException{
 		String databaseName = train ? trainingDatabaseName : testDatabaseName;
-		DerbyDb db = new DerbyDb(databaseName);
+		DerbyDb db = new DerbyDb(databaseName,false);
 		deleteTable(db.connection,sentenceInformationTableName);
 		deleteTable(db.connection,documentInformationTableName);
 		createTable(db.connection,sentenceInformationTableName,sentenceTableSQLSpecification);

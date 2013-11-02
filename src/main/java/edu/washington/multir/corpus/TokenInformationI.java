@@ -9,4 +9,5 @@ public interface TokenInformationI {
 	String write(String s);
 	Class<? extends CoreAnnotation<String>> getAnnotationKey();
 	List<String> getTokenSeparatedValues(String s);
+	String name();
 }

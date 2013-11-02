@@ -1,50 +1,31 @@
 package edu.washington.multir.corpus;
 
+import java.io.File;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 import edu.stanford.nlp.ling.CoreAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.washington.multir.database.CorpusDatabase;
 
-public abstract class Corpus {
+public class Corpus {
 	
 	private CorpusDatabase cd;
-	private SentInformationI[] sentenceInformationTypes;
+	private CorpusInformationSpecification cis;
 	private static String documentColumnName = "DOCNAME";
 	private static String sentIDColumnName = "SENTID";
 	
-
-	//required sentence level annotations
-    public static class SentGlobalID implements CoreAnnotation<Integer>{
-		@Override
-		public Class<Integer> getType() {
-			return Integer.class;
-		}
-    }
-    public static class SentDocName implements CoreAnnotation<String>{
-		@Override
-		public Class<String> getType() {
-			return String.class;
-		}
-    }
-    
-    public List<Class<? extends CoreAnnotation>> getAnnotations(){
-    	List<Class <? extends CoreAnnotation>> coreAnnotations= new ArrayList<>();
-    	coreAnnotations.add(SentGlobalID.class);
-    	coreAnnotations.add(SentDocName.class);
-    	
-    	
-    }
-	
-	protected Corpus(SentInformationI[] sentenceInformationTypes, boolean load, boolean train) throws SQLException{
-	  this.sentenceInformationTypes = sentenceInformationTypes;
+	protected Corpus(CorpusInformationSpecification cis, boolean load, boolean train) throws SQLException{
+	  this.cis = cis;
       cd = load ? CorpusDatabase.loadCorpusDatabase(train) : CorpusDatabase.newCorpusDatabase(getSentenceTableSQLSpecification(), getDocumentTableSQLSpecification(), train);
 	}
 	private String getSentenceTableSQLSpecification(){
@@ -52,8 +33,14 @@ public abstract class Corpus {
 		sqlTableSpecificationBuilder.append("( " + sentIDColumnName + " int,\n");
 		sqlTableSpecificationBuilder.append(documentColumnName +" VARCHAR(128),\n");
 		// add SentenceInformation types
-		for(SentInformationI sentenceInformation : sentenceInformationTypes){
-			String columnName = sentenceInformation.getClass().getSimpleName();
+		
+		for(int i =2; i < cis.sentenceInformation.size(); i++){
+			SentInformationI sentenceInformation = cis.sentenceInformation.get(i);
+			String columnName = sentenceInformation.name();
+			sqlTableSpecificationBuilder.append(columnName + " VARCHAR(10000),\n");
+		}
+		for(TokenInformationI tokenInformation : cis.tokenInformation){
+			String columnName = tokenInformation.name();
 			sqlTableSpecificationBuilder.append(columnName + " VARCHAR(10000),\n");
 		}
 		sqlTableSpecificationBuilder.append("PRIMARY KEY (" + sentIDColumnName+"))");
@@ -96,20 +83,22 @@ public abstract class Corpus {
     private CoreMap parseSentence(ResultSet sentenceResults) throws SQLException,IllegalArgumentException {
     	ResultSetMetaData metaData = sentenceResults.getMetaData();
     	Annotation a = new Annotation("");
-    	//add annotation for global sent Id
-    	Integer globalId = sentenceResults.getInt(1);
-    	a.set(SentGlobalID.class, globalId);
-    	
-    	//add annotation for document Name
-    	String docName = sentenceResults.getString(2);
-    	a.set(SentDocName.class,docName);
-    	
-    	//add all other sent information types as specified during object construction
-    	int startIndex = 3;
-    	for(SentInformationI si : sentenceInformationTypes){
-    		Class key = si.getAnnotationKey();
-    		a.set(key, si.read(sentenceResults.getString(startIndex)));
-    		startIndex++;
+
+    	int index =1;
+    	for(SentInformationI si : cis.sentenceInformation){
+    		Object x = sentenceResults.getObject(index);
+    		a.set(si.getAnnotationKey(), si.read(sentenceResults.getObject(index)));
+    		index++;
+    	}
+    	for(TokenInformationI ti: cis.tokenInformation){
+    		List<String> tokenSeparatedValues = ti.getTokenSeparatedValues(sentenceResults.getString(index));
+    		List<CoreLabel> tokens = a.get(CoreAnnotations.TokensAnnotation.class);
+    		for(int i =0; i < tokenSeparatedValues.size(); i++){
+    			String tokenSeparatedValue = tokenSeparatedValues.get(i);
+    			CoreLabel token = tokens.get(i);
+    			token.set(ti.getAnnotationKey(), ti.read(tokenSeparatedValue));
+    		}
+    		index++;
     	}
     	return a;
 	}
@@ -165,19 +154,30 @@ public abstract class Corpus {
     
     public static void main(String[] args) throws SQLException{
     	//load db with stuff
-    	Corpus c = new DefaultCorpus(false,true);
+    	Corpus c = new Corpus(new DefaultCorpusInformationSpecification(),false,true);
     	List<String> columnNames = new ArrayList<String>();
     	List<Object> values = new ArrayList<Object>();
-    	columnNames.add(sentIDColumnName);
-    	columnNames.add(documentColumnName);
-    	for(SentInformationI info : c.sentenceInformationTypes){
-    		columnNames.add(info.getClass().getSimpleName());
+    	for(SentInformationI info : c.cis.sentenceInformation){
+    		columnNames.add(info.name());
+    	}
+    	for(TokenInformationI tokenInfo : c.cis.tokenInformation){
+    		columnNames.add(tokenInfo.name());
     	}
     	values.add(new Integer(0));
     	values.add("DOC1");
     	values.add("This is the sentence text.");
     	values.add("This is the sentence text .");
+    	values.add("DT VB DT NN NN P");
     	c.cd.insertToSentenceTable(columnNames, values);
+    	
+    	values = new ArrayList<Object>();
+    	values.add(new Integer(1));
+    	values.add("DOC1");
+    	values.add("A test is a beautiful thing.");
+    	values.add("A test is a beautiful thing .");
+    	values.add("DT NN VB DT JJ NN P");
+    	c.cd.insertToSentenceTable(columnNames, values);
+
     	columnNames = new ArrayList<String>();
     	columnNames.add(documentColumnName);
     	values = new ArrayList<Object>();
@@ -194,6 +194,32 @@ public abstract class Corpus {
     	
     }
     
+    
+    public void loadCorpus(File path, CorpusInformationSpecification ci){
+    	if(path.isDirectory()){
+    		File[] filesInDirectory = path.listFiles();
+    		//check for all required files
+    		if(requiredFilesExist(Arrays.asList(filesInDirectory), ci)){
+    			
+    		}
+    	}
+    	
+    }
+    
+    private boolean requiredFilesExist(List<File> files, CorpusInformationSpecification cis){
+    	List<String> requiredFileNames = new ArrayList<String>();
+    	requiredFileNames.add("sentences.meta");
+    	//sentences.meta will be sentID docname tokens 
+    	for(SentInformationI si :cis.sentenceInformation){
+    		if(si.name() != "DOCNAME" && si.name() != "SENTID" && si.name()!="SentTokensInformation"){
+    			requiredFileNames.add(si.name());
+    		}
+    	}
+    	for(TokenInformationI ti: cis.tokenInformation){
+    		requiredFileNames.add(si.name());
+    	}
+    }
+    
     private static void printAnnotation(Annotation a){	
     	Set<Class<?>> keys = a.keySet();
     	System.out.println("KEYS:");
@@ -205,12 +231,16 @@ public abstract class Corpus {
     		System.out.println("Key: "+ k.getName());
     		System.out.println("Value: " + a.get(k));
     	}
-    }
-    
-    
-    public void printAnnotationKeys(){
-    	for(SentInformationI si : sentenceInformationTypes){
-    		System.out.println(si.getAnnotationKey());
+    	
+    	System.out.println("Sentences:");
+    	List<CoreMap> sentences = a.get(CoreAnnotations.SentencesAnnotation.class);
+    	for(CoreMap sentence: sentences){
+    		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+    		for(CoreLabel token : tokens){
+    			System.out.println(token.value());
+    			System.out.println(token.get(CoreAnnotations.NamedEntityTagAnnotation.class));
+    		}
     	}
+    	
     }
 }
