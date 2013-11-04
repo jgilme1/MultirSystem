@@ -70,7 +70,7 @@ public final class CorpusDatabase {
 	    	command.append(" ");
 	    	if(value instanceof String){
 	    		command.append("'");
-	    		command.append(value.toString());
+	    		command.append(value.toString().replaceAll("'", "''"));
 	    		command.append("'");
 	    	}
 	    	else{
@@ -80,7 +80,13 @@ public final class CorpusDatabase {
 	    }
 	    command.deleteCharAt(command.length()-1);
 		command.append(")");
-		db.connection.prepareStatement(command.toString()).execute();		
+		try{
+		 db.connection.prepareStatement(command.toString()).execute();		
+		}
+		catch(SQLException e){
+			System.err.println(command.toString());
+			throw e;
+		}
 	}
 	
 	public void insertToSentenceTable(List<String> columnNames, List<Object> values) throws SQLException{
@@ -101,6 +107,12 @@ public final class CorpusDatabase {
 			resultList.add(information);
 		}
 		return resultList;
+	}
+	public void turnOffAutoCommit() throws SQLException {
+		db.connection.setAutoCommit(false);
+	}
+	public void turnOnAutoCommit() throws SQLException{
+		db.connection.setAutoCommit(true);
 	}
 	
 }

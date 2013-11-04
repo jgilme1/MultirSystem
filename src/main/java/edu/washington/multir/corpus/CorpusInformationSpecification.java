@@ -15,6 +15,9 @@ public abstract class CorpusInformationSpecification {
 	//private final List<DocumentInformationI> documentInformation;
 	protected final List<TokenInformationI>  tokenInformation;
 	private static final LabelFactory coreLabelFactory = CoreLabel.factory();
+	
+	private List<String> sentenceColumnNames = null;
+	private List<String> documentColumnNames = null;
 
 
 	public CorpusInformationSpecification(){
@@ -22,20 +25,49 @@ public abstract class CorpusInformationSpecification {
 		tokenInformation = new ArrayList<TokenInformationI>();
 		sentenceInformation.add(sentGlobalIDInformatIoninstance);
 		sentenceInformation.add(sentDocNameInformationInstance);
-		sentenceInformation.add(sentTextInformationInstance);
 		sentenceInformation.add(sentTokensInformationInstance);
+		sentenceInformation.add(sentTextInformationInstance);
+	}
+	
+	public List<String> getSentenceTableColumnNames(){
+		if(sentenceColumnNames == null){
+			List<String> names = new ArrayList<String>();
+			for(SentInformationI si: sentenceInformation){
+				names.add(si.name());
+			}
+			for(TokenInformationI ti: tokenInformation){
+				names.add(ti.name());
+			}
+			sentenceColumnNames = names;
+			return names;
+		}
+		else{
+			return sentenceColumnNames;
+		}
+	}
+	
+	public List<String> getDocumentTableColumnNames(){
+		if(documentColumnNames == null){
+			List<String> names = new ArrayList<String>();
+			names.add(sentDocNameInformationInstance.name());
+			documentColumnNames = names;
+			return names;
+		}
+		else{
+			return documentColumnNames;
+		}
 	}
 	
 	private static final SentGlobalIDInformation sentGlobalIDInformatIoninstance = new SentGlobalIDInformation();
 	private static final class SentGlobalIDInformation implements SentInformationI<Integer,Integer>{
 
 		@Override
-		public Integer read(Integer t) {
+		public Integer readFromDb(Integer t) {
 			return t;
 		}
 
 		@Override
-		public Integer write(Integer t) {
+		public Integer writeToDb(Integer t) {
 			return t;
 		}
 
@@ -55,17 +87,22 @@ public abstract class CorpusInformationSpecification {
 		public String name() {
 			return "SENTID";
 		}
+
+		@Override
+		public Integer readFromString(String t) {
+			return Integer.parseInt(t);
+		}
 	}
 	
 	private static final SentDocNameInformation sentDocNameInformationInstance  = new SentDocNameInformation();
     private static final class SentDocNameInformation implements SentInformationI<String,String>{
 		@Override
-		public String read(String t) {
+		public String readFromDb(String t) {
 			return t;
 		}
 
 		@Override
-		public String write(String t) {
+		public String writeToDb(String t) {
 			return t;
 		}
 
@@ -85,17 +122,22 @@ public abstract class CorpusInformationSpecification {
 		public String name() {
 			return "DOCNAME";
 		}
+
+		@Override
+		public String readFromString(String t) {
+			return t;
+		}
     }
     
 	private static final SentTextInformation sentTextInformationInstance = new SentTextInformation();
 	private static final class SentTextInformation implements SentInformationI<String,String>{
 		@Override
-		public String read(String s) {
+		public String readFromDb(String s) {
 			return s;
 		}
 
 		@Override
-		public String write(String t) {
+		public String writeToDb(String t) {
 			return t;
 		}
 
@@ -108,13 +150,18 @@ public abstract class CorpusInformationSpecification {
 		public String name() {
 			return this.getClass().getSimpleName();
 		}
+
+		@Override
+		public String readFromString(String t) {
+			return t;
+		}
 	}
 	
 	private static final SentTokensInformation sentTokensInformationInstance = new SentTokensInformation();
 	private static final class SentTokensInformation implements SentInformationI<List<CoreLabel>,String>{
 
 		@Override
-		public List<CoreLabel> read(String s) {
+		public List<CoreLabel> readFromDb(String s) {
 			String[] tokens = s.split("\\s+");
 			List<CoreLabel> tokenAnnotations = new ArrayList<CoreLabel>();
 			for(String token: tokens){
@@ -124,7 +171,7 @@ public abstract class CorpusInformationSpecification {
 		}
 
 		@Override
-		public String write(List<CoreLabel> t) {
+		public String writeToDb(List<CoreLabel> t) {
 			StringBuilder tokens = new StringBuilder();
 			for(CoreLabel l : t){
 				tokens.append(l.originalText()+" ");
@@ -139,6 +186,11 @@ public abstract class CorpusInformationSpecification {
 		@Override
 		public String name() {
 			return this.getClass().getSimpleName();
+		}
+
+		@Override
+		public String readFromString(String t) {
+			return t;
 		}
 	}
 }
