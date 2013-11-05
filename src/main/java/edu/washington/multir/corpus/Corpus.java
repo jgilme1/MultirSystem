@@ -60,6 +60,32 @@ public class Corpus {
 		return sqlTableSpecificationBuilder.toString();
 	}
 	
+	private List<Annotation> getDocuments(List<String> docNames) throws SQLException{
+		ResultSet sentenceResults = cd.getSentenceRows(documentColumnName, docNames);
+		
+		List<Annotation> documents = new ArrayList<Annotation>();
+		List<CoreMap> sentences = new ArrayList<CoreMap>();
+		String lastDocument = docNames.get(0);
+		while(sentenceResults.next()){
+			String document = sentenceResults.getString(documentColumnName);
+			if(!lastDocument.equals(document)){
+				Annotation a = new Annotation(sentences);
+				documents.add(a);
+				sentences = new ArrayList<CoreMap>();
+				lastDocument = document;
+			}
+			else{
+				sentences.add(parseSentence(sentenceResults));				
+			}
+		}
+		
+		if(!sentences.isEmpty()){
+			Annotation a = new Annotation(sentences);
+			documents.add(a);
+		}
+		return documents;
+	}
+	
 	private Annotation getDocument(String docName) throws SQLException{
 		List<CoreMap> sentences = getSentences(docName);
 		if(sentences.size() > 0)
@@ -70,10 +96,11 @@ public class Corpus {
 	
 	private List<CoreMap> getSentences(String docName) throws SQLException{
 		List<CoreMap> sentences = new ArrayList<CoreMap>();
-		ResultSet sentenceResults = cd.getSentenceRows(documentColumnName,docName);
+		List<String> docNames = new ArrayList<String>();
+		docNames.add(docName);
+		ResultSet sentenceResults = cd.getSentenceRows(documentColumnName,docNames);
 		//iterate over sentence results
 		while(sentenceResults.next()){
-			    System.out.println("Has one sentence");
 				sentences.add(parseSentence(sentenceResults));
 		}
 			
@@ -99,11 +126,27 @@ public class Corpus {
     	for(TokenInformationI ti: cis.tokenInformation){
     		List<String> tokenSeparatedValues = ti.getTokenSeparatedValues(sentenceResults.getString(index));
     		List<CoreLabel> tokens = a.get(CoreAnnotations.TokensAnnotation.class);
-    		for(int i =0; i < tokenSeparatedValues.size(); i++){
-    			String tokenSeparatedValue = tokenSeparatedValues.get(i);
-    			CoreLabel token = tokens.get(i);
-    			token.set(ti.getAnnotationKey(), ti.read(tokenSeparatedValue));
+    		if(tokenSeparatedValues.size() != tokens.size()){
+    			for(int j =0; j < tokens.size(); j++){
+    				CoreLabel token = tokens.get(j);
+    				token.set(ti.getAnnotationKey(),null);
+    			}
     		}
+    		else{
+	    		//iterate over tokens adding token level annotations to each one
+	    		// if there is no data add null as an annotation
+	    		int i;
+	    		for(i =0; i < tokenSeparatedValues.size(); i++){
+	    			String tokenSeparatedValue = tokenSeparatedValues.get(i);
+	    			CoreLabel token = tokens.get(i);
+	    			token.set(ti.getAnnotationKey(), ti.read(tokenSeparatedValue));
+	    		}
+	    		for(int j = i; j < tokens.size(); j++){
+	    			CoreLabel token = tokens.get(j);
+	    			token.set(ti.getAnnotationKey(),null);
+	    		}
+    		}
+    		
     		index++;
     	}
     	return a;
@@ -149,12 +192,88 @@ public class Corpus {
 
 		@Override
 		public void remove() {
-			// TODO Auto-generated method stub
-			
 		}    	
     }
-    public DocumentIterator getDocumentIterator() throws SQLException{
+	
+	private class CachingDocumentIterator implements Iterator<Annotation>{
+    	private ResultSet documents;
+    	private List<Annotation> cachedDocuments;
+    	private int documentCount =0;
+    	
+    	private static final int CACHED_LIMIT = 1000;
+    	
+    	private boolean doNext() throws SQLException{
+    		int i =0;
+    		List<String> docNames = new ArrayList<String>();
+    		while((i < CACHED_LIMIT) && documents.next()){
+    			String docName = documents.getString(documentColumnName);
+    			docNames.add(docName);
+    			i++;
+    			documentCount++;
+    		}
+    		if(i == 0){
+    			return false;
+    		}
+    		else{
+    		  cachedDocuments.addAll(getDocuments(docNames));
+    		  return true;
+    		}
+    	}
+    	
+    	public CachingDocumentIterator() throws SQLException{
+    		documents = cd.getDocumentRows();
+    		cachedDocuments = new ArrayList<Annotation>();
+    	}
+		@Override
+		public boolean hasNext() {
+			if(!cachedDocuments.isEmpty()){
+				return true;
+			}
+			else{
+				try{
+						//doing next involves doing up to a limit of nexts
+						//and doing one Derby query....
+					return doNext();
+				}
+				catch(SQLException e){
+					e.printStackTrace();
+					return false;
+				}
+			}
+		}
+		@Override
+		public Annotation next() {
+			if(cachedDocuments.isEmpty()){
+				try{
+					if(doNext()){
+						return next();
+					}
+					else{
+						return null;
+					}
+				}
+				catch(SQLException e){
+					e.printStackTrace();
+					return null;
+				}
+			}
+			else{
+				Annotation d = cachedDocuments.remove(0);
+				return d;
+			}
+		}
+
+		@Override
+		public void remove() {
+		}    
+	}
+	
+    public Iterator<Annotation> getDocumentIterator() throws SQLException{
     	return new DocumentIterator();
+    }
+    
+    public Iterator<Annotation> getCachedDocumentIterator() throws SQLException{
+    	return new CachingDocumentIterator();
     }
     
     
@@ -191,7 +310,7 @@ public class Corpus {
     	c.cd.insertToDocumentTable(columnNames, values);
     	
     	//use Document Iterator
-    	DocumentIterator di = c.getDocumentIterator();
+    	Iterator<Annotation> di = c.getDocumentIterator();
     	
     	while(di.hasNext()){
     		Annotation a = di.next();
@@ -343,6 +462,7 @@ public class Corpus {
     	}
     	// after files are converted to db format, batch load them into derby
     	cd.batchSentenceTableLoad(ci,dbsentencesFile);
+    	cd.batchDocumentTableLoad(ci,dbdocumentsFile);
 
     }
     

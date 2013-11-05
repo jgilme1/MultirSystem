@@ -37,6 +37,8 @@ public final class CorpusDatabase {
 		deleteTable(db.connection,documentInformationTableName);
 		createTable(db.connection,sentenceInformationTableName,sentenceTableSQLSpecification);
 		createTable(db.connection,documentInformationTableName,documentTableSQLSpecification);
+		//add Document index on sentence table
+		db.connection.prepareStatement("CREATE INDEX DOCNAMEINDEX ON " + sentenceInformationTableName + " (DOCNAME)").execute();
 		return new CorpusDatabase(databaseName,db);
 	}
 	private static void deleteTable(Connection connection, String tableName) throws SQLException{
@@ -56,11 +58,22 @@ public final class CorpusDatabase {
 		return issueQuery("SELECT * FROM " + documentInformationTableName);
 	}
 	
-	public ResultSet getSentenceRows(String columnName, String value) throws SQLException{
-		return issueQuery("SELECT * FROM " + sentenceInformationTableName + " WHERE " + columnName + "='" + value+"'");
+	public ResultSet getSentenceRows(String columnName, List<String> values) throws SQLException{
+		if(values.size() == 0){
+			return null;
+		}
+		StringBuilder query = new StringBuilder();
+		query.append("SELECT * FROM " + sentenceInformationTableName + " WHERE ");
+		for(String value: values){
+			query.append(columnName + "='");
+			query.append(value);
+			query.append("'");
+			query.append(" OR ");
+		}
+		String sqlCommand = query.substring(0, query.length()-4);
+		return issueQuery(sqlCommand);
 	}
 	public ResultSet issueQuery(String queryString) throws SQLException{
-		System.out.println(queryString);
 		return db.connection.prepareStatement(queryString).executeQuery();
 	}
 	
@@ -150,16 +163,24 @@ public final class CorpusDatabase {
 	public void turnOnAutoCommit() throws SQLException{
 		db.connection.setAutoCommit(true);
 	}
-	public void batchSentenceTableLoad(CorpusInformationSpecification ci, File dbSentencesFile) throws SQLException {
+	
+	private void batchTableLoad(String tableName,CorpusInformationSpecification ci, File dbFile ) throws SQLException{
 		PreparedStatement loadTable = db.connection.prepareStatement("CALL SYSCS_UTIL.SYSCS_IMPORT_TABLE(?,?,?,?,?,?,?)");
 		loadTable.setString(1, null);
-		loadTable.setString(2,sentenceInformationTableName);
-		loadTable.setString(3,dbSentencesFile.getPath());
+		loadTable.setString(2,tableName);
+		loadTable.setString(3,dbFile.getPath());
 		loadTable.setString(4,"\t");
 		loadTable.setString(5,"%");
 		loadTable.setString(6,null);
 		loadTable.setInt(7, 0);
-		loadTable.execute();		
+		loadTable.execute();	
+	}
+	public void batchSentenceTableLoad(CorpusInformationSpecification ci, File dbSentencesFile) throws SQLException {
+		batchTableLoad(sentenceInformationTableName,ci,dbSentencesFile);
+	}
+	public void batchDocumentTableLoad(CorpusInformationSpecification ci,
+			File dbdocumentsFile) throws SQLException {
+		batchTableLoad(documentInformationTableName,ci,dbdocumentsFile);
 	}
 	
 }

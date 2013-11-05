@@ -14,7 +14,9 @@ public class TestLoadCorpus {
 	public static void main(String[] args) throws SQLException, IOException{
 		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
     	Corpus c = new Corpus(cis,false,true);
+    	long start = System.currentTimeMillis();
     	c.loadCorpus2(new File("/scratch2/code/multir-reimplementation/PreprocessedCorpus/reformatted/"), cis);
+    	long end = System.currentTimeMillis();
+    	System.out.println("Loading DB took " + (end-start) + " millisseconds");
 	}
-
 }

@@ -103,7 +103,6 @@ public class DocumentIterator implements Iterator<Annotation>{
 		}
 	}
 	
-	
 	public static void main(String[] args) throws IOException{
 		DocumentIterator di = new DocumentIterator(args[0]);
 		int dIndex = 0;

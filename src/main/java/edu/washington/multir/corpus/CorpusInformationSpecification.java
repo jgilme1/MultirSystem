@@ -12,7 +12,6 @@ import edu.stanford.nlp.ling.LabelFactory;
 public abstract class CorpusInformationSpecification {
 	
 	protected final List<SentInformationI> sentenceInformation;
-	//private final List<DocumentInformationI> documentInformation;
 	protected final List<TokenInformationI>  tokenInformation;
 	private static final LabelFactory coreLabelFactory = CoreLabel.factory();
 	
@@ -58,8 +57,8 @@ public abstract class CorpusInformationSpecification {
 		}
 	}
 	
-	private static final SentGlobalIDInformation sentGlobalIDInformatIoninstance = new SentGlobalIDInformation();
-	private static final class SentGlobalIDInformation implements SentInformationI<Integer,Integer>{
+	public static final SentGlobalIDInformation sentGlobalIDInformatIoninstance = new SentGlobalIDInformation();
+	public static final class SentGlobalIDInformation implements SentInformationI<Integer,Integer>{
 
 		@Override
 		public Integer readFromDb(Integer t) {
@@ -76,7 +75,7 @@ public abstract class CorpusInformationSpecification {
 			return SentGlobalID.class;
 		}
 		
-	    private static class SentGlobalID implements CoreAnnotation<Integer>{
+	    public static class SentGlobalID implements CoreAnnotation<Integer>{
 			@Override
 			public Class<Integer> getType() {
 				return Integer.class;
@@ -94,8 +93,8 @@ public abstract class CorpusInformationSpecification {
 		}
 	}
 	
-	private static final SentDocNameInformation sentDocNameInformationInstance  = new SentDocNameInformation();
-    private static final class SentDocNameInformation implements SentInformationI<String,String>{
+	public static final SentDocNameInformation sentDocNameInformationInstance  = new SentDocNameInformation();
+    public static final class SentDocNameInformation implements SentInformationI<String,String>{
 		@Override
 		public String readFromDb(String t) {
 			return t;
@@ -111,7 +110,7 @@ public abstract class CorpusInformationSpecification {
 				return SentDocName.class;
 		}
 		
-	    private static class SentDocName implements CoreAnnotation<String>{
+	    public static class SentDocName implements CoreAnnotation<String>{
 			@Override
 			public Class<String> getType() {
 				return String.class;
