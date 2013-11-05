@@ -1,23 +1,29 @@
 package edu.washington.multir.database;
 
+import java.io.File;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.ArrayList;
 
+import edu.washington.multir.corpus.CorpusInformationSpecification;
+
 public final class CorpusDatabase {
 	
 	private String name;
 	private DerbyDb db;
-	private static final String sentenceInformationTableName = "SentenceTable";
-	private static final String documentInformationTableName = "DocumentTable";
+	private static final String sentenceInformationTableName = "SENTENCETABLE";
+	private static final String documentInformationTableName = "DOCUMENTTABLE";
 	private static final String trainingDatabaseName = "TrainingCorpusDatabase";
 	private static final String testDatabaseName = "TestCorpusDatabase";
 	
 	private CorpusDatabase(String name, DerbyDb db){
 		this.name = name;
 		this.db =db;
+		cachedSentenceValues = new ArrayList<List<Object>>();
+		cachedDocumentValues = new ArrayList<List<Object>>();
 	}
 	public static CorpusDatabase loadCorpusDatabase(boolean train) throws SQLException{
 		String databaseName = train ? trainingDatabaseName : testDatabaseName;
@@ -58,30 +64,33 @@ public final class CorpusDatabase {
 		return db.connection.prepareStatement(queryString).executeQuery();
 	}
 	
-	private void insert(String tableName, List<String> columnNames, List<Object> values) throws SQLException{
+	private void insert(String tableName, List<String> columnNames, List<List<Object>> columnValues) throws SQLException{
 		StringBuilder command = new StringBuilder();
 		command.append("INSERT INTO " + tableName + " (");
 		for(String columnName: columnNames){
-			command.append(" " + columnName + ",");
+			command.append(columnName + ",");
 		}
 		command.deleteCharAt(command.length()-1);
-		command.append(") VALUES (");
-	    for(Object value: values){
-	    	command.append(" ");
-	    	if(value instanceof String){
-	    		command.append("'");
-	    		command.append(value.toString().replaceAll("'", "''"));
-	    		command.append("'");
+		command.append(") VALUES ");
+	    for(List<Object> values: columnValues){
+	    	command.append(" (");
+	    	for(Object value : values){
+		    	if(value instanceof String){
+		    		command.append("'");
+		    		command.append(value.toString().replaceAll("'", "''"));
+		    		command.append("'");
+		    	}
+		    	else{
+		    		command.append(value.toString());
+		    	}
+		    	command.append(",");
 	    	}
-	    	else{
-	    		command.append(value.toString());
-	    	}
-	    	command.append(",");
+	    	command.deleteCharAt(command.length()-1);
+	    	command.append("),");
 	    }
 	    command.deleteCharAt(command.length()-1);
-		command.append(")");
 		try{
-		 db.connection.prepareStatement(command.toString()).execute();		
+		 db.connection.prepareStatement(command.toString()).execute();
 		}
 		catch(SQLException e){
 			System.err.println(command.toString());
@@ -89,11 +98,38 @@ public final class CorpusDatabase {
 		}
 	}
 	
+	private List<List<Object>> cachedSentenceValues;
+	private List<List<Object>> cachedDocumentValues;
+	
+	private void bulkInsert(String tableName, List<String> columnNames, List<Object> values) throws SQLException{
+		List<List<Object>> columnValues = tableName.equals(sentenceInformationTableName) ? cachedSentenceValues : cachedDocumentValues;
+		if(columnValues.size() < 2000){
+			columnValues.add(values);
+		}
+		else{
+			//do insert
+			columnValues.add(values);
+			insert(tableName,columnNames,columnValues);
+			columnValues.clear();
+		}
+	}
+	
+	public void bulkInsertToSentenceTable(List<String> columnNames, List<Object> values) throws SQLException{
+		bulkInsert(sentenceInformationTableName,columnNames,values);
+	}
+	public void bulkInsertToDocumentTable(List<String> columnNames, List<Object> values) throws SQLException{
+		bulkInsert(documentInformationTableName,columnNames,values);
+	}
+	
 	public void insertToSentenceTable(List<String> columnNames, List<Object> values) throws SQLException{
-		insert(sentenceInformationTableName,columnNames,values);
+		  List<List<Object>> columnValues = new ArrayList<List<Object>>();
+		  columnValues.add(values);
+		  insert(sentenceInformationTableName,columnNames,columnValues);
 	}
 	public void insertToDocumentTable(List<String> columnNames, List<Object> values) throws SQLException{
-		insert(documentInformationTableName,columnNames,values);
+		  List<List<Object>> columnValues = new ArrayList<List<Object>>();
+		  columnValues.add(values);
+		  insert(documentInformationTableName,columnNames,columnValues);
 	}
 	
 	public List<List<String>> issueQuery(String queryStatement, List<Integer> columnIds) throws SQLException{
@@ -113,6 +149,17 @@ public final class CorpusDatabase {
 	}
 	public void turnOnAutoCommit() throws SQLException{
 		db.connection.setAutoCommit(true);
+	}
+	public void batchSentenceTableLoad(CorpusInformationSpecification ci, File dbSentencesFile) throws SQLException {
+		PreparedStatement loadTable = db.connection.prepareStatement("CALL SYSCS_UTIL.SYSCS_IMPORT_TABLE(?,?,?,?,?,?,?)");
+		loadTable.setString(1, null);
+		loadTable.setString(2,sentenceInformationTableName);
+		loadTable.setString(3,dbSentencesFile.getPath());
+		loadTable.setString(4,"\t");
+		loadTable.setString(5,"%");
+		loadTable.setString(6,null);
+		loadTable.setInt(7, 0);
+		loadTable.execute();		
 	}
 	
 }

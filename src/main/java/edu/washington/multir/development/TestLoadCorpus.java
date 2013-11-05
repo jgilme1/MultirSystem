@@ -14,7 +14,7 @@ public class TestLoadCorpus {
 	public static void main(String[] args) throws SQLException, IOException{
 		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
     	Corpus c = new Corpus(cis,false,true);
-    	c.loadCorpus(new File("/scratch2/code/multir-reimplementation/PreprocessedCorpus/reformatted/"), cis);
+    	c.loadCorpus2(new File("/scratch2/code/multir-reimplementation/PreprocessedCorpus/reformatted/"), cis);
 	}
 
 }

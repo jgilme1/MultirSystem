@@ -148,7 +148,7 @@ public abstract class CorpusInformationSpecification {
 
 		@Override
 		public String name() {
-			return this.getClass().getSimpleName();
+			return this.getClass().getSimpleName().toUpperCase();
 		}
 
 		@Override
@@ -185,7 +185,7 @@ public abstract class CorpusInformationSpecification {
 
 		@Override
 		public String name() {
-			return this.getClass().getSimpleName();
+			return this.getClass().getSimpleName().toUpperCase();
 		}
 
 		@Override

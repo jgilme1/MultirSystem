@@ -45,7 +45,7 @@ public class DefaultCorpusInformationSpecification extends
 		}
 		@Override
 		public String name() {
-			return this.getClass().getSimpleName();
+			return this.getClass().getSimpleName().toUpperCase();
 		}
 	}
 }
