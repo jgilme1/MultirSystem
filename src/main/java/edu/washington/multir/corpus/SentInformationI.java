@@ -1,11 +1,10 @@
 package edu.washington.multir.corpus;
 
 import edu.stanford.nlp.ling.CoreAnnotation;
+import edu.stanford.nlp.util.CoreMap;
 
-public interface SentInformationI<AT,DT>{
-	AT readFromDb(DT t);
-	DT writeToDb(AT t);
-	DT readFromString(String t);
-	Class<? extends CoreAnnotation<AT>> getAnnotationKey();
+public interface SentInformationI{
+	void read(String s, CoreMap c);
+	String write(CoreMap c);
 	String name();
 }

@@ -116,37 +116,18 @@ public class Corpus {
     private CoreMap parseSentence(ResultSet sentenceResults) throws SQLException,IllegalArgumentException {
     	ResultSetMetaData metaData = sentenceResults.getMetaData();
     	Annotation a = new Annotation("");
-
     	int index =1;
     	for(SentInformationI si : cis.sentenceInformation){
-    		Object x = sentenceResults.getObject(index);
-    		a.set(si.getAnnotationKey(), si.readFromDb(sentenceResults.getObject(index)));
+    		String x = sentenceResults.getString(index);
+    		si.read(x,a);
     		index++;
     	}
+ 
+    	List<CoreLabel> tokens = a.get(CoreAnnotations.TokensAnnotation.class);
+
     	for(TokenInformationI ti: cis.tokenInformation){
-    		List<String> tokenSeparatedValues = ti.getTokenSeparatedValues(sentenceResults.getString(index));
-    		List<CoreLabel> tokens = a.get(CoreAnnotations.TokensAnnotation.class);
-    		if(tokenSeparatedValues.size() != tokens.size()){
-    			for(int j =0; j < tokens.size(); j++){
-    				CoreLabel token = tokens.get(j);
-    				token.set(ti.getAnnotationKey(),null);
-    			}
-    		}
-    		else{
-	    		//iterate over tokens adding token level annotations to each one
-	    		// if there is no data add null as an annotation
-	    		int i;
-	    		for(i =0; i < tokenSeparatedValues.size(); i++){
-	    			String tokenSeparatedValue = tokenSeparatedValues.get(i);
-	    			CoreLabel token = tokens.get(i);
-	    			token.set(ti.getAnnotationKey(), ti.read(tokenSeparatedValue));
-	    		}
-	    		for(int j = i; j < tokens.size(); j++){
-	    			CoreLabel token = tokens.get(j);
-	    			token.set(ti.getAnnotationKey(),null);
-	    		}
-    		}
-    		
+    		String tokenInformation =sentenceResults.getString(index);
+    		ti.read(tokenInformation, tokens);
     		index++;
     	}
     	return a;
@@ -464,119 +445,6 @@ public class Corpus {
     	cd.batchSentenceTableLoad(ci,dbsentencesFile);
     	cd.batchDocumentTableLoad(ci,dbdocumentsFile);
 
-    }
-    
-    public void loadCorpus(File path, CorpusInformationSpecification ci) throws IOException, SQLException{
-    	cd.turnOffAutoCommit();
-    	if(path.isDirectory()){
-    		File[] filesInDirectory = path.listFiles();
-    		//check for all required files
-    		if(requiredFilesExist(Arrays.asList(filesInDirectory), ci)){
-    			//load in data from each file iteratively as rows into db.
-    			List<LineIterator> sentenceDataLineIterators = new ArrayList<LineIterator>();
-    			List<LineIterator> tokenDataLineIterators = new ArrayList<LineIterator>();
-    			List<LineIterator> documentDataLineIterators = new ArrayList<LineIterator>();
-    			LineIterator metaLineIterator = FileUtils.lineIterator(new File(path.getPath()+"/sentences.meta"));
-    			
-    			List<String> sentColumnNames = ci.getSentenceTableColumnNames();
-    			List<String> docColumnNames = ci.getDocumentTableColumnNames();
-    			
-    			List<SentInformationI> sentenceInformationSpecifications = new ArrayList<SentInformationI>();
-    			List<TokenInformationI> tokenInformationSpecifications = new ArrayList<TokenInformationI>();
-    			
-    			for(SentInformationI si : ci.sentenceInformation){
-    	    		if(!(si.name().equals("DOCNAME") || si.name().equals("SENTID") ||  si.name().equals("SENTTOKENSINFORMATION"))){
-    	    			sentenceInformationSpecifications.add(si);
-    	    			sentenceDataLineIterators.add(FileUtils.lineIterator(new File(path+"/"+si.name())));
-    	    		}
-    			}
-    			for(TokenInformationI ti : ci.tokenInformation){
-    				tokenInformationSpecifications.add(ti);
-    				tokenDataLineIterators.add(FileUtils.lineIterator(new File(path+"/"+ti.name())));
-    			}
-    			
-    			
-    			SentInformationI globalSentIdInformationSpecification = ci.sentenceInformation.get(0);
-    			SentInformationI docNameInformationSpecification = ci.sentenceInformation.get(1);
-    			SentInformationI tokensInformationSpecification = ci.sentenceInformation.get(2);
-    			
-    			int linesProcessed = 0;
-
-    			//iterate over corpus
-    			String previousDocumentName = "";
-    			while(metaLineIterator.hasNext()){
-    				List<Object> sentenceValues = new ArrayList<Object>();
-    				List<Object> documentValues = null;
-
-    				String metaLine = metaLineIterator.nextLine();
-    				String[] metaLineValues = metaLine.split("\t");
-    				String docName = metaLineValues[1];
-    				sentenceValues.add(globalSentIdInformationSpecification.readFromString(metaLineValues[0]));
-    				sentenceValues.add(docNameInformationSpecification.readFromString(metaLineValues[1]));
-    				sentenceValues.add(tokensInformationSpecification.readFromString(metaLineValues[2]));
-    				
-    				int sentLineIteratorIndex = 0;
-    				//get remaining SentInformationI values
-    				while(sentLineIteratorIndex < sentenceDataLineIterators.size()){
-    					String nextLine = sentenceDataLineIterators.get(sentLineIteratorIndex).nextLine();
-    					String[] lineValues = nextLine.split("\t");
-    					Integer sentId = Integer.parseInt(lineValues[0]);
-    					
-    					SentInformationI si = sentenceInformationSpecifications.get(sentLineIteratorIndex);
-    					sentenceValues.add(si.readFromString(lineValues[1]));
-    					
-    					sentLineIteratorIndex++;
-    				}
-    				
-    				//get tokenInformation values
-    				int tokenLineIteratorIndex = 0;
-    				while(tokenLineIteratorIndex < tokenDataLineIterators.size()){
-    					TokenInformationI ti = tokenInformationSpecifications.get(tokenLineIteratorIndex);
-    					String nextLine = tokenDataLineIterators.get(tokenLineIteratorIndex).nextLine();
-    					String [] values = nextLine.split("\t");
-    					sentenceValues.add(values[1]);
-    					tokenLineIteratorIndex++;
-    				}
-
-    				//get DocumentInformation values if applicable
-    				if(!docName.equals(previousDocumentName)){
-    					documentValues = new ArrayList<Object>();
-    					documentValues.add(docName);
-    					previousDocumentName = docName;
-    				}
-
-//    				//insert data to sentence table
-//    				for(String name: sentColumnNames){
-//    					System.out.println(name);
-//    				}
-//    				for(Object o : sentenceValues){
-//    					System.out.println(o.toString());
-//    				}
-//    				//insert data to sentence table
-//    				for(String name: docColumnNames){
-//    					System.out.println(name);
-//    				}
-//    				for(Object o : documentValues){
-//    					System.out.println(o.toString());
-//    				}
-    				cd.bulkInsertToSentenceTable(sentColumnNames, sentenceValues);
-    				if(documentValues != null) {
-    					cd.bulkInsertToDocumentTable(docColumnNames, documentValues);
-    					documentValues = null;
-    				}
-    				
-    				
-    				if(linesProcessed % 1000 == 0){
-    					System.out.println("Processed " + linesProcessed + " lines");
-    				}
-    				linesProcessed++;
-    			}
-    			
-    		}
-    		else{
-    		}
-    	}
-    	cd.turnOnAutoCommit();
     }
     
     private boolean requiredFilesExist(List<File> files, CorpusInformationSpecification cis){

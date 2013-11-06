@@ -2,12 +2,10 @@ package edu.washington.multir.corpus;
 
 import java.util.List;
 
-import edu.stanford.nlp.ling.CoreAnnotation;
+import edu.stanford.nlp.ling.CoreLabel;
 
 public interface TokenInformationI {
-	String read(String s);
-	String write(String s);
-	Class<? extends CoreAnnotation<String>> getAnnotationKey();
-	List<String> getTokenSeparatedValues(String s);
+	void read(String line, List<CoreLabel> tokens);
+	String write(List<CoreLabel> tokens);
 	String name();
 }

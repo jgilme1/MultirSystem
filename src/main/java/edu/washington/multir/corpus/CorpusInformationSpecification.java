@@ -7,6 +7,7 @@ import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.LabelFactory;
+import edu.stanford.nlp.util.CoreMap;
 
 
 public abstract class CorpusInformationSpecification {
@@ -58,24 +59,9 @@ public abstract class CorpusInformationSpecification {
 	}
 	
 	public static final SentGlobalIDInformation sentGlobalIDInformatIoninstance = new SentGlobalIDInformation();
-	public static final class SentGlobalIDInformation implements SentInformationI<Integer,Integer>{
-
-		@Override
-		public Integer readFromDb(Integer t) {
-			return t;
-		}
-
-		@Override
-		public Integer writeToDb(Integer t) {
-			return t;
-		}
-
-		@Override
-		public Class<? extends CoreAnnotation<Integer>> getAnnotationKey() {
-			return SentGlobalID.class;
-		}
+	public static final class SentGlobalIDInformation implements SentInformationI{
 		
-	    public static class SentGlobalID implements CoreAnnotation<Integer>{
+	    public static final class SentGlobalID implements CoreAnnotation<Integer>{
 			@Override
 			public Class<Integer> getType() {
 				return Integer.class;
@@ -83,34 +69,31 @@ public abstract class CorpusInformationSpecification {
 	    }
 
 		@Override
-		public String name() {
-			return "SENTID";
+		public void read(String s, CoreMap c) {
+			Integer id = Integer.parseInt(s);
+			c.set(SentGlobalID.class, id);
 		}
 
 		@Override
-		public Integer readFromString(String t) {
-			return Integer.parseInt(t);
+		public String write(CoreMap s) {
+			Integer id = s.get(SentGlobalID.class);
+			if(id == null){
+				return "";
+			}
+			else{
+				return String.valueOf(id);
+			}
+		}
+
+		@Override
+		public String name() {
+			return "SENTID";
 		}
 	}
 	
 	public static final SentDocNameInformation sentDocNameInformationInstance  = new SentDocNameInformation();
-    public static final class SentDocNameInformation implements SentInformationI<String,String>{
-		@Override
-		public String readFromDb(String t) {
-			return t;
-		}
-
-		@Override
-		public String writeToDb(String t) {
-			return t;
-		}
-
-		@Override
-		public Class<? extends CoreAnnotation<String>> getAnnotationKey() {
-				return SentDocName.class;
-		}
-		
-	    public static class SentDocName implements CoreAnnotation<String>{
+    public static final class SentDocNameInformation implements SentInformationI{
+	    public static final class SentDocName implements CoreAnnotation<String>{
 			@Override
 			public Class<String> getType() {
 				return String.class;
@@ -118,31 +101,54 @@ public abstract class CorpusInformationSpecification {
 	    }
 
 		@Override
-		public String name() {
-			return "DOCNAME";
+		public void read(String s, CoreMap c) {
+			if(s.equals("")){
+				c.set(SentDocName.class,null);
+			}
+			else{
+			 c.set(SentDocName.class, s);
+			}
 		}
 
 		@Override
-		public String readFromString(String t) {
-			return t;
+		public String write(CoreMap c) {
+			String docName = c.get(SentDocName.class);
+			if(docName == null){
+				return "";
+			}
+			else{
+				return docName;
+			}
+		}
+
+		@Override
+		public String name() {
+			return "DOCNAME";
 		}
     }
     
 	private static final SentTextInformation sentTextInformationInstance = new SentTextInformation();
-	private static final class SentTextInformation implements SentInformationI<String,String>{
+	private static final class SentTextInformation implements SentInformationI{
+
 		@Override
-		public String readFromDb(String s) {
-			return s;
+		public void read(String s, CoreMap c) {
+			if(s.equals("")){
+				c.set(CoreAnnotations.TextAnnotation.class,null);
+			}
+			else{
+			 c.set(CoreAnnotations.TextAnnotation.class, s);
+			}
 		}
 
 		@Override
-		public String writeToDb(String t) {
-			return t;
-		}
-
-		@Override
-		public Class<? extends CoreAnnotation<String>> getAnnotationKey() {
-			return CoreAnnotations.TextAnnotation.class;
+		public String write(CoreMap c) {
+			String text = c.get(CoreAnnotations.TextAnnotation.class);
+			if(text == null){
+				return "";
+			}
+			else{
+				return text;
+			}
 		}
 
 		@Override
@@ -150,46 +156,33 @@ public abstract class CorpusInformationSpecification {
 			return this.getClass().getSimpleName().toUpperCase();
 		}
 
-		@Override
-		public String readFromString(String t) {
-			return t;
-		}
 	}
 	
 	private static final SentTokensInformation sentTokensInformationInstance = new SentTokensInformation();
-	private static final class SentTokensInformation implements SentInformationI<List<CoreLabel>,String>{
-
+	private static final class SentTokensInformation implements SentInformationI{
 		@Override
-		public List<CoreLabel> readFromDb(String s) {
-			String[] tokens = s.split("\\s+");
-			List<CoreLabel> tokenAnnotations = new ArrayList<CoreLabel>();
-			for(String token: tokens){
-				tokenAnnotations.add((CoreLabel) coreLabelFactory.newLabel(token));
+		public void read(String s, CoreMap c) {
+			String[] tokenStrings = s.split("\\s+");
+			List<CoreLabel> tokens = new ArrayList<CoreLabel>();
+			for(String token : tokenStrings){
+				CoreLabel l = (CoreLabel) coreLabelFactory.newLabel(token);
+				tokens.add(l);
 			}
-			return tokenAnnotations;
+			c.set(CoreAnnotations.TokensAnnotation.class, tokens);
 		}
-
 		@Override
-		public String writeToDb(List<CoreLabel> t) {
-			StringBuilder tokens = new StringBuilder();
-			for(CoreLabel l : t){
-				tokens.append(l.originalText()+" ");
+		public String write(CoreMap c) {
+			StringBuilder sb = new StringBuilder();
+			List<CoreLabel> tokens = c.get(CoreAnnotations.TokensAnnotation.class);
+			for(CoreLabel token : tokens){
+				sb.append(token);
+				sb.append(" ");
 			}
-			return tokens.substring(0, tokens.length()-1).toString();
+			return sb.toString().trim();
 		}
-		@Override
-		public Class<? extends CoreAnnotation<List<CoreLabel>>> getAnnotationKey() {
-			return CoreAnnotations.TokensAnnotation.class;
-		}
-
 		@Override
 		public String name() {
 			return this.getClass().getSimpleName().toUpperCase();
-		}
-
-		@Override
-		public String readFromString(String t) {
-			return t;
 		}
 	}
 }
