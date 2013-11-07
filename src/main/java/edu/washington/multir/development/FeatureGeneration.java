@@ -1,7 +1,10 @@
 package edu.washington.multir.development;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -30,6 +33,8 @@ public class FeatureGeneration {
 		String nextLine = in.readLine();
 		List<String> lines = new ArrayList<String>();
 		Map<Integer,String> lineMap = new HashMap<Integer,String>();
+		
+		BufferedWriter bw =  new BufferedWriter(new FileWriter(new File("features")));
 		while(nextLine != null){
 			String [] values = nextLine.split("\t");
 			Integer id = Integer.parseInt(values[8]);
@@ -39,6 +44,7 @@ public class FeatureGeneration {
 			
 			if(count % 1000 == 0){
 				//issue Solr Query
+				StringBuilder sb = new StringBuilder();
 				Map<Integer,Pair<Annotation,Annotation>> sentAnnotationsMap = getSentAnnotationsMap(lines,c);
 				for(Integer i : sentAnnotationsMap.keySet()){
 					String line = lineMap.get(i);
@@ -50,24 +56,30 @@ public class FeatureGeneration {
 					Pair<Annotation,Annotation> annotations = sentAnnotationsMap.get(i);
 					Annotation sentence = annotations.first;
 					Annotation doc = annotations.second;
+					
 					List<String> features = fg.generateFeatures(arg1StartOffset,arg1EndOffset,arg2StartOffset,arg2EndOffset,sentence,doc);
 					int globalSentID = sentence.get(CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID.class);
-					System.out.print(globalSentID);
-					for(String feature : features){
-						System.out.print("\t" + feature);
+					sb.append(String.valueOf(globalSentID));
+					for(String feature: features){
+						sb.append("\t");
+						sb.append(feature);
 					}
-					System.out.print("\n");
+					sb.append("\n");
+//					System.out.print(globalSentID);
+//					for(String feature : features){
+//						System.out.print("\t" + feature);
+//					}
+//					System.out.print("\n");
 				}
 				lineMap.clear();
 				lines.clear();
+				System.out.println(count + " distant supervision annotations processed");
+				bw.write(sb.toString());
 			}
 			nextLine = in.readLine();
 			count ++;
 		}
-		
-		
-		
-		
+		bw.close();
 	}
 
 	private static Map<Integer, Pair<Annotation,Annotation>> getSentAnnotationsMap(

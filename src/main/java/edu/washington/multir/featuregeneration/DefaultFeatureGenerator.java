@@ -19,19 +19,31 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 		
 		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
 		
+		//initialize arguments
 		String[] tokenStrings = new String[tokens.size()];
 		String[] posTags = new String[tokens.size()];
-		int[] depParents = new int[tokens.size()];
-		String[] depTypes = new String[tokens.size()];
-		String arg1ner = "NONE";
-		String arg2ner = "NONE";
 		
-		List<Integer> arg1TokenIndices = new ArrayList<Integer>();
-		List<Integer> arg2TokenIndices = new ArrayList<Integer>();
-		System.out.println(String.valueOf(arg1StartOffset));
-		System.out.println(String.valueOf(arg1EndOffset));
+		int[] depParents = new int[tokens.size()];
+		for(int i = 0; i < depParents.length; i ++){
+			depParents[i] = -1;
+		}
+		
+		
+		String[] depTypes = new String[tokens.size()];
+		
+		
+		
+		String arg1ner = "";
+		String arg2ner = "";
+		int[] arg1Pos = new int[2];
+		int[] arg2Pos = new int[2];
+
+//		System.out.println(String.valueOf(arg1StartOffset));
+//		System.out.println(String.valueOf(arg1EndOffset));
+//		System.out.println(String.valueOf(arg2StartOffset));
+//		System.out.println(String.valueOf(arg2EndOffset));
 		for(int i =0; i < tokens.size(); i++){
-			System.out.println("Token " + i);
+//			System.out.println("Token " + i);
 			CoreLabel token = tokens.get(i);
 			tokenStrings[i] =token.value();
 			String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
@@ -44,19 +56,19 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 			
 			int begOffset =token.get(CoreAnnotations.TokenBeginAnnotation.class);
 			int endOffset = token.get(CoreAnnotations.TokenEndAnnotation.class);
-			System.out.println("begOffset = " + begOffset);
-			System.out.println("endOffset = " + endOffset);
+//			System.out.println("begOffset = " + begOffset);
+//			System.out.println("endOffset = " + endOffset);
 			
 			if(begOffset == arg1StartOffset){
 				String ner = token.get(CoreAnnotations.NamedEntityTagAnnotation.class);
 				if(ner != null){
 					arg1ner = ner;
 				}
-				arg1TokenIndices.add(i);
+				arg1Pos[0] = i;
 			}
 			
-			if((begOffset > arg1StartOffset) && (endOffset <= arg1EndOffset)){
-				arg1TokenIndices.add(i);
+			if(endOffset == arg1EndOffset){
+				arg1Pos[1] = i;
 			}
 			
 			
@@ -65,33 +77,18 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 				if(ner != null){
 					arg2ner = ner;
 				}
-				arg2TokenIndices.add(i);
+				arg2Pos[0] = i;
 			}
 			
-			if((begOffset > arg2StartOffset) && (endOffset <= arg2EndOffset)){
-				arg2TokenIndices.add(i);
+			if(endOffset == arg2EndOffset){
+				arg2Pos[1] = i;
 			}
 		}
 		
-		int[] arg1Pos = new int[arg1TokenIndices.size()];
-		int[] arg2Pos = new int[arg2TokenIndices.size()];
-		
-		System.out.println("ARG1POS:");
-		for(int i =0; i < arg1TokenIndices.size(); i++){
-			int tokenIndex = arg1TokenIndices.get(i);
-			arg1Pos[i] = tokenIndex;
-			System.out.println("Token: " + tokenIndex);
-		}
-		System.out.println("ARG2POS:");
-		for(int i =0; i < arg2TokenIndices.size(); i++){
-			int tokenIndex = arg2TokenIndices.get(i);
-			arg2Pos[i] = tokenIndex;
-			System.out.println("Token: " + tokenIndex);
-
-		}
 		
 		//dependency conversions..
 		List<Triple<Integer,String,Integer>> dependencyData = sentence.get(DependencyAnnotation.class);
+//		System.out.println("Dependency data size = " + dependencyData.size());
 		
 		for(Triple<Integer,String,Integer> dep : dependencyData){
 			int parent = dep.first;
@@ -101,11 +98,41 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 			depTypes[child] = type;
 		}
 		
+		//add 1 to end Pos values
+		arg1Pos[1] += 1;
+		arg2Pos[1] += 1;
+		
+//		System.out.println("ARG1POS");
+//		for(int i : arg1Pos){
+//			System.out.println(i);
+//		}
+//		System.out.println("ARG2POS");
+//		for(int i : arg2Pos){
+//			System.out.println(i);
+//		}
+//		
+//		System.out.println("dep parents:");
+//		for(int i : depParents){
+//			System.out.println(i);
+//		}
+		
 		return orginalMultirFeatures(tokenStrings, posTags, depParents,
 				depTypes, arg1Pos, arg2Pos, arg1ner, arg2ner);
 	}
 	
 	
+	/**
+	 * 
+	 * @param tokens  String[], element for each token in the sentence
+	 * @param postags String[], pos tag for each token in the sentence
+	 * @param depParents int[], ........
+	 * @param depTypes  int[],.........
+	 * @param arg1Pos   int[2] where int[0] is start token and int[1] is end token
+	 * @param arg2Pos   int[2] where int[0] is start token and int[1] is end token
+	 * @param arg1ner   String describing the NER tag of the argument
+	 * @param arg2ner   String describing the NER tag of the argument
+	 * @return
+	 */
 	private static List<String> orginalMultirFeatures(String[] tokens, 
 			String[] postags,
 			int[] depParents, String[] depTypes,

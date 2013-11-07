@@ -539,8 +539,6 @@ public class Corpus {
 			docNames.add(docName);
 		}
 		List<Annotation> docAnnotations = getDocuments(docNames);
-		System.out.println(docNames.size());
-		System.out.println(docAnnotations.size());
 		for(int i =0; i < docAnnotations.size(); i++){
 			String docName = docNames.get(i);
 			Annotation doc = docAnnotations.get(i);

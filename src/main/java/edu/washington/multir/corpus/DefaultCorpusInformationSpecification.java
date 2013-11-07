@@ -187,7 +187,7 @@ public class DefaultCorpusInformationSpecification extends
 		}
 		@Override
 		public void read(String s, CoreMap c) {	
-			String[] dependencyInformation = s.split("|");
+			String[] dependencyInformation = s.split("\\|");
 			List<Triple<Integer,String,Integer>> dependencyParseInformation = new ArrayList<>();
 			for(String dependencyInfo : dependencyInformation){
 				String[] parts = dependencyInfo.split("\\s+");
