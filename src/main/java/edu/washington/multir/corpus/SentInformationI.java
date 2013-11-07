@@ -4,7 +4,7 @@ import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.util.CoreMap;
 
 public interface SentInformationI{
-	void read(String s, CoreMap c);
-	String write(CoreMap c);
-	String name();
+	public void read(String s, CoreMap c);
+	public String write(CoreMap c);
+	public String name();
 }

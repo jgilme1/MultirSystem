@@ -19,11 +19,13 @@ public class DefaultCorpusInformationSpecification extends
 	public DefaultCorpusInformationSpecification(){
 		super();
 		sentenceInformation.add(sentenceOffsetInformationInstance);
+	    sentenceInformation.add(sentenceDependencyInformationInstance);
 		tokenInformation.add(tokenNERInformationInstance);
+		tokenInformation.add(tokenOffsetInformationinstance);
+		tokenInformation.add(tokenPOSInformationInstance);
 		
 	}
-	
-	public static final TokenNERInformation tokenNERInformationInstance = new TokenNERInformation();
+	private TokenNERInformation tokenNERInformationInstance = new TokenNERInformation();
 	public static final class TokenNERInformation implements TokenInformationI{
 		private TokenNERInformation(){}
 		
@@ -72,7 +74,7 @@ public class DefaultCorpusInformationSpecification extends
 
 	}
 	
-	public static final TokenOffsetInformation tokenOffsetInformationinstance = new TokenOffsetInformation();
+	private TokenOffsetInformation tokenOffsetInformationinstance = new TokenOffsetInformation();
 	public static final class TokenOffsetInformation implements TokenInformationI{
 		
 		@Override
@@ -90,8 +92,11 @@ public class DefaultCorpusInformationSpecification extends
 				  CoreLabel token = tokens.get(i);
 				  String[] offsetValues = tokenValue.split(":");
 				  if(offsetValues.length == 2){
+	//				System.out.println("Reading... in offset values from strings");
 					Integer start = Integer.parseInt(offsetValues[0]);
 					Integer end = Integer.parseInt(offsetValues[1]);
+//					System.out.println(start);
+//					System.out.println(end);
 					token.set(CoreAnnotations.TokenBeginAnnotation.class,start);
 					token.set(CoreAnnotations.TokenEndAnnotation.class,end);
 				  }
@@ -132,7 +137,7 @@ public class DefaultCorpusInformationSpecification extends
 		
 	}
 	
-	public static final TokenPOSInformation tokenPOSInformationInstance = new TokenPOSInformation();
+	private TokenPOSInformation tokenPOSInformationInstance = new TokenPOSInformation();
 	public static final class TokenPOSInformation implements TokenInformationI{
 
 		@Override
@@ -171,8 +176,8 @@ public class DefaultCorpusInformationSpecification extends
 		}
 	}
 	
-	public static final TokenDependencyInformation tokenDependencyInformationInstance = new TokenDependencyInformation();	
-	public static final class TokenDependencyInformation implements SentInformationI{
+	private SentDependencyInformation sentenceDependencyInformationInstance = new SentDependencyInformation();	
+	public static final class SentDependencyInformation implements SentInformationI{
 
 		public static final class DependencyAnnotation implements CoreAnnotation<List<Triple<Integer,String,Integer>>>{
 			@Override
@@ -196,7 +201,6 @@ public class DefaultCorpusInformationSpecification extends
 			}
 			c.set(DependencyAnnotation.class, dependencyParseInformation);
 		}
-
 		@Override
 		public String write(CoreMap c) {
 			StringBuilder sb = new StringBuilder();
@@ -222,8 +226,8 @@ public class DefaultCorpusInformationSpecification extends
 		
 	}
 	
-	public static final SentenceOffsetInformation sentenceOffsetInformationInstance = new SentenceOffsetInformation();
-	public static final class SentenceOffsetInformation implements SentInformationI{
+	private SentOffsetInformation sentenceOffsetInformationInstance = new SentOffsetInformation();
+	public static final class SentOffsetInformation implements SentInformationI{
 
 		public static final class SentStartOffset implements CoreAnnotation<Integer>{
 			@Override
@@ -242,9 +246,9 @@ public class DefaultCorpusInformationSpecification extends
 		@Override
 		public void read(String s, CoreMap c) {
 			String[] values = s.split("\\s+");
-			if(values.length == 3){
-				Integer startOffset = Integer.parseInt(values[1]);
-				Integer endOffset = Integer.parseInt(values[2]);
+			if(values.length == 2){
+				Integer startOffset = Integer.parseInt(values[0]);
+				Integer endOffset = Integer.parseInt(values[1]);
 				c.set(SentStartOffset.class, startOffset);
 				c.set(SentEndOffset.class,endOffset);
 			}

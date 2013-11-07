@@ -23,7 +23,7 @@ public abstract class CorpusInformationSpecification {
 	public CorpusInformationSpecification(){
 		sentenceInformation = new ArrayList<SentInformationI>();
 		tokenInformation = new ArrayList<TokenInformationI>();
-		sentenceInformation.add(sentGlobalIDInformatIoninstance);
+		sentenceInformation.add(sentGlobalIDInformationInstance);
 		sentenceInformation.add(sentDocNameInformationInstance);
 		sentenceInformation.add(sentTokensInformationInstance);
 		sentenceInformation.add(sentTextInformationInstance);
@@ -58,7 +58,7 @@ public abstract class CorpusInformationSpecification {
 		}
 	}
 	
-	public static final SentGlobalIDInformation sentGlobalIDInformatIoninstance = new SentGlobalIDInformation();
+	private SentGlobalIDInformation sentGlobalIDInformationInstance = new SentGlobalIDInformation();
 	public static final class SentGlobalIDInformation implements SentInformationI{
 		
 	    public static final class SentGlobalID implements CoreAnnotation<Integer>{
@@ -91,7 +91,7 @@ public abstract class CorpusInformationSpecification {
 		}
 	}
 	
-	public static final SentDocNameInformation sentDocNameInformationInstance  = new SentDocNameInformation();
+	private SentDocNameInformation sentDocNameInformationInstance  = new SentDocNameInformation();
     public static final class SentDocNameInformation implements SentInformationI{
 	    public static final class SentDocName implements CoreAnnotation<String>{
 			@Override
@@ -127,7 +127,7 @@ public abstract class CorpusInformationSpecification {
 		}
     }
     
-	private static final SentTextInformation sentTextInformationInstance = new SentTextInformation();
+	private  SentTextInformation sentTextInformationInstance = new SentTextInformation();
 	private static final class SentTextInformation implements SentInformationI{
 
 		@Override
@@ -158,7 +158,7 @@ public abstract class CorpusInformationSpecification {
 
 	}
 	
-	private static final SentTokensInformation sentTokensInformationInstance = new SentTokensInformation();
+	private SentTokensInformation sentTokensInformationInstance = new SentTokensInformation();
 	private static final class SentTokensInformation implements SentInformationI{
 		@Override
 		public void read(String s, CoreMap c) {

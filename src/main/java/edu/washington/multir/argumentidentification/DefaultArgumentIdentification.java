@@ -24,6 +24,7 @@ public class DefaultArgumentIdentification implements ArgumentIdentification {
 	private static DefaultArgumentIdentification instance = null;
 	
 	private KnowledgeBase kb = null;
+	private RelationMatching rm = new DefaultRelationMatching();
 	
 	private DefaultArgumentIdentification(){}
 	public static DefaultArgumentIdentification getInstance(){
@@ -56,12 +57,13 @@ public class DefaultArgumentIdentification implements ArgumentIdentification {
 				argumentSB.append(" ");
 			}
 			String argumentString = argumentSB.toString().trim();
-			//check for argumentString in KB
+			int tokenStartOffset = argumentTokenSpan.get(0).get(CoreAnnotations.TokenBeginAnnotation.class);
+			int tokenEndOffset = argumentTokenSpan.get(argumentTokenSpan.size()-1).get(CoreAnnotations.TokenEndAnnotation.class);
 
 			if(kb.getEntityMap().containsKey(argumentString)){
 				List<String> matchingKBIDs = kb.getEntityMap().get(argumentString);
 				for(String kbID : matchingKBIDs){
-					Argument arg = new Argument(globalSentId,argumentString,kbID);
+					Argument arg = new Argument(argumentString, tokenStartOffset, tokenEndOffset,kbID);
 					arguments.add(arg);
 				}
 			}
@@ -98,5 +100,9 @@ public class DefaultArgumentIdentification implements ArgumentIdentification {
 	@Override
 	public void setKB(KnowledgeBase kb) {
 		this.kb = kb;
+	}
+	@Override
+	public void setRM(RelationMatching rm) {
+		this.rm = rm;
 	}
 }

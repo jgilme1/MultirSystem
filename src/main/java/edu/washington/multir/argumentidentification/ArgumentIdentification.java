@@ -17,6 +17,6 @@ import edu.washington.multir.knowledgebase.KnowledgeBase;
 public interface ArgumentIdentification {
 	
 	List<Argument> identifyArguments(Annotation d, CoreMap s);
-
 	void setKB(KnowledgeBase kb);
+	void setRM(RelationMatching rm);
 }

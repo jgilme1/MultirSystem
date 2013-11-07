@@ -73,6 +73,22 @@ public final class CorpusDatabase {
 		String sqlCommand = query.substring(0, query.length()-4);
 		return issueQuery(sqlCommand);
 	}
+	
+	public ResultSet getSentenceRowsByID(List<Integer> ids) throws SQLException{
+		if(ids.size() == 0){
+			return null;
+		}
+		StringBuilder query = new StringBuilder();
+		query.append("SELECT * FROM " + sentenceInformationTableName + " WHERE ");
+		for(Integer id: ids){
+			query.append("SENTID" + "=");
+			query.append(String.valueOf(id));
+			query.append(" OR ");
+		}
+		String sqlCommand = query.substring(0, query.length()-4);
+		return issueQuery(sqlCommand);
+	}
+	
 	public ResultSet issueQuery(String queryString) throws SQLException{
 		return db.connection.prepareStatement(queryString).executeQuery();
 	}
