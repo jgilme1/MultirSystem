@@ -29,14 +29,14 @@ public class DistantSupervision {
 	
 	public static void main(String[] args) throws SQLException, IOException{
 		CorpusInformationSpecification cis =  new DefaultCorpusInformationSpecification();
-		Corpus c = new Corpus(cis,true,true);
+		Corpus c = new Corpus(cis,true,false);
 		Iterator<Annotation> di = c.getCachedDocumentIterator();
 		KnowledgeBase kb = new KnowledgeBase(args[0],args[1],args[2]);
 		ArgumentIdentification ai = DefaultArgumentIdentification.getInstance();
 		RelationMatching rm = new DefaultRelationMatching();
 		ai.setKB(kb);
 
-		PrintWriter dsWriter = new PrintWriter("distantSupervision");
+		PrintWriter dsWriter = new PrintWriter("distantSupervisionTest");
 		int count =0;
 		while(di.hasNext()){
 			Annotation d = di.next();

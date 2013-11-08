@@ -1,6 +1,9 @@
 package edu.washington.multir.corpus;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.PreparedStatement;
@@ -316,20 +319,20 @@ public class Corpus {
     	return sb.toString();
     }
     
-    public void loadCorpus2(File path, CorpusInformationSpecification ci) throws IOException, SQLException{
+    public void loadCorpus2(File path, CorpusInformationSpecification ci, String sentenceDBFileName, String documentDBFileName ) throws IOException, SQLException{
     	cd.turnOffAutoCommit();
-    	File dbsentencesFile = new File("dbsentences");
-    	File dbdocumentsFile = new File("dbdocuments");
+    	File dbsentencesFile = new File(sentenceDBFileName);
+    	File dbdocumentsFile = new File(documentDBFileName);
     	if(!(dbsentencesFile.exists() && dbdocumentsFile.exists())){
     	if(path.isDirectory()){
     		File[] filesInDirectory = path.listFiles();
     		//check for all required files
     		if(requiredFilesExist(Arrays.asList(filesInDirectory), ci)){
     			//load in data from each file iteratively as rows into db.
-    			List<LineIterator> sentenceDataLineIterators = new ArrayList<LineIterator>();
-    			List<LineIterator> tokenDataLineIterators = new ArrayList<LineIterator>();
-    			List<LineIterator> documentDataLineIterators = new ArrayList<LineIterator>();
-    			LineIterator metaLineIterator = FileUtils.lineIterator(new File(path.getPath()+"/sentences.meta"));
+    			List<BufferedReader> sentenceDataLineReaders = new ArrayList<BufferedReader>();
+    			List<BufferedReader> tokenDataLineReaders = new ArrayList<BufferedReader>();
+    			List<BufferedReader> documentDataLineReaders = new ArrayList<BufferedReader>();
+    			BufferedReader metaLineReader = new BufferedReader(new FileReader(new File(path.getPath()+"/sentences.meta")));
     			
     			List<String> sentColumnNames = ci.getSentenceTableColumnNames();
     			List<String> docColumnNames = ci.getDocumentTableColumnNames();
@@ -340,12 +343,12 @@ public class Corpus {
     			for(SentInformationI si : ci.sentenceInformation){
     	    		if(!(si.name().equals("DOCNAME") || si.name().equals("SENTID") ||  si.name().equals("SENTTOKENSINFORMATION"))){
     	    			sentenceInformationSpecifications.add(si);
-    	    			sentenceDataLineIterators.add(FileUtils.lineIterator(new File(path+"/"+si.name())));
+    	    			sentenceDataLineReaders.add(new BufferedReader(new FileReader(new File(path+"/"+si.name()))));
     	    		}
     			}
     			for(TokenInformationI ti : ci.tokenInformation){
     				tokenInformationSpecifications.add(ti);
-    				tokenDataLineIterators.add(FileUtils.lineIterator(new File(path+"/"+ti.name())));
+    				tokenDataLineReaders.add(new BufferedReader(new FileReader(new File(path+"/"+ti.name()))));
     			}
     			
     			
@@ -357,16 +360,16 @@ public class Corpus {
 
     			//iterate over corpus
     			String previousDocumentName = "";
-    			PrintWriter sentenceWriter = new PrintWriter(new File("dbsentences"));
-    			PrintWriter documentWriter = new PrintWriter(new File("dbdocuments"));
+    			BufferedWriter sentenceWriter = new BufferedWriter(new PrintWriter(new File(sentenceDBFileName)));
+    			BufferedWriter documentWriter = new BufferedWriter(new PrintWriter(new File(documentDBFileName)));
     			List<String> cachedSentenceLines = new ArrayList<String>();
     			List<String> cachedDocumentLines = new ArrayList<String>();
-    			while(metaLineIterator.hasNext()){
+    			String nextMetaLine = metaLineReader.readLine();
+    			while(nextMetaLine != null){
     				List<Object> sentenceValues = new ArrayList<Object>();
     				List<Object> documentValues = null;
 
-    				String metaLine = metaLineIterator.nextLine();
-    				String[] metaLineValues = metaLine.split("\t");
+    				String[] metaLineValues = nextMetaLine.split("\t");
     				String docName = metaLineValues[1];
     				
     				StringBuilder newLine =  new StringBuilder();
@@ -378,8 +381,8 @@ public class Corpus {
     				
     				int sentLineIteratorIndex = 0;
     				//get remaining SentInformationI values
-    				while(sentLineIteratorIndex < sentenceDataLineIterators.size()){
-    					String nextLine = sentenceDataLineIterators.get(sentLineIteratorIndex).nextLine();
+    				while(sentLineIteratorIndex < sentenceDataLineReaders.size()){
+    					String nextLine = sentenceDataLineReaders.get(sentLineIteratorIndex).readLine();
     					String [] splitValues = nextLine.split("\t");
     					String values = "";
     					if(splitValues.length >1){
@@ -392,8 +395,8 @@ public class Corpus {
     				
     				//get tokenInformation values
     				int tokenLineIteratorIndex = 0;
-    				while(tokenLineIteratorIndex < tokenDataLineIterators.size()){
-    					String nextLine = tokenDataLineIterators.get(tokenLineIteratorIndex).nextLine();
+    				while(tokenLineIteratorIndex < tokenDataLineReaders.size()){
+    					String nextLine = tokenDataLineReaders.get(tokenLineIteratorIndex).readLine();
     			        String [] splitValues = nextLine.split("\t");
     			        String values = " ";
     			        if(splitValues.length > 1){
@@ -431,6 +434,7 @@ public class Corpus {
     					
     				}
     				linesProcessed++;
+        			nextMetaLine = metaLineReader.readLine();
     			}
 				StringBuilder sentenceBuilder = new StringBuilder();
 				StringBuilder documentBuilder = new StringBuilder();
@@ -446,16 +450,26 @@ public class Corpus {
 				cachedDocumentLines.clear();
     			sentenceWriter.close();
     			documentWriter.close();
+    			metaLineReader.close();
+    			for(BufferedReader br : sentenceDataLineReaders){
+    				br.close();
+    			}
+    			for(BufferedReader br: tokenDataLineReaders){
+    				br.close();
+    			}
+    			for(BufferedReader br: documentDataLineReaders){
+    				br.close();
+    			}
     		}
     		else{
     		}
     	}
     	cd.turnOnAutoCommit();
     	}
+    	
     	// after files are converted to db format, batch load them into derby
     	cd.batchSentenceTableLoad(ci,dbsentencesFile);
     	cd.batchDocumentTableLoad(ci,dbdocumentsFile);
-
     }
     
     private boolean requiredFilesExist(List<File> files, CorpusInformationSpecification cis){

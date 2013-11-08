@@ -94,27 +94,32 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 			int parent = dep.first;
 			String type = dep.second;
 			int child = dep.third;
+			//child and parent should not be equivalent
+			if(parent == child){
+				parent = -1;
+			}
 			depParents[child] = parent;
 			depTypes[child] = type;
+
 		}
 		
 		//add 1 to end Pos values
 		arg1Pos[1] += 1;
 		arg2Pos[1] += 1;
 		
-//		System.out.println("ARG1POS");
-//		for(int i : arg1Pos){
-//			System.out.println(i);
-//		}
-//		System.out.println("ARG2POS");
-//		for(int i : arg2Pos){
-//			System.out.println(i);
-//		}
-//		
-//		System.out.println("dep parents:");
-//		for(int i : depParents){
-//			System.out.println(i);
-//		}
+		System.out.println("ARG1POS");
+		for(int i : arg1Pos){
+			System.out.println(i);
+		}
+		System.out.println("ARG2POS");
+		for(int i : arg2Pos){
+			System.out.println(i);
+		}
+		
+		System.out.println("dep parents:");
+		for(int i : depParents){
+			System.out.println(i);
+		}
 		
 		return orginalMultirFeatures(tokenStrings, posTags, depParents,
 				depTypes, arg1Pos, arg2Pos, arg1ner, arg2ner);
@@ -204,10 +209,18 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 		// identify head words of arg1 and arg2
 		// (start at end, while inside entity, jump)
 		int head1 = arg1Pos[1]-1;
-		while (depParents[head1] >= arg1Pos[0] && depParents[head1] < arg1Pos[1]) head1 = depParents[head1];
+		while (depParents[head1] >= arg1Pos[0] && depParents[head1] < arg1Pos[1]){
+			//System.out.println("Old head1 = " + head1);
+			head1 = depParents[head1];
+			//System.out.println("New head1 = " + head1);
+		}
 		int head2 = arg2Pos[1]-1;
 		//System.out.println(head1 + " " + head2);
-		while (depParents[head2] >= arg2Pos[0] && depParents[head2] < arg2Pos[1]) head2 = depParents[head2];
+		while (depParents[head2] >= arg2Pos[0] && depParents[head2] < arg2Pos[1]){
+			//System.out.println("Old head2 = " + head2);
+			head2 = depParents[head2];
+			//System.out.println("New head2 = " + head2); 
+		}
 		
 		
 		// find path of dependencies from first to second

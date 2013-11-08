@@ -3,7 +3,6 @@ package edu.washington.multir.development;
 
 import java.util.List;
 import java.util.Properties;
-
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
@@ -54,6 +53,7 @@ public class TestFeatureGeneration {
 		multirAnnotation.set(CoreAnnotations.TokensAnnotation.class,original.get(CoreAnnotations.TokensAnnotation.class));
 		
 		SemanticGraph g = original.get(SemanticGraphCoreAnnotations.CollapsedCCProcessedDependenciesAnnotation.class);
+		
 
 		System.out.println(g.toString("plain"));
 		
