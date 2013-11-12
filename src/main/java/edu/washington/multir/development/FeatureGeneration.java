@@ -61,36 +61,41 @@ public class FeatureGeneration {
 				//System.out.println(sentAnnotationsMap.size());
 				for(String line : lines){
 					
-					String [] lineValues = line.split("\t");
-					int arg1StartOffset = Integer.parseInt(lineValues[1]);
-					int arg1EndOffset = Integer.parseInt(lineValues[2]);
-					int arg2StartOffset = Integer.parseInt(lineValues[5]);
-					int arg2EndOffset = Integer.parseInt(lineValues[6]);
-					int sentId = Integer.parseInt(lineValues[8]);
-					Pair<Annotation,Annotation> annotations = sentAnnotationsMap.get(sentId);
-					Annotation sentence = annotations.first;
-					Annotation doc = annotations.second;
-					System.out.println("GENERATING FEATURES");
-					System.out.println("SENTID: " +sentId);
-					System.out.println("ARG1 = " + lineValues[3]);
-					List<String> features = fg.generateFeatures(arg1StartOffset,arg1EndOffset,arg2StartOffset,arg2EndOffset,sentence,doc);
-					System.out.println("GENERATED FEATURES");
-					int globalSentID = sentence.get(CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID.class);
-					sb.append(String.valueOf(globalSentID));
-					String arg1Id = lineValues[0];
-					String arg2Id = lineValues[4];
-					String rel = lineValues[9];
-					sb.append("\t");
-					sb.append(arg1Id);
-					sb.append("\t");
-					sb.append(arg2Id);
-					sb.append("\t");
-					sb.append(rel);
-					for(String feature: features){
+					try{
+						String [] lineValues = line.split("\t");
+						int arg1StartOffset = Integer.parseInt(lineValues[1]);
+						int arg1EndOffset = Integer.parseInt(lineValues[2]);
+						int arg2StartOffset = Integer.parseInt(lineValues[5]);
+						int arg2EndOffset = Integer.parseInt(lineValues[6]);
+						int sentId = Integer.parseInt(lineValues[8]);
+						Pair<Annotation,Annotation> annotations = sentAnnotationsMap.get(sentId);
+						Annotation sentence = annotations.first;
+						Annotation doc = annotations.second;
+						System.out.println("GENERATING FEATURES");
+						System.out.println("SENTID: " +sentId);
+						System.out.println("ARG1 = " + lineValues[3]);
+						List<String> features = fg.generateFeatures(arg1StartOffset,arg1EndOffset,arg2StartOffset,arg2EndOffset,sentence,doc);
+						System.out.println("GENERATED FEATURES");
+						int globalSentID = sentence.get(CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID.class);
+						sb.append(String.valueOf(globalSentID));
+						String arg1Id = lineValues[0];
+						String arg2Id = lineValues[4];
+						String rel = lineValues[9];
 						sb.append("\t");
-						sb.append(feature);
+						sb.append(arg1Id);
+						sb.append("\t");
+						sb.append(arg2Id);
+						sb.append("\t");
+						sb.append(rel);
+						for(String feature: features){
+							sb.append("\t");
+							sb.append(feature);
+						}
+						sb.append("\n");
 					}
-					sb.append("\n");
+					catch(NumberFormatException e){
+						e.printStackTrace();
+					}
 				}
 				lines.clear();
 				System.out.println(count + " distant supervision annotations processed");
