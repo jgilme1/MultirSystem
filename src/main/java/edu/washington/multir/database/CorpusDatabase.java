@@ -10,6 +10,11 @@ import java.util.ArrayList;
 
 import edu.washington.multir.corpus.CorpusInformationSpecification;
 
+/**
+ * This class handles most of the SQL formatting
+ * @author jgilme1
+ *
+ */
 public final class CorpusDatabase {
 	
 	private String name;
@@ -27,12 +32,12 @@ public final class CorpusDatabase {
 	}
 	public static CorpusDatabase loadCorpusDatabase(boolean train) throws SQLException{
 		String databaseName = train ? trainingDatabaseName : testDatabaseName;
-		DerbyDb db = new DerbyDb(databaseName,true);
+		DerbyDb db = new DerbyDb(databaseName);
 		return new CorpusDatabase(databaseName,db);
 	}
 	public static CorpusDatabase newCorpusDatabase(String sentenceTableSQLSpecification, String documentTableSQLSpecification, boolean train) throws SQLException{
 		String databaseName = train ? trainingDatabaseName : testDatabaseName;
-		DerbyDb db = new DerbyDb(databaseName,false);
+		DerbyDb db = new DerbyDb(databaseName);
 		deleteTable(db.connection,sentenceInformationTableName);
 		deleteTable(db.connection,documentInformationTableName);
 		createTable(db.connection,sentenceInformationTableName,sentenceTableSQLSpecification);

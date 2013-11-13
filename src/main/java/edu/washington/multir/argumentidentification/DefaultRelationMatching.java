@@ -7,6 +7,11 @@ import java.util.Map;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.data.Argument;
 
+/**
+ * Default implementation of relation matching
+ * @author jgilme1
+ *
+ */
 public class DefaultRelationMatching implements RelationMatching {
 
 	@Override

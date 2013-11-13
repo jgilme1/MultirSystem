@@ -1,5 +1,12 @@
 package edu.washington.multir.data;
 
+/**
+ * Argument represents an offset interval
+ * with optional meta information like
+ * name and id.
+ * @author jgilme1
+ *
+ */
 public class Argument {
 	int startOffset;
 	int endOffset;

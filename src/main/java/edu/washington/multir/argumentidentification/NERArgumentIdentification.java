@@ -7,39 +7,45 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
-import edu.washington.multir.corpus.Corpus;
-import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID;
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 
 /**
- * Has reference to the KB in order to find IDs.
+ * NERArgumentIdentification is am implementation of the ArgumentIdentification
+ * interface that uses NER tags on the Annotation sentence objects to identify
+ * potential arguments and then checks to see if those strings are names
+ * in the associated Knowledgebase and assigns the proper KBids to the arguments
+ * from the sentence.
  * @author jgilme1
  *
  */
-public class DefaultArgumentIdentification implements ArgumentIdentification {
+
+public class NERArgumentIdentification implements ArgumentIdentification {
 
 	private static String[] relevantNERTypes = {"ORGANIZATION", "PERSON", "LOCATION"};
 	
-	private static DefaultArgumentIdentification instance = null;
+	private static NERArgumentIdentification instance = null;
 	
 	private KnowledgeBase kb = null;
-	private RelationMatching rm = new DefaultRelationMatching();
 	
-	private DefaultArgumentIdentification(){}
-	public static DefaultArgumentIdentification getInstance(){
-		if(instance == null) instance = new DefaultArgumentIdentification();
+	private NERArgumentIdentification(){}
+	public static NERArgumentIdentification getInstance(){
+		if(instance == null) instance = new NERArgumentIdentification();
 		return instance;
 		}
 	
 	
 	@Override
+	/**
+	 * Returns a List of Argument for all of the unique arguments in
+	 * the sentence.
+	 */
 	public List<Argument> identifyArguments(Annotation d, CoreMap s) {
-		int globalSentId = s.get(SentGlobalID.class);
 		List<Argument> arguments = new ArrayList<Argument>();
 		List<CoreLabel> tokens = s.get(CoreAnnotations.TokensAnnotation.class);
 		List<List<CoreLabel>> argumentTokenSpans = new ArrayList<List<CoreLabel>>();
 		
+		//add candidate token spans
 		for(int i =0; i < tokens.size();){
 			if (isRelevant(tokens.get(i))){
 				List<CoreLabel> tokenSequence = getRelevantTokenSequence(tokens,i);
@@ -50,6 +56,9 @@ public class DefaultArgumentIdentification implements ArgumentIdentification {
 				i++;
 			}
 		}
+		
+		//for each candidate string check in the KB for all ids that 
+		//share that string and return as possible arguments
 		for(List<CoreLabel> argumentTokenSpan : argumentTokenSpans){
 			StringBuilder argumentSB = new StringBuilder();
 			for(CoreLabel token: argumentTokenSpan){
@@ -71,6 +80,7 @@ public class DefaultArgumentIdentification implements ArgumentIdentification {
 		return arguments;
 	}
 	
+	//get contiguous sequences of tokens that share a relevant named entity type
 	private List<CoreLabel> getRelevantTokenSequence(List<CoreLabel> tokens,
 			int i) {
 		List<CoreLabel> tokenSequence = new ArrayList<CoreLabel>();
@@ -100,9 +110,5 @@ public class DefaultArgumentIdentification implements ArgumentIdentification {
 	@Override
 	public void setKB(KnowledgeBase kb) {
 		this.kb = kb;
-	}
-	@Override
-	public void setRM(RelationMatching rm) {
-		this.rm = rm;
 	}
 }

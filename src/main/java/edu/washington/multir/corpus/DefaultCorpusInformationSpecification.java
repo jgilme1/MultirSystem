@@ -1,9 +1,7 @@
 package edu.washington.multir.corpus;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-
 import edu.stanford.nlp.ling.CoreAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
@@ -13,9 +11,9 @@ import edu.stanford.nlp.util.Triple;
 
 public class DefaultCorpusInformationSpecification extends
 		CorpusInformationSpecification {
-	
-	
-	
+
+	//adds custom sentenceInformation and tokenInformation
+	//to the corpus representation
 	public DefaultCorpusInformationSpecification(){
 		super();
 		sentenceInformation.add(sentenceOffsetInformationInstance);
@@ -92,11 +90,8 @@ public class DefaultCorpusInformationSpecification extends
 				  CoreLabel token = tokens.get(i);
 				  String[] offsetValues = tokenValue.split(":");
 				  if(offsetValues.length == 2){
-	//				System.out.println("Reading... in offset values from strings");
 					Integer start = Integer.parseInt(offsetValues[0]);
 					Integer end = Integer.parseInt(offsetValues[1]);
-//					System.out.println(start);
-//					System.out.println(end);
 					token.set(CoreAnnotations.TokenBeginAnnotation.class,start);
 					token.set(CoreAnnotations.TokenEndAnnotation.class,end);
 				  }
@@ -273,11 +268,9 @@ public class DefaultCorpusInformationSpecification extends
 					return sb.toString();
 				}
 		}
-
 		@Override
 		public String name() {
 			return this.getClass().getSimpleName().toUpperCase();
 		}
-		
 	}
 }

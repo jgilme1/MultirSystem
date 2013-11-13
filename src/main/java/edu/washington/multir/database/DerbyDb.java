@@ -3,6 +3,12 @@ package edu.washington.multir.database;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+
+/**
+ * Derby wrapper class
+ * @author jgilme1
+ *
+ */
 public class DerbyDb {
     public static final String PROTOCOL = "jdbc:derby:";
     public static final String DRIVER = "org.apache.derby.jdbc.EmbeddedDriver";
@@ -14,7 +20,7 @@ public class DerbyDb {
 * @param url The URL of the database (e.g., localhost:1527://path/to/db)
      * @throws SQLException 
 */
-    public DerbyDb(String dbName, boolean load) throws SQLException {
+    public DerbyDb(String dbName) throws SQLException {
         String connectionUrl = PROTOCOL + dbName+";create=true";
         try {
             Class.forName(DRIVER);

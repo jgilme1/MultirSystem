@@ -9,7 +9,14 @@ import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.ling.LabelFactory;
 import edu.stanford.nlp.util.CoreMap;
 
-
+/**
+ * The abstract class CorpusInformationSpecification
+ * should be extended when customizing the preprocessed Corpus.
+ * The abstract class defines the integral information in a Corpus
+ * for the default Multir algorithm to work.
+ * @author jgilme1
+ *
+ */
 public abstract class CorpusInformationSpecification {
 	
 	protected final List<SentInformationI> sentenceInformation;
@@ -21,8 +28,11 @@ public abstract class CorpusInformationSpecification {
 
 
 	public CorpusInformationSpecification(){
+		//initialize Lists of sentenceInformation and tokenInformation
 		sentenceInformation = new ArrayList<SentInformationI>();
 		tokenInformation = new ArrayList<TokenInformationI>();
+		
+		//set default sentenceInformation
 		sentenceInformation.add(sentGlobalIDInformationInstance);
 		sentenceInformation.add(sentDocNameInformationInstance);
 		sentenceInformation.add(sentTokensInformationInstance);

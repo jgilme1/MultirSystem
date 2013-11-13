@@ -13,7 +13,7 @@ public class TestLoadCorpus {
 		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
     	Corpus c = new Corpus(cis,false,true);
     	long start = System.currentTimeMillis();
-    	c.loadCorpus2(new File("/scratch2/code/multir-reimplementation/PreprocessedCorpus/reformatted/train"), cis, "dbsentencestrain", "dbdocumentstrain");
+    	c.loadCorpus(new File("/scratch2/code/multir-reimplementation/PreprocessedCorpus/reformatted/train"), "dbsentencestrain", "dbdocumentstrain");
     	long end = System.currentTimeMillis();
     	System.out.println("Loading DB took " + (end-start) + " millisseconds");
 	}

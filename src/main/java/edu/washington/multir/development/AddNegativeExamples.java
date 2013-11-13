@@ -1,13 +1,9 @@
 package edu.washington.multir.development;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -18,30 +14,50 @@ import java.util.Map;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
-import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.argumentidentification.ArgumentIdentification;
-import edu.washington.multir.argumentidentification.DefaultArgumentIdentification;
+import edu.washington.multir.argumentidentification.NERArgumentIdentification;
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
 import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
 import edu.washington.multir.data.Argument;
-import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
-import edu.washington.multir.featuregeneration.FeatureGenerator;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 
+/**
+ * This is just an app for adding negative examples to
+ * a distant supervision file. This should only be run
+ * after running distant supervision.
+ * 
+ * Run the main method with the arguments
+ * 1. "train" or "test"
+ * 2. relationKBFilePath
+ * 3. entityKBFilePath
+ * 4. targetRelationsFilePath
+ * 
+ * After running this main method, the file
+ * distantSupervisionTrain or
+ * distantSupervisionTest will be modified to include
+ * negative examples
+ * 
+ * @author jgilme1
+ *
+ */
 public class AddNegativeExamples {
 	
+	
 	public static void main(String[] args) throws SQLException, IOException{
+		
+		//initialize variables
 		String dsFileName = "";
-		String outputFile = "";
 		Corpus c;
 		KnowledgeBase KB = new KnowledgeBase(args[1],args[2],args[3]);
 		Map<String,List<String>> entityPairRelationMap = KB.getEntityPairRelationMap();
-		ArgumentIdentification ai = DefaultArgumentIdentification.getInstance();
+		ArgumentIdentification ai = NERArgumentIdentification.getInstance();
 		ai.setKB(KB);
 		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
+		
+		//choose corpus based on first argument
 		if(args[0].equals("train")){
 			dsFileName = "distantSupervisionTrain";
 			c = new Corpus(cis,true,true);
@@ -93,7 +109,7 @@ public class AddNegativeExamples {
 							String key = arg1.getArgID()+arg2.getArgID();
 							if(!entityPairRelationMap.containsKey(key)){
 								// can be negative example
-								Triple t = new Triple(arg1,arg2,sentId);
+								Triple<Argument,Argument,Integer> t = new Triple<>(arg1,arg2,sentId);
 								nonRelatedEntityPairs.add(t);
 								//check if the size of the nonRelatedPairs is 10, if so add to output
 								if(nonRelatedEntityPairs.size() == 10){
@@ -116,6 +132,12 @@ public class AddNegativeExamples {
 		
 	}
 	
+	/**
+	 * Writing NA distant supervision training instances
+	 * @param triple
+	 * @param dsWriter
+	 * @throws IOException
+	 */
 	private static void writeDistantSupervisionNoRelationAnnotations(
 			Triple<Argument, Argument, Integer> triple, BufferedWriter dsWriter) throws IOException {
 			Argument arg1 = triple.first;
