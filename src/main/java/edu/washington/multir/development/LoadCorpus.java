@@ -8,7 +8,14 @@ import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
 
-public class TestLoadCorpus {
+/**
+ * An app for taking a prespecified corpus
+ * directory an inputting the information
+ * into the derby db.
+ * @author jgilme1
+ *
+ */
+public class LoadCorpus {
 	public static void main(String[] args) throws SQLException, IOException{
 		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
     	Corpus c = new Corpus(cis,false,true);

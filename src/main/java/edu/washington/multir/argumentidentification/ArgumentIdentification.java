@@ -16,6 +16,20 @@ import edu.washington.multir.knowledgebase.KnowledgeBase;
  */
 public interface ArgumentIdentification {
 	
+	/**
+	 * 
+	 * @param d
+	 * @param s
+	 * @return
+	 */
 	List<Argument> identifyArguments(Annotation d, CoreMap s);
+	
+	
+	/**
+	 * The KnowledgeBase should be set if
+	 * the identifyArguments algorithm makes use of
+	 * it.
+	 * @param kb
+	 */
 	void setKB(KnowledgeBase kb);
 }

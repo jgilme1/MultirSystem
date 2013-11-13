@@ -15,8 +15,23 @@ import java.util.Map;
 
 import edu.stanford.nlp.util.Pair;
 
+/**
+ * This main method takes the featuresTest
+ * and featuresTrain file and creates all the necessary
+ * Multir files like mapping, model, train, test.
+ * @author jgilme1
+ *
+ */
 public class Preprocess {
 
+	/**
+	 * args[0] is path to featuresTrain
+	 * args[1] is path to featuresTest
+	 * args[2] is path directory for new multir files like
+	 * 			mapping, model, train, test..
+	 * @param args
+	 * @throws IOException
+	 */
 	public static void main(String[] args) 
 	throws IOException {
 		
@@ -47,22 +62,40 @@ public class Preprocess {
 		}		
 	}
 	
+	/**
+	 * Converts featuresTrain or featuresTest to 
+	 * train or test by aggregating the entity pairs
+	 * into relations and their mentions.
+	 * @param input - the test/train file in non-multir
+	 * 				  format
+	 * @param output - the test/train file in multir,
+	 * 					MILDoc format
+	 * @param mappingFile - the mapping file that holds
+	 * 			int representation of features and 
+	 * 			relations
+	 * @param writeFeatureMapping - boolean flag
+	 * 		    for writing new features, should
+	 * 			be on for training and off for test
+	 * @param writeRelationMapping - boolean flag
+	 * 			for writing new relations, should be
+	 * 			on for training and off for test
+	 * @throws IOException
+	 */
 	private static void convertFeatureFileToMILDocument(String input, String output, String mappingFile, 
 			boolean writeFeatureMapping, boolean writeRelationMapping) throws IOException {
 		
-		// This tool can be used in two ways:
-		//  1) a new Mapping is created and saved at the end
-		//  2) an existing Mapping is used; non-existent relations
-		//     or features are ignored
 		
 		Mappings m = new Mappings();
 		
+		//if test time, load the mapping
 		if (!writeFeatureMapping || !writeRelationMapping)
 			m.read(mappingFile);
+		//else start writing a new mapping
 		else
 			// ensure that relation NA gets ID 0
 			m.getRelationID("NA", true);
 		
+		//open input and output streams
 		DataOutputStream os = new DataOutputStream
 			(new BufferedOutputStream(new FileOutputStream(output)));
 	
@@ -81,12 +114,15 @@ public class Preprocess {
 	    	String arg1Id = values[1];
 	    	String arg2Id = values[2];
 	    	String rel = values[3];
+	    	// entity pair key separated by a delimiter
 	    	String key = arg1Id+"%"+arg2Id;
 	    	List<String> features = new ArrayList<>();
+	    	//add all features
 	    	for(int i = 4; i < values.length; i++){
 	    		features.add(values[i]);
 	    	}
 	    	
+	    	//update map entry
 	    	if(relationMentionMap.containsKey(key)){
 	    		Pair<List<String>, List<List<String>>> p = relationMentionMap.get(key);
 	    		List<String> oldRelations = p.first;
@@ -97,6 +133,7 @@ public class Preprocess {
 	    		oldFeatures.add(features);
 	    	}
 	    	
+	    	//new map entry
 	    	else{
 	    		List<String> relations = new ArrayList<>();
 	    		relations.add(rel);
@@ -111,7 +148,8 @@ public class Preprocess {
 	    
 	    
 	    MILDocument doc = new MILDocument();	    
-    	    
+    	
+	    //iterate over keys in the map and create MILDocuments
 	    for(String key : relationMentionMap.keySet()){
 	    	doc.clear();
 

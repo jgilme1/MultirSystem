@@ -21,15 +21,25 @@ import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
 import edu.washington.multir.featuregeneration.FeatureGenerator;
 
+/**
+ * App for doing feature generation. Before this is run
+ * DistantSupervision and AddNegativeExamples should have
+ * been run.
+ * @author jgilme1
+ *
+ */
 public class FeatureGeneration {
 	
 	public static void main(String[] args) throws SQLException, IOException{
+		
+		//initialize variables
 		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
 		FeatureGenerator fg = new DefaultFeatureGenerator();
 		Corpus c;
 		BufferedReader in;
 		BufferedWriter bw;
 
+		// train/test switch
 		if(args[0].equals("train")){
 			in = new BufferedReader(new FileReader(new File("distantSupervisionTrain")));
 			bw =  new BufferedWriter(new FileWriter(new File("featuresTrain")));
@@ -49,17 +59,19 @@ public class FeatureGeneration {
 		List<String> lines = new ArrayList<String>();
 		
 		while(nextLine != null){
-			String [] values = nextLine.split("\t");
 			lines.add(nextLine);
 			System.out.println("Line " + count + "\t" + nextLine);
 			
+			//every 1000 do a batch SQL query to speed up processing time
 			if(count % 1000 == 0){
+				
 				//issue Solr Query
 				StringBuilder sb = new StringBuilder();
 				Map<Integer,Pair<Annotation,Annotation>> sentAnnotationsMap = getSentAnnotationsMap(lines,c);
-				//System.out.println(sentAnnotationsMap.size());
-				for(String line : lines){
-					
+				
+				for(String line : lines){	
+					//try block in case some of the distantsupervision input is 
+					//malformed.
 					try{
 						String [] lineValues = line.split("\t");
 						int arg1StartOffset = Integer.parseInt(lineValues[1]);
@@ -70,11 +82,7 @@ public class FeatureGeneration {
 						Pair<Annotation,Annotation> annotations = sentAnnotationsMap.get(sentId);
 						Annotation sentence = annotations.first;
 						Annotation doc = annotations.second;
-						System.out.println("GENERATING FEATURES");
-						System.out.println("SENTID: " +sentId);
-						System.out.println("ARG1 = " + lineValues[3]);
 						List<String> features = fg.generateFeatures(arg1StartOffset,arg1EndOffset,arg2StartOffset,arg2EndOffset,sentence,doc);
-						System.out.println("GENERATED FEATURES");
 						int globalSentID = sentence.get(CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID.class);
 						sb.append(String.valueOf(globalSentID));
 						String arg1Id = lineValues[0];

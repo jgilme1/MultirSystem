@@ -9,8 +9,16 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.SentDependencyInformation.DependencyAnnotation;
 
+/**
+ * Default implementation of FeatureGenerator
+ * inspired by the Mintz features, but slightly
+ * different.
+ * @author jgilme1
+ *
+ */
 public class DefaultFeatureGenerator implements FeatureGenerator {
 
+	
 	@Override
 	public List<String> generateFeatures(Integer arg1StartOffset,
 			Integer arg1EndOffset, Integer arg2StartOffset,
@@ -23,6 +31,7 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 		String[] tokenStrings = new String[tokens.size()];
 		String[] posTags = new String[tokens.size()];
 		
+		//initialize dependency parents to -1
 		int[] depParents = new int[tokens.size()];
 		for(int i = 0; i < depParents.length; i ++){
 			depParents[i] = -1;
@@ -32,20 +41,20 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 		String[] depTypes = new String[tokens.size()];
 		
 		
-		
 		String arg1ner = "";
 		String arg2ner = "";
 		int[] arg1Pos = new int[2];
 		int[] arg2Pos = new int[2];
 
-//		System.out.println(String.valueOf(arg1StartOffset));
-//		System.out.println(String.valueOf(arg1EndOffset));
-//		System.out.println(String.valueOf(arg2StartOffset));
-//		System.out.println(String.valueOf(arg2EndOffset));
+		//iterate over tokens
 		for(int i =0; i < tokens.size(); i++){
-//			System.out.println("Token " + i);
+			
 			CoreLabel token = tokens.get(i);
+			
+			//set the tokenString value
 			tokenStrings[i] =token.value();
+			
+			//set the pos value
 			String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
 			if(pos == null){
 				posTags[i] = "";
@@ -56,9 +65,8 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 			
 			int begOffset =token.get(CoreAnnotations.TokenBeginAnnotation.class);
 			int endOffset = token.get(CoreAnnotations.TokenEndAnnotation.class);
-//			System.out.println("begOffset = " + begOffset);
-//			System.out.println("endOffset = " + endOffset);
-			
+
+			// if the token matches the argument set the ner and argPos values
 			if(begOffset == arg1StartOffset){
 				String ner = token.get(CoreAnnotations.NamedEntityTagAnnotation.class);
 				if(ner != null){
@@ -85,10 +93,8 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 			}
 		}
 		
-		
 		//dependency conversions..
 		List<Triple<Integer,String,Integer>> dependencyData = sentence.get(DependencyAnnotation.class);
-//		System.out.println("Dependency data size = " + dependencyData.size());
 		
 		for(Triple<Integer,String,Integer> dep : dependencyData){
 			int parent = dep.first;
@@ -100,27 +106,12 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 			}
 			depParents[child] = parent;
 			depTypes[child] = type;
-
 		}
 		
 		//add 1 to end Pos values
 		arg1Pos[1] += 1;
 		arg2Pos[1] += 1;
-		
-		System.out.println("ARG1POS");
-		for(int i : arg1Pos){
-			System.out.println(i);
-		}
-		System.out.println("ARG2POS");
-		for(int i : arg2Pos){
-			System.out.println(i);
-		}
-		
-		System.out.println("dep parents:");
-		for(int i : depParents){
-			System.out.println(i);
-		}
-		
+				
 		return orginalMultirFeatures(tokenStrings, posTags, depParents,
 				depTypes, arg1Pos, arg2Pos, arg1ner, arg2ner);
 	}
@@ -130,8 +121,8 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 	 * 
 	 * @param tokens  String[], element for each token in the sentence
 	 * @param postags String[], pos tag for each token in the sentence
-	 * @param depParents int[], ........
-	 * @param depTypes  int[],.........
+	 * @param depParents int[], an integer representing dependency parent for each token
+	 * @param depTypes  String[], a dependency type for each token in a dependency
 	 * @param arg1Pos   int[2] where int[0] is start token and int[1] is end token
 	 * @param arg2Pos   int[2] where int[0] is start token and int[1] is end token
 	 * @param arg1ner   String describing the NER tag of the argument
@@ -210,16 +201,11 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 		// (start at end, while inside entity, jump)
 		int head1 = arg1Pos[1]-1;
 		while (depParents[head1] >= arg1Pos[0] && depParents[head1] < arg1Pos[1]){
-			//System.out.println("Old head1 = " + head1);
 			head1 = depParents[head1];
-			//System.out.println("New head1 = " + head1);
 		}
 		int head2 = arg2Pos[1]-1;
-		//System.out.println(head1 + " " + head2);
 		while (depParents[head2] >= arg2Pos[0] && depParents[head2] < arg2Pos[1]){
-			//System.out.println("Old head2 = " + head2);
 			head2 = depParents[head2];
-			//System.out.println("New head2 = " + head2); 
 		}
 		
 		
@@ -270,14 +256,11 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 				dirs[i] = "->";
 				strs[i] = i > 0? tokens[path1[i]] : "";
 				rels[i] = depTypes[path1[i]];
-				//System.out.println("[" + depTypes[path1[i]] + "]->");
 			}
 			for (int j=0; j < lcaDown; j++) {
-			//for (int j=lcaDown-1; j >= 0; j--) {
 				dirs[lcaUp + j] = "<-";
 				strs[lcaUp + j] = (lcaUp + j > 0)? tokens[path2[lcaDown-j]] : ""; // word taken from above
 				rels[lcaUp + j] = depTypes[path2[lcaDown-j]];
-				//System.out.println("[" + depTypes[path2[j]] + "]<-");
 			}
 			
 			for (int i=0; i < dirs.length; i++) {
@@ -295,11 +278,6 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 		String basicDir = arg1ner + "|" + middleDirs.toString() + "|" + arg2ner;
 		String basicDep = arg1ner + "|" + middleRels.toString() + "|" + arg2ner;
 		String basicStr = arg1ner + "|" + middleStrs.toString() + "|" + arg2ner;
-		
-
-		// new left and right windows: all elements pointing to first arg, but not on path
-		//List<Integer> lws = new ArrayList<Integer>();
-		//List<Integer> rws = new ArrayList<Integer>();
 		
 		List<String> arg1dirs = new ArrayList<String>();
 		List<String> arg1deps = new ArrayList<String>();
@@ -365,26 +343,11 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 			}
 		}
 		
-		// case 2: pointing out of argument
-		
-		//features.add("dir:" + basicDir);		
-		//features.add("dep:" + basicDep);
-
 		
 		// left and right, including word
 		for (String w1 : arg1strs)
 			for (String w2 : arg2strs)
 				features.add("str:" + w1 + "|" + basicStr + "|" + w2);
-		
-		/*
-		for (int lw : lws) {
-			for (int rw : rws) {
-				features.add("str:" + tokens[lw] + "[" + depTypes[lw] + "]<-" + "|" + basicStr
-						+ "|" + "[" + depTypes[rw] + "]->" + tokens[rw]);
-			}
-		}
-		*/
-		
 		
 		
 		// only left
