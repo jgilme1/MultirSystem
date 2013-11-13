@@ -40,7 +40,8 @@ public class DistantSupervision {
 	
 	
 	public static void main(String[] args) throws SQLException, IOException{
-		
+    	long start = System.currentTimeMillis();
+
 		//initialize variables
 		CorpusInformationSpecification cis =  new DefaultCorpusInformationSpecification();
 		Corpus c;
@@ -67,7 +68,6 @@ public class DistantSupervision {
 
 		PrintWriter dsWriter = new PrintWriter(dsFileName);
 		Iterator<Annotation> di = c.getDocumentIterator();
-		
 		int count =0;
 		while(di.hasNext()){
 			Annotation d = di.next();
@@ -84,12 +84,14 @@ public class DistantSupervision {
 				//writeArguments(arguments,argumentWriter);
 				writeDistantSupervisionAnnotations(distantSupervisionAnnotations,dsWriter,sentGlobalID);
 			}
-			count ++;
-			if(count % 100 == 0){
-				System.out.println(count +" documents read");
+			count++;
+			if( count % 1000 == 0){
+				System.out.println(count + " documents processed");
 			}
 		}
 		dsWriter.close();
+    	long end = System.currentTimeMillis();
+    	System.out.println("Distant Supervision took " + (end-start) + " millisseconds");
 	}
 	
 	/**

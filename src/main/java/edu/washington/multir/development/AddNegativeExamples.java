@@ -47,7 +47,8 @@ public class AddNegativeExamples {
 	
 	
 	public static void main(String[] args) throws SQLException, IOException{
-		
+    	long start = System.currentTimeMillis();
+
 		//initialize variables
 		String dsFileName = "";
 		Corpus c;
@@ -129,6 +130,8 @@ public class AddNegativeExamples {
 		}
 		bw.close();
 		
+    	long end = System.currentTimeMillis();
+    	System.out.println("Add Negative Examples took " + (end-start) + " millisseconds");
 		
 	}
 	

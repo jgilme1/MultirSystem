@@ -34,7 +34,8 @@ public class Preprocess {
 	 */
 	public static void main(String[] args) 
 	throws IOException {
-		
+    	long start = System.currentTimeMillis();
+
 		String trainFile = args[0];
 		String testFile = args[1];
 		String outDir = args[2];
@@ -59,7 +60,10 @@ public class Preprocess {
 			for (int i=0; i < m.numRelations; i++)
 				m.numFeaturesPerRelation[i] = mappings.numFeatures();
 			m.write(modelFile);
-		}		
+		}
+		
+    	long end = System.currentTimeMillis();
+    	System.out.println("Preprocessing took " + (end-start) + " millisseconds");
 	}
 	
 	/**

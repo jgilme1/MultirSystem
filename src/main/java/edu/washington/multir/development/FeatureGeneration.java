@@ -31,7 +31,8 @@ import edu.washington.multir.featuregeneration.FeatureGenerator;
 public class FeatureGeneration {
 	
 	public static void main(String[] args) throws SQLException, IOException{
-		
+    	long start = System.currentTimeMillis();
+
 		//initialize variables
 		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
 		FeatureGenerator fg = new DefaultFeatureGenerator();
@@ -59,9 +60,7 @@ public class FeatureGeneration {
 		List<String> lines = new ArrayList<String>();
 		
 		while(nextLine != null){
-			lines.add(nextLine);
-			System.out.println("Line " + count + "\t" + nextLine);
-			
+			lines.add(nextLine);			
 			//every 1000 do a batch SQL query to speed up processing time
 			if(count % 1000 == 0){
 				
@@ -113,6 +112,9 @@ public class FeatureGeneration {
 		}
 		bw.close();
 		in.close();
+		
+    	long end = System.currentTimeMillis();
+    	System.out.println("Feature Generation took " + (end-start) + " millisseconds");	
 	}
 
 	private static Map<Integer, Pair<Annotation,Annotation>> getSentAnnotationsMap(
