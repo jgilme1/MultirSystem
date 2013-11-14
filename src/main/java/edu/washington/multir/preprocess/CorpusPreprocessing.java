@@ -44,7 +44,7 @@ public class CorpusPreprocessing {
 		}
 		
 		for(List<CoreLabel> sentence : sentences){
-			
+			String rawString = 
 		}
 		
 //		int count =0;
