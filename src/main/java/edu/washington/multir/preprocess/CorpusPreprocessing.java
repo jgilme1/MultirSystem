@@ -58,7 +58,6 @@ public class CorpusPreprocessing {
 	public static void main(String[] args) throws IOException, InterruptedException{
 		props.put("annotators", "pos,lemma,ner");
 		props.put("sutime.binders","0");
-		props.put("ner.useSUTime", "false");
 		pipeline = new StanfordCoreNLP(props,false);
 
 		String docPath = args[0];
@@ -159,13 +158,23 @@ public class CorpusPreprocessing {
 				String name = td.reln().getShortName();
 				if (td.reln().getSpecific() != null)
 					name += "-" + td.reln().getSpecific();
-				Integer governor = td.gov().index();
+				Integer governor = td.gov().index()-1;
 				String type = name;
-				Integer child = td.dep().index();
-				Triple<Integer,String,Integer> t = new Triple<>(governor,type,child);
-				dependencyInformation.add(t);
+				Integer child = td.dep().index()-1;
+				if(!name.equals("root")){
+					type = type.replace("-", "_");
+					Triple<Integer,String,Integer> t = new Triple<>(governor,type,child);
+					dependencyInformation.add(t);
+				}
 
 			}
+			
+			//print dependency information for sentence
+			System.out.println("Sentence number " + index);
+			for(Triple<Integer,String,Integer> di : dependencyInformation){
+				System.out.print(di.first + " " + di.second + " " + di.third + "|");
+			}
+			System.out.println();
 			
 			//set annotation on sentence
 			CoreMap sentence = sentences.get(index);
@@ -182,8 +191,21 @@ public class CorpusPreprocessing {
 		FeatureGenerator fg = new DefaultFeatureGenerator();
 		
 		List<CoreMap> docSentences = doc.get(CoreAnnotations.SentencesAnnotation.class);
+		int count =0;
 		for(CoreMap sent: docSentences){
+			System.out.println("Sentence " + count);
 			List<Argument> arguments = ai.identifyArguments(doc, sent);
+			System.out.println("Arguments");
+			for(Argument arg : arguments){
+				System.out.println(arg.getArgName());
+			}
+			List<CoreLabel> tokens = sent.get(CoreAnnotations.TokensAnnotation.class);
+			System.out.println("Token size = " + tokens.size());
+			System.out.println("TOKENS");
+			for(CoreLabel t: tokens){
+				System.out.print(t + " ");
+			}
+			System.out.println();
 			List<Pair<Argument,Argument>> sententialInstances = sig.generateSententialInstances(arguments, sent);
 			for(Pair<Argument,Argument> argPair : sententialInstances){
 				Argument arg1 = argPair.first;
@@ -199,10 +221,11 @@ public class CorpusPreprocessing {
 				}
 				System.out.println();
 			}
+			count++;
 			
 		}
-
 	}
+	
 
 	private static String cjPreprocessSentence(String sentenceTokensText) {
 		String[] toks = sentenceTokensText.split(" ");
@@ -258,7 +281,7 @@ public class CorpusPreprocessing {
 		for(String p : ps){
 			paragraphs.add(p);
 		}
-		return paragraphs;
+		return paragraphs;	
 	}
 
 	private static List<String> getXMLParagraphs(String documentString) {
@@ -269,5 +292,176 @@ public class CorpusPreprocessing {
 			paragraphs.add(paragraph);
 		}
 		return paragraphs;
+	}
+	
+	
+	public static Annotation getTestDocument(String docPath) throws IOException, InterruptedException{
+		props.put("annotators", "pos,lemma,ner");
+		pipeline = new StanfordCoreNLP(props,false);
+
+		String documentString = FileUtils.readFileToString(new File(docPath));
+
+		List<String> paragraphs = cleanDocument(documentString);
+		List<CoreMap> sentences = new ArrayList<CoreMap>();
+		
+		String[] docSplit = docPath.split("/");
+		String docName = docSplit[docSplit.length-1].split("\\.")[0];
+		
+		File cjInputFile = File.createTempFile(docName, "cjinput");
+		File cjOutputFile = File.createTempFile(docName, "cjoutput");
+		cjOutputFile.deleteOnExit();
+		cjInputFile.deleteOnExit();
+		
+		BufferedWriter bw = new BufferedWriter(new FileWriter(cjInputFile));
+		
+		for(String par: paragraphs){
+			par = cleanParagraph(par);
+			
+			//tokenize
+			PTBTokenizer<CoreLabel> tok = new PTBTokenizer<CoreLabel>(
+					new StringReader(par), ltf, options);
+			List<CoreLabel> l = tok.tokenize();
+			List<List<CoreLabel>> snts = sen.process(l);
+			
+			//process each sentence 
+			int offset =0;
+			for(List<CoreLabel> snt: snts){
+				//get snt original text
+				String sentenceText = getSentenceTextAnnotation(snt,par);
+				Annotation sentence = new Annotation(sentenceText);
+				
+				//set tokens on Annotation sentence
+				sentence.set(CoreAnnotations.TokensAnnotation.class, snt);
+				sentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class,offset);
+				
+				
+				//get String for tokens separated by white space
+				StringBuilder tokensBuilder = new StringBuilder();
+				for(CoreLabel token: snt){
+					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, token.beginPosition());
+					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, token.endPosition());
+					tokensBuilder.append(token.value());
+					tokensBuilder.append(" ");
+				}
+				String tokenString = tokensBuilder.toString().trim();
+				
+				//preprocess sentence text for charniak-johnson parser
+				String cjPreprocessedString = cjPreprocessSentence(tokenString);
+				bw.write(cjPreprocessedString +"\n");
+				
+				sentences.add(sentence);
+			}
+		}
+		Annotation doc = new Annotation(sentences);
+		//get pos and ner information from stanford processing
+		pipeline.annotate(doc);		
+		bw.close();
+		
+		//run charniak johnson parser
+		File parserDirectory = new File("/scratch2/code/JohnsonCharniakParser/bllip-parser/");
+		ProcessBuilder pb = new ProcessBuilder();
+		List<String> commandArguments = new ArrayList<String>();
+		commandArguments.add("./parse.sh");
+		pb.command(commandArguments);
+		pb.directory(parserDirectory);
+		pb.redirectInput(cjInputFile);
+		pb.redirectOutput(cjOutputFile);
+		pb.redirectError(new File("test.err"));
+		Process p =pb.start();
+		p.waitFor();
+		
+		
+		
+		//read cj parser output and run stanford dependency parse
+		BufferedReader in = new BufferedReader(new FileReader(cjOutputFile));
+		String nextLine;
+		int index =0;
+		while((nextLine = in.readLine()) != null){
+			//initialize custom Dependency Parse Structure
+			List<Triple<Integer,String,Integer>> dependencyInformation= new ArrayList<>();
+			
+			//put parse information in a tree and get dependency parses
+			Tree parse = Tree.valueOf(nextLine.replaceAll("\\|", " "));
+			GrammaticalStructure gs = gsf.newGrammaticalStructure(parse);
+			Collection<TypedDependency> tdl = null;
+			try {
+				tdl = /*gs.allTypedDependencies();*/ gs.typedDependenciesCCprocessed();
+			} catch (NullPointerException e) {
+				// there has to be a bug in EnglishGrammaticalStructure.collapseFlatMWP
+				tdl = new ArrayList<TypedDependency>();
+			}
+			
+			//convert dependency information into custom annotation
+			List<TypedDependency> l = new ArrayList<TypedDependency>();
+			l.addAll(tdl);
+			for (int i=0; i < tdl.size(); i++) {
+				TypedDependency td = l.get(i);
+				String name = td.reln().getShortName();
+				if (td.reln().getSpecific() != null)
+					name += "-" + td.reln().getSpecific();
+				Integer governor = td.gov().index()-1;
+				String type = name;
+				Integer child = td.dep().index()-1;
+				if(!name.equals("root")){
+					type = type.replace("-", "_");
+					Triple<Integer,String,Integer> t = new Triple<>(governor,type,child);
+					dependencyInformation.add(t);
+				}
+
+			}			
+			//set annotation on sentence
+			CoreMap sentence = sentences.get(index);
+			sentence.set(DefaultCorpusInformationSpecification.SentDependencyInformation.DependencyAnnotation.class,
+					dependencyInformation);
+			
+			index++;
+		}
+		in.close();
+		
+		return doc;
+	}
+	
+	public static Annotation alternateGetTestDocument(String docPath) throws IOException, InterruptedException{
+		props.put("annotators", "tokenize,ssplit,pos,lemma,ner");
+		pipeline = new StanfordCoreNLP(props,true);
+
+		String documentString = FileUtils.readFileToString(new File(docPath));
+
+		List<String> paragraphs = cleanDocument(documentString);
+		
+		String[] docSplit = docPath.split("/");
+		String docName = docSplit[docSplit.length-1].split("\\.")[0];
+		
+		File cjInputFile = File.createTempFile(docName, "cjinput");
+		File cjOutputFile = File.createTempFile(docName, "cjoutput");
+		cjOutputFile.deleteOnExit();
+		cjInputFile.deleteOnExit();
+		
+		BufferedWriter bw = new BufferedWriter(new FileWriter(cjInputFile));
+		
+        StringBuilder docText = new StringBuilder();
+        for(String par: paragraphs){
+        	docText.append(par);
+        }
+		Annotation doc = new Annotation(docText.toString());
+		//get pos and ner information from stanford processing
+		pipeline.annotate(doc);		
+		bw.close();
+		
+		//run charniak johnson parser
+		File parserDirectory = new File("/scratch2/code/JohnsonCharniakParser/bllip-parser/");
+		ProcessBuilder pb = new ProcessBuilder();
+		List<String> commandArguments = new ArrayList<String>();
+		commandArguments.add("./parse.sh");
+		pb.command(commandArguments);
+		pb.directory(parserDirectory);
+		pb.redirectInput(cjInputFile);
+		pb.redirectOutput(cjOutputFile);
+		pb.redirectError(new File("test.err"));
+		Process p =pb.start();
+		p.waitFor();
+
+		
+		return doc;
 	}
 }

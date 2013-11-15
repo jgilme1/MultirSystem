@@ -64,8 +64,8 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 				posTags[i] = pos;
 			}
 			
-			int begOffset =token.get(CoreAnnotations.TokenBeginAnnotation.class);
-			int endOffset = token.get(CoreAnnotations.TokenEndAnnotation.class);
+			int begOffset =token.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+			int endOffset = token.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
 
 			// if the token matches the argument set the ner and argPos values
 			if(begOffset == arg1StartOffset){
@@ -105,8 +105,13 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 			if(parent == child){
 				parent = -1;
 			}
-			depParents[child] = parent;
-			depTypes[child] = type;
+			if(child < tokens.size()){
+				depParents[child] = parent;
+				depTypes[child] = type;
+			}
+			else{
+				System.out.println("ERROR BETWEEN DEPENDENCY PARSE AND TOKEN SIZE");
+			}
 		}
 		
 		//add 1 to end Pos values
