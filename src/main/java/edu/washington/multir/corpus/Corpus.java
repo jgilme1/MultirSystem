@@ -101,7 +101,7 @@ public class Corpus {
 		return documents;
 	}
 	
-	private Annotation getDocument(String docName) throws SQLException{
+	public Annotation getDocument(String docName) throws SQLException{
 		List<CoreMap> sentences = getSentences(docName);
 		if(sentences.size() > 0)
 		  return new Annotation(sentences);
