@@ -85,6 +85,9 @@ public class NERArgumentIdentification implements ArgumentIdentification {
 			if(ner.equals(nextNer)){
 				tokenSequence.add(tokens.get(i));
 			}
+			else{
+				break;
+			}
 			i++;
 		}
 		return tokenSequence;
