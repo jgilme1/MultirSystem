@@ -5,7 +5,6 @@ import java.util.List;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.washington.multir.data.Argument;
-import edu.washington.multir.knowledgebase.KnowledgeBase;
 
 /**
  * The burden to make sure that the Annotation scheme
@@ -23,13 +22,4 @@ public interface ArgumentIdentification {
 	 * @return
 	 */
 	List<Argument> identifyArguments(Annotation d, CoreMap s);
-	
-	
-	/**
-	 * The KnowledgeBase should be set if
-	 * the identifyArguments algorithm makes use of
-	 * it.
-	 * @param kb
-	 */
-	void setKB(KnowledgeBase kb);
 }

@@ -55,7 +55,6 @@ public class AddNegativeExamples {
 		KnowledgeBase KB = new KnowledgeBase(args[1],args[2],args[3]);
 		Map<String,List<String>> entityPairRelationMap = KB.getEntityPairRelationMap();
 		ArgumentIdentification ai = NERArgumentIdentification.getInstance();
-		ai.setKB(KB);
 		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
 		
 		//choose corpus based on first argument
@@ -102,11 +101,21 @@ public class AddNegativeExamples {
 				//shuffle list
 				java.util.Collections.shuffle(filteredArguments);
 				for(int i =0; i < filteredArguments.size(); i ++){
-					for(int j =i; j < filteredArguments.size();j++){
+					for(int j =0; j < filteredArguments.size();j++){
 						if( j != i){
 							//check that there is no relation between these.
 							Argument arg1 = filteredArguments.get(i);
 							Argument arg2 = filteredArguments.get(j);
+							
+							List<String> arg1Ids = new ArrayList<>();
+							if(KB.getEntityMap().containsKey(arg1.getArgName())){
+								arg1Ids = KB.getEntityMap().get(arg1);
+							}
+							List<String> arg2Ids = new ArrayList<>();
+							if(KB.getEntityMap().containsKey(arg2.getArgName())){
+								arg2Ids = KB.getEntityMap().get(arg1.getArgName());
+							}
+							
 							String key = arg1.getArgID()+arg2.getArgID();
 							if(!entityPairRelationMap.containsKey(key)){
 								// can be negative example
