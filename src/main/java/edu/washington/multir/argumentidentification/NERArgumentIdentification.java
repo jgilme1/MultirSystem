@@ -8,7 +8,6 @@ import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.washington.multir.data.Argument;
-import edu.washington.multir.knowledgebase.KnowledgeBase;
 
 /**
  * NERArgumentIdentification is am implementation of the ArgumentIdentification
@@ -26,7 +25,6 @@ public class NERArgumentIdentification implements ArgumentIdentification {
 	
 	private static NERArgumentIdentification instance = null;
 	
-	private KnowledgeBase kb = null;
 	
 	private NERArgumentIdentification(){}
 	public static NERArgumentIdentification getInstance(){
@@ -69,13 +67,8 @@ public class NERArgumentIdentification implements ArgumentIdentification {
 			int tokenStartOffset = argumentTokenSpan.get(0).get(CoreAnnotations.TokenBeginAnnotation.class);
 			int tokenEndOffset = argumentTokenSpan.get(argumentTokenSpan.size()-1).get(CoreAnnotations.TokenEndAnnotation.class);
 
-			if(kb.getEntityMap().containsKey(argumentString)){
-				List<String> matchingKBIDs = kb.getEntityMap().get(argumentString);
-				for(String kbID : matchingKBIDs){
-					Argument arg = new Argument(argumentString, tokenStartOffset, tokenEndOffset,kbID);
-					arguments.add(arg);
-				}
-			}
+			Argument arg = new Argument(argumentString, tokenStartOffset, tokenEndOffset);
+			arguments.add(arg);
 		}
 		return arguments;
 	}
@@ -105,10 +98,5 @@ public class NERArgumentIdentification implements ArgumentIdentification {
 			}
 		}
 		return false;
-	}
-	
-	@Override
-	public void setKB(KnowledgeBase kb) {
-		this.kb = kb;
 	}
 }
