@@ -28,4 +28,11 @@ public class Argument {
 	public Argument(String name, int startOffset, int endOffset){
 		this(name,startOffset,endOffset,null);
 	}
+	
+	protected Argument (Argument a){
+		this.startOffset = a.startOffset;
+		this.endOffset = a.endOffset;
+		this.argName = a.argName;
+		this.argID = a.argID;
+	}
 }
