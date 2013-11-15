@@ -6,6 +6,7 @@ import java.util.List;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.SentDependencyInformation.DependencyAnnotation;
 
@@ -22,7 +23,7 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 	@Override
 	public List<String> generateFeatures(Integer arg1StartOffset,
 			Integer arg1EndOffset, Integer arg2StartOffset,
-			Integer arg2EndOffset, Annotation sentence, Annotation document) {
+			Integer arg2EndOffset, CoreMap sentence, Annotation document) {
 		
 		
 		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);

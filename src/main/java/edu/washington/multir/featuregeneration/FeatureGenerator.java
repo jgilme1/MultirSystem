@@ -3,6 +3,7 @@ package edu.washington.multir.featuregeneration;
 import java.util.List;
 
 import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
 
 /**
  * Feature Generator interface
@@ -23,5 +24,5 @@ public interface FeatureGenerator {
 	 * @return
 	 */
 	public List<String> generateFeatures(Integer arg1StartOffset, Integer arg1EndOffset, 
-			Integer arg2StartOffset, Integer arg2EndOffset, Annotation sentence, Annotation document );
+			Integer arg2StartOffset, Integer arg2EndOffset, CoreMap sentence, Annotation document );
 }

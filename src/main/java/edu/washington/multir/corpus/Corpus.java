@@ -483,13 +483,13 @@ public class Corpus {
     
     
     //getAnnotationPairsForEachSentence is used to bulk SQL queries for sentences and document information at the same time
-	public Map<Integer,Pair<Annotation,Annotation>> getAnnotationPairsForEachSentence(Set<Integer> sentIds) throws SQLException {
+	public Map<Integer,Pair<CoreMap,Annotation>> getAnnotationPairsForEachSentence(Set<Integer> sentIds) throws SQLException {
 		
 		if(sentIds.size() > 1000){
 			throw new IllegalArgumentException("sentIds should have less than 1000 sentences in order for the large SQL query to work");
 		}
 		
-		Map<Integer,Pair<Annotation,Annotation>> sentIdToAnnotationsMap = new HashMap<>();
+		Map<Integer,Pair<CoreMap,Annotation>> sentIdToAnnotationsMap = new HashMap<>();
 		List<Integer> values = new ArrayList<Integer>();
 		
 		for(Integer sentID: sentIds){
@@ -527,9 +527,9 @@ public class Corpus {
 		
 		for(Integer key : mapFromSentToAnnotationAndDocName.keySet()){
 			Pair<CoreMap,String> s = mapFromSentToAnnotationAndDocName.get(key);
-			Annotation sent = (Annotation) s.first;
+			CoreMap sent = s.first;
 			Annotation doc = docNameToAnnoMap.get(s.second);
-			Pair<Annotation,Annotation> newPair = new Pair<Annotation,Annotation>(sent,doc);
+			Pair<CoreMap,Annotation> newPair = new Pair<CoreMap,Annotation>(sent,doc);
 			sentIdToAnnotationsMap.put(key, newPair);
 		}
 		return sentIdToAnnotationsMap;

@@ -30,9 +30,17 @@ import edu.stanford.nlp.trees.PennTreebankLanguagePack;
 import edu.stanford.nlp.trees.TreebankLanguagePack;
 import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.cs.knowitall.util.HtmlUtils;
+import edu.washington.multir.argumentidentification.ArgumentIdentification;
+import edu.washington.multir.argumentidentification.NERArgumentIdentification;
+import edu.washington.multir.argumentidentification.NERSententialInstanceGeneration;
+import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
+import edu.washington.multir.data.Argument;
+import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
+import edu.washington.multir.featuregeneration.FeatureGenerator;
 import edu.stanford.nlp.trees.Tree;
 
 
@@ -48,8 +56,6 @@ public class CorpusPreprocessing {
 	private static GrammaticalStructureFactory gsf = tlp.grammaticalStructureFactory();
 
 	public static void main(String[] args) throws IOException, InterruptedException{
-
-		
 		props.put("annotators", "pos,lemma,ner");
 		props.put("sutime.binders","0");
 		props.put("ner.useSUTime", "false");
@@ -169,6 +175,32 @@ public class CorpusPreprocessing {
 			index++;
 		}
 		in.close();
+		
+		//do argument identification
+		ArgumentIdentification ai = NERArgumentIdentification.getInstance();
+		SententialInstanceGeneration sig = NERSententialInstanceGeneration.getInstance();
+		FeatureGenerator fg = new DefaultFeatureGenerator();
+		
+		List<CoreMap> docSentences = doc.get(CoreAnnotations.SentencesAnnotation.class);
+		for(CoreMap sent: docSentences){
+			List<Argument> arguments = ai.identifyArguments(doc, sent);
+			List<Pair<Argument,Argument>> sententialInstances = sig.generateSententialInstances(arguments, sent);
+			for(Pair<Argument,Argument> argPair : sententialInstances){
+				Argument arg1 = argPair.first;
+				Argument arg2 = argPair.second;
+				List<String> features =fg.generateFeatures(arg1.getStartOffset(),
+										arg1.getEndOffset(),
+										arg2.getStartOffset(),
+										arg2.getEndOffset(), 
+										sent, doc);
+				System.out.print(arg1.getArgName() + "\t" + arg2.getArgName());
+				for(String feature: features){
+					System.out.print("\t" + feature);
+				}
+				System.out.println();
+			}
+			
+		}
 
 	}
 

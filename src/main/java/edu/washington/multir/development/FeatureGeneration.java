@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Set;
 
 import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
@@ -66,7 +67,7 @@ public class FeatureGeneration {
 				
 				//issue Solr Query
 				StringBuilder sb = new StringBuilder();
-				Map<Integer,Pair<Annotation,Annotation>> sentAnnotationsMap = getSentAnnotationsMap(lines,c);
+				Map<Integer,Pair<CoreMap,Annotation>> sentAnnotationsMap = getSentAnnotationsMap(lines,c);
 				
 				for(String line : lines){	
 					//try block in case some of the distantsupervision input is 
@@ -78,8 +79,8 @@ public class FeatureGeneration {
 						int arg2StartOffset = Integer.parseInt(lineValues[5]);
 						int arg2EndOffset = Integer.parseInt(lineValues[6]);
 						int sentId = Integer.parseInt(lineValues[8]);
-						Pair<Annotation,Annotation> annotations = sentAnnotationsMap.get(sentId);
-						Annotation sentence = annotations.first;
+						Pair<CoreMap,Annotation> annotations = sentAnnotationsMap.get(sentId);
+						CoreMap sentence = annotations.first;
 						Annotation doc = annotations.second;
 						List<String> features = fg.generateFeatures(arg1StartOffset,arg1EndOffset,arg2StartOffset,arg2EndOffset,sentence,doc);
 						int globalSentID = sentence.get(CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID.class);
@@ -117,7 +118,7 @@ public class FeatureGeneration {
     	System.out.println("Feature Generation took " + (end-start) + " millisseconds");	
 	}
 
-	private static Map<Integer, Pair<Annotation,Annotation>> getSentAnnotationsMap(
+	private static Map<Integer, Pair<CoreMap,Annotation>> getSentAnnotationsMap(
 			List<String> lines, Corpus c) throws SQLException {
 		
 		Set<Integer> sentIds = new HashSet<Integer>();
