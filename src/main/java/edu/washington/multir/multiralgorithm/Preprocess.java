@@ -104,7 +104,7 @@ public class Preprocess {
 			(new BufferedOutputStream(new FileOutputStream(output)));
 	
 		BufferedReader br = new BufferedReader(new FileReader(new File(input)));
-
+		System.out.println("Set up buffered reader");
 	    
 	    //create MILDocument data map
 	    //load feature generation data into map from argument pair keys to
@@ -146,6 +146,9 @@ public class Preprocess {
 	    		Pair<List<String>, List<List<String>>> p = new Pair<List<String>, List<List<String>>>(relations, newFeatureList);
 	    		relationMentionMap.put(key,p);
 	    	}
+	    	if(relationMentionMap.size() % 1000 == 0){
+	    		System.out.println("Number of entity pairs read in =" + relationMentionMap.size());
+	    	}
 	    }
 	    
 	    br.close();
@@ -154,6 +157,7 @@ public class Preprocess {
 	    MILDocument doc = new MILDocument();	    
     	
 	    //iterate over keys in the map and create MILDocuments
+	    int count =0;
 	    for(String key : relationMentionMap.keySet()){
 	    	doc.clear();
 
@@ -216,8 +220,12 @@ public class Preprocess {
 		    			sv.ids[pos++] = fts[i];
 	    	}
 	    	doc.write(os);
+	    	count ++;
+	    	
+	    	if(count % 1000 == 0){
+	    		System.out.println(count + " entity pairs processed");
+	    	}
 	    }
-		
 		br.close();
 		os.close();
 		if (writeFeatureMapping || writeRelationMapping)

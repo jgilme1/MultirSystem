@@ -6,6 +6,7 @@ import java.util.List;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.SentDependencyInformation.DependencyAnnotation;
 
@@ -22,7 +23,7 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 	@Override
 	public List<String> generateFeatures(Integer arg1StartOffset,
 			Integer arg1EndOffset, Integer arg2StartOffset,
-			Integer arg2EndOffset, Annotation sentence, Annotation document) {
+			Integer arg2EndOffset, CoreMap sentence, Annotation document) {
 		
 		
 		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
@@ -63,8 +64,8 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 				posTags[i] = pos;
 			}
 			
-			int begOffset =token.get(CoreAnnotations.TokenBeginAnnotation.class);
-			int endOffset = token.get(CoreAnnotations.TokenEndAnnotation.class);
+			int begOffset =token.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+			int endOffset = token.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
 
 			// if the token matches the argument set the ner and argPos values
 			if(begOffset == arg1StartOffset){
@@ -104,8 +105,13 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 			if(parent == child){
 				parent = -1;
 			}
-			depParents[child] = parent;
-			depTypes[child] = type;
+			if(child < tokens.size()){
+				depParents[child] = parent;
+				depTypes[child] = type;
+			}
+			else{
+				System.out.println("ERROR BETWEEN DEPENDENCY PARSE AND TOKEN SIZE");
+			}
 		}
 		
 		//add 1 to end Pos values

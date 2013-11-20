@@ -80,8 +80,8 @@ public class DefaultCorpusInformationSpecification extends
 			String[] tokenValues = line.split("\\s+");
 			if(tokenValues.length != tokens.size()){
 				for(CoreLabel token : tokens){
-					token.set(CoreAnnotations.TokenBeginAnnotation.class, null);
-					token.set(CoreAnnotations.TokenEndAnnotation.class,null);
+					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, null);
+					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class,null);
 				}
 			}
 			else{
@@ -92,12 +92,12 @@ public class DefaultCorpusInformationSpecification extends
 				  if(offsetValues.length == 2){
 					Integer start = Integer.parseInt(offsetValues[0]);
 					Integer end = Integer.parseInt(offsetValues[1]);
-					token.set(CoreAnnotations.TokenBeginAnnotation.class,start);
-					token.set(CoreAnnotations.TokenEndAnnotation.class,end);
+					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class,start);
+					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class,end);
 				  }
 				  else{
-					token.set(CoreAnnotations.TokenBeginAnnotation.class, null);
-					token.set(CoreAnnotations.TokenEndAnnotation.class,null); 
+					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, null);
+					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class,null); 
 				  }
 			  }
 			}

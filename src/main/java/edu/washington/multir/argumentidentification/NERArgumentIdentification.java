@@ -64,8 +64,8 @@ public class NERArgumentIdentification implements ArgumentIdentification {
 				argumentSB.append(" ");
 			}
 			String argumentString = argumentSB.toString().trim();
-			int tokenStartOffset = argumentTokenSpan.get(0).get(CoreAnnotations.TokenBeginAnnotation.class);
-			int tokenEndOffset = argumentTokenSpan.get(argumentTokenSpan.size()-1).get(CoreAnnotations.TokenEndAnnotation.class);
+			int tokenStartOffset = argumentTokenSpan.get(0).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+			int tokenEndOffset = argumentTokenSpan.get(argumentTokenSpan.size()-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
 
 			Argument arg = new Argument(argumentString, tokenStartOffset, tokenEndOffset);
 			arguments.add(arg);
