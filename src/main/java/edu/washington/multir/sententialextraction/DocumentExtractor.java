@@ -13,6 +13,7 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
+import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.multiralgorithm.FullInference;
 import edu.washington.multir.multiralgorithm.MILDocument;
 import edu.washington.multir.multiralgorithm.Parse;
@@ -84,11 +85,12 @@ public class DocumentExtractor {
 	public void extractFromDocument(String pathToDocument) throws IOException, InterruptedException{
 		
 		Annotation doc = CorpusPreprocessing.getTestDocument(pathToDocument);
-		List<Pair<String,Double>> extractions = new ArrayList<>();
+		List<Triple<String,String,Double>> extractions = new ArrayList<>();
 		
 		List<CoreMap> sentences = doc.get(CoreAnnotations.SentencesAnnotation.class);
 		for(CoreMap s : sentences){
 			
+			try{
 			List<Argument> args = ai.identifyArguments(doc, s);
 			List<Pair<Argument,Argument>> sigs = sig.generateSententialInstances(args, s);
 			for(Pair<Argument,Argument> p : sigs){
@@ -99,16 +101,22 @@ public class DocumentExtractor {
 				Pair<String,Double> relationConfidencePair = getPrediction(features,arg1,arg2);
 				if(relationConfidencePair !=null){
 					String extractionString = arg1.getArgName() + " " + relationConfidencePair.first + " " + arg2.getArgName();
-					extractions.add(new Pair<String,Double>(extractionString,relationConfidencePair.second));
+					extractions.add(new Triple<String,String,Double>(s.get(CoreAnnotations.TextAnnotation.class),extractionString,relationConfidencePair.second));
 				}
+			}
+			}
+			catch(Exception e){
+				System.err.println(e.getStackTrace());
 			}
 		}
 		
-		for(Pair<String,Double> extr: extractions){
-			String extrString = extr.first;
-			Double confidence = extr.second;
+		for(Triple<String,String,Double> extr: extractions){
+			String sen = extr.first;
+			String extrString = extr.second;
+			Double confidence = extr.third;
 			
 			System.out.println(extrString + "\t" + confidence);
+			System.out.println(sen);
 		}
 	}
 
@@ -182,7 +190,7 @@ public class DocumentExtractor {
 		DocumentExtractor de = new DocumentExtractor("/scratch2/code/multir-reimplementation/MultirSystem/multirAlgorithmFiles/",
 				new DefaultFeatureGenerator(), NERArgumentIdentification.getInstance(), NERSententialInstanceGeneration.getInstance());
 		
-		de.extractFromDocument("/homes/gws/jgilme1/AFP_ENG_19941021.0120.LDC2007T07.sgm");
+		de.extractFromDocument("/homes/gws/jgilme1/NYT_ENG_20000503.0255.LDC2007T07.sgm");
 		
 	}
 

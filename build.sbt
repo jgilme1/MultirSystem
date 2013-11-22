@@ -4,8 +4,9 @@ version := "0.1"
 
 scalaVersion := "2.10.1"
 
+
 libraryDependencies ++= Seq(
-  "org.apache.commons" % "commons-io" % "1.3.2",
+  "commons-io" % "commons-io" % "2.4",
   "org.apache.commons" % "commons-lang3" % "3.1",
   "edu.stanford.nlp" % "stanford-corenlp" % "1.3.5",
   "edu.washington.cs.knowitall.stanford-corenlp" % "stanford-ner-models" % "1.3.5",

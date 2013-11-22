@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.FutureTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,6 +39,7 @@ import edu.washington.multir.argumentidentification.ArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERSententialInstanceGeneration;
 import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
+import edu.washington.multir.corpus.CorpusInformationSpecification;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
@@ -144,7 +147,7 @@ public class CorpusPreprocessing {
 			GrammaticalStructure gs = gsf.newGrammaticalStructure(parse);
 			Collection<TypedDependency> tdl = null;
 			try {
-				tdl = /*gs.allTypedDependencies();*/ gs.typedDependenciesCCprocessed();
+				tdl = /*gs.allTypedDependencies();*/ gs.typedDependencies();
 			} catch (NullPointerException e) {
 				// there has to be a bug in EnglishGrammaticalStructure.collapseFlatMWP
 				tdl = new ArrayList<TypedDependency>();
@@ -158,9 +161,9 @@ public class CorpusPreprocessing {
 				String name = td.reln().getShortName();
 				if (td.reln().getSpecific() != null)
 					name += "-" + td.reln().getSpecific();
-				Integer governor = td.gov().index()-1;
+				Integer governor = td.gov().index();
 				String type = name;
-				Integer child = td.dep().index()-1;
+				Integer child = td.dep().index();
 				if(!name.equals("root")){
 					type = type.replace("-", "_");
 					Triple<Integer,String,Integer> t = new Triple<>(governor,type,child);
@@ -230,6 +233,7 @@ public class CorpusPreprocessing {
 	private static String cjPreprocessSentence(String sentenceTokensText) {
 		String[] toks = sentenceTokensText.split(" ");
 		if (toks.length <= 120) {
+			//return sentenceTokensText + "\n";
 			return "<s> " +sentenceTokensText+ " </s>\n";
 		}
 		else{
@@ -347,6 +351,7 @@ public class CorpusPreprocessing {
 				
 				//preprocess sentence text for charniak-johnson parser
 				String cjPreprocessedString = cjPreprocessSentence(tokenString);
+				System.out.println("CJPreprocessedString = " + cjPreprocessedString);
 				bw.write(cjPreprocessedString +"\n");
 				
 				sentences.add(sentence);
@@ -362,6 +367,7 @@ public class CorpusPreprocessing {
 		ProcessBuilder pb = new ProcessBuilder();
 		List<String> commandArguments = new ArrayList<String>();
 		commandArguments.add("./parse.sh");
+		commandArguments.add("-K");
 		pb.command(commandArguments);
 		pb.directory(parserDirectory);
 		pb.redirectInput(cjInputFile);
@@ -376,16 +382,19 @@ public class CorpusPreprocessing {
 		BufferedReader in = new BufferedReader(new FileReader(cjOutputFile));
 		String nextLine;
 		int index =0;
+		System.out.println("CJ parses");
 		while((nextLine = in.readLine()) != null){
 			//initialize custom Dependency Parse Structure
 			List<Triple<Integer,String,Integer>> dependencyInformation= new ArrayList<>();
+			System.out.println(nextLine);
+			
 			
 			//put parse information in a tree and get dependency parses
-			Tree parse = Tree.valueOf(nextLine.replaceAll("\\|", " "));
+			Tree parse = Tree.valueOf(nextLine.replace("|", " "));
 			GrammaticalStructure gs = gsf.newGrammaticalStructure(parse);
 			Collection<TypedDependency> tdl = null;
 			try {
-				tdl = /*gs.allTypedDependencies();*/ gs.typedDependenciesCCprocessed();
+				tdl = gs.allTypedDependencies();
 			} catch (NullPointerException e) {
 				// there has to be a bug in EnglishGrammaticalStructure.collapseFlatMWP
 				tdl = new ArrayList<TypedDependency>();
@@ -399,14 +408,14 @@ public class CorpusPreprocessing {
 				String name = td.reln().getShortName();
 				if (td.reln().getSpecific() != null)
 					name += "-" + td.reln().getSpecific();
-				Integer governor = td.gov().index()-1;
+				Integer governor = td.gov().index();
 				String type = name;
-				Integer child = td.dep().index()-1;
-				if(!name.equals("root")){
-					type = type.replace("-", "_");
+				Integer child = td.dep().index();
+//				if(!name.equals("root")){
+//					type = type.replace("-", "_");
 					Triple<Integer,String,Integer> t = new Triple<>(governor,type,child);
 					dependencyInformation.add(t);
-				}
+//				}
 
 			}			
 			//set annotation on sentence
@@ -463,5 +472,242 @@ public class CorpusPreprocessing {
 
 		
 		return doc;
+	}
+	
+	public static class ProcessDocuments implements Callable<List<Pair<Annotation,File>>>{
+	
+	    private List<File> docs;
+		private static LexedTokenFactory<CoreLabel> ltf = new CoreLabelTokenFactory(true);
+		private static WordToSentenceProcessor<CoreLabel> sen = new WordToSentenceProcessor<CoreLabel>();
+		private static Properties props = new Properties();
+		private static StanfordCoreNLP pipeline;
+		private static TreebankLanguagePack tlp = new PennTreebankLanguagePack();
+		private static GrammaticalStructureFactory gsf = tlp.grammaticalStructureFactory();
+	  	public static File CorpusDirectory;
+		static{
+			props.put("annotators", "pos,lemma,ner");
+			props.put("sutime.binders","0");
+			pipeline = new StanfordCoreNLP(props,false);
+		}
+		
+		private static File parserDirectory = new File("/scratch2/code/JohnsonCharniakParser/bllip-parser/");
+
+		
+		private File cjInputFile;
+		private File cjOutputFile;
+		private List<Pair<Annotation,File>> annotations;
+		
+		public int startGlobalSentID;
+		public int currentGlobalSentID;
+
+		  
+	  private  class PostParseProcessDocument implements Callable<Annotation>{
+			private File doc;
+			private Annotation a;
+			private BufferedReader cjParseReader;
+			
+			public PostParseProcessDocument(File doc, Annotation a, BufferedReader br){
+				super();
+				this.doc = doc;
+				this.a  = a;
+				this.cjParseReader = br;
+			}
+			@Override
+			public Annotation call() throws Exception {
+				
+				List<CoreMap> sentences = a.get(CoreAnnotations.SentencesAnnotation.class);
+				for(CoreMap sentence : sentences){
+					String cjParse = cjParseReader.readLine();
+					//System.out.println("CJPARSE = " + cjParse);
+					List<Triple<Integer,String,Integer>> dependencyInformation= new ArrayList<>();
+
+					if(cjParse.length() > 5){
+						//put parse information in a tree and get dependency parses
+						Tree parse = Tree.valueOf(cjParse.replace("|", " "));
+						GrammaticalStructure gs = gsf.newGrammaticalStructure(parse);
+						Collection<TypedDependency> tdl = null;
+						try {
+							tdl = gs.allTypedDependencies();
+						} catch (NullPointerException e) {
+							// there has to be a bug in EnglishGrammaticalStructure.collapseFlatMWP
+							tdl = new ArrayList<TypedDependency>();
+						}
+						
+						//convert dependency information into custom annotation
+						List<TypedDependency> l = new ArrayList<TypedDependency>();
+						l.addAll(tdl);
+						for (int i=0; i < tdl.size(); i++) {
+							TypedDependency td = l.get(i);
+							String name = td.reln().getShortName();
+							if (td.reln().getSpecific() != null)
+								name += "-" + td.reln().getSpecific();
+							Integer governor = td.gov().index();
+							String type = name;
+							Integer child = td.dep().index();
+							if(!name.equals("root")){
+								type = type.replace("-", "_");
+								Triple<Integer,String,Integer> t = new Triple<>(governor,type,child);
+								dependencyInformation.add(t);
+							}
+						}			
+						//set annotation on sentence
+						sentence.set(DefaultCorpusInformationSpecification.SentDependencyInformation.DependencyAnnotation.class,
+								dependencyInformation);
+					}
+				}
+				return a;
+			}
+		  }
+	  
+	  
+	    private class PreParseProcessDocument implements Callable<Annotation>{
+				private File doc;
+
+				public PreParseProcessDocument(File doc){
+					super();
+					this.doc = doc;
+				}
+				@Override
+				public Annotation call() throws Exception {
+					
+					String documentString = FileUtils.readFileToString(doc);
+
+					List<String> paragraphs = cleanDocument(documentString);
+					List<CoreMap> sentences = new ArrayList<CoreMap>();
+					
+					for(String par: paragraphs){
+						par = cleanParagraph(par);
+						//System.out.println("Paragraph: " + par);
+						//tokenize
+						PTBTokenizer<CoreLabel> tok = new PTBTokenizer<CoreLabel>(
+								new StringReader(par), ltf, options);
+						List<CoreLabel> l = tok.tokenize();
+						List<List<CoreLabel>> snts = sen.process(l);
+						
+						//process each sentence 
+						int offset =0;
+						for(List<CoreLabel> snt: snts){
+							//get snt original text
+							String sentenceText = getSentenceTextAnnotation(snt,par);
+							//System.out.println("Sentence text: " + sentenceText);
+							Annotation sentence = new Annotation(sentenceText);
+							
+							//set tokens on Annotation sentence
+							sentence.set(CoreAnnotations.TokensAnnotation.class, snt);
+							sentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class,offset);
+							sentence.set(CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID.class,currentGlobalSentID);
+							currentGlobalSentID++;
+							
+							//get String for tokens separated by white space
+							StringBuilder tokensBuilder = new StringBuilder();
+							for(CoreLabel token: snt){
+								token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, token.beginPosition());
+								token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, token.endPosition());
+								tokensBuilder.append(token.value());
+								tokensBuilder.append(" ");
+							}
+							//preprocess sentence text for charniak-johnson parser
+							sentences.add(sentence);
+						}
+					}
+					Annotation doc = new Annotation(sentences);
+					//get pos and ner information from stanford processing
+					pipeline.annotate(doc);							
+					return doc;
+				}  
+	      }
+
+	    public ProcessDocuments(List<File> docs, int startGlobalSentID, int tempFileIndex) throws IOException{
+	    	super();
+	    	this.docs = docs;
+			cjInputFile = File.createTempFile("parse"+String.valueOf(tempFileIndex), "cjinput");
+			cjOutputFile = File.createTempFile("parse"+String.valueOf(tempFileIndex), "cjoutput");
+			annotations = new ArrayList<>();
+			this.startGlobalSentID = startGlobalSentID;
+			this.currentGlobalSentID = this.startGlobalSentID;
+	    }
+	    
+	    private void parseDocuments() throws IOException, InterruptedException{
+	    	
+	    	StringBuilder cjInputBuilder = new StringBuilder();
+	    	//write tokens to cjInputFile
+	    	for(Pair<Annotation,File> p : annotations){
+	    		Annotation doc = p.first;
+	    		List<CoreMap> sentences = doc.get(CoreAnnotations.SentencesAnnotation.class);
+	    		for(CoreMap sentence : sentences){
+		    		StringBuilder tokenSequence = new StringBuilder();
+		    		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+		    		for(CoreLabel t : tokens){
+		    			tokenSequence.append(t.value());
+		    			tokenSequence.append(" ");
+		    		}
+		    		cjInputBuilder.append(cjPreprocessSentence(tokenSequence.toString().trim()));
+	    		}
+	    	}
+	    	System.out.println("Build cjinput string");
+	    	
+	    	//write to temp file parse output
+	    	BufferedWriter bw = new BufferedWriter(new FileWriter(cjInputFile));
+	    	bw.write(cjInputBuilder.toString());
+	    	//System.out.println(cjInputBuilder.toString());
+	    	bw.close();
+	    	
+	    	System.out.println("Wrote cjinput string");
+	    	
+			//run charniak johnson parser
+			ProcessBuilder pb = new ProcessBuilder();
+			List<String> commandArguments = new ArrayList<String>();
+			commandArguments.add("./parse.sh");
+			commandArguments.add("-K");
+			commandArguments.add("-T50");
+			pb.command(commandArguments);
+			pb.directory(parserDirectory);
+			pb.redirectInput(cjInputFile);
+			pb.redirectOutput(cjOutputFile);
+			pb.redirectError(new File("test.err"));
+			long start = System.currentTimeMillis();
+			Process p =pb.start();
+			p.waitFor();
+			long end = System.currentTimeMillis();
+			System.out.println((end-start) + " milliseconds to parse docs");
+			
+			System.out.println("parsed cjinput string");
+			
+	    }
+	    
+		@Override
+		public List<Pair<Annotation,File>> call() throws Exception {
+			try{	
+				//pre parse processing
+				for(File f : docs){
+					FutureTask<Annotation> ft = new FutureTask<>(new PreParseProcessDocument(f));
+					ft.run();
+					Annotation a =ft.get();
+					annotations.add(new Pair<Annotation,File> (a,f));
+				}
+				System.out.println("Preparse Processed Docs");
+				//parse documents
+				parseDocuments();
+				System.out.println("Parsed Docs");
+				
+				//post parse processing
+				BufferedReader br = new BufferedReader(new FileReader(cjOutputFile));
+				for(Pair<Annotation,File> p : annotations){
+					Annotation a = p.first;
+					File f = p.second;
+					FutureTask<Annotation> ft = new FutureTask<>(new PostParseProcessDocument(f,a,br));
+					ft.run();
+					ft.get();
+				}
+				br.close();
+				System.out.println("Postparse Processed Docs");
+				
+				return annotations;
+			}
+			finally{
+				cjInputFile.delete();
+				cjOutputFile.delete();
+			}
+		}
 	}
 }

@@ -105,13 +105,16 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 			if(parent == child){
 				parent = -1;
 			}
-			if(child < tokens.size()){
+//			if(child < tokens.size()){
+//				depParents[child] = parent;
+//				depTypes[child] = type;
+//			}
+//			else{
+//				System.out.println("ERROR BETWEEN DEPENDENCY PARSE AND TOKEN SIZE");
+//			}
 				depParents[child] = parent;
 				depTypes[child] = type;
-			}
-			else{
-				System.out.println("ERROR BETWEEN DEPENDENCY PARSE AND TOKEN SIZE");
-			}
+
 		}
 		
 		//add 1 to end Pos values

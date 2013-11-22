@@ -2,6 +2,7 @@ package edu.washington.multir.development;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -42,8 +43,8 @@ public class SingleDocumentTrainingFeatures {
 		fg = new DefaultFeatureGenerator();
 		
 		
-		Annotation traind = c.getDocument("AFP_ENG_19941021.0120.LDC2007T07");
-		Annotation testd = CorpusPreprocessing.getTestDocument("/homes/gws/jgilme1/AFP_ENG_19941021.0120.LDC2007T07.sgm");
+		Annotation traind = c.getDocument("NYT_ENG_20000503.0255.LDC2007T07");
+		Annotation testd = CorpusPreprocessing.getTestDocument("/homes/gws/jgilme1/NYT_ENG_20000503.0255.LDC2007T07.sgm");
 		compareDocuments(traind,testd);
 		
 		
@@ -211,27 +212,46 @@ public class SingleDocumentTrainingFeatures {
 			}
 			
 			
-			if(i ==11){
-				//get test time features
-				List<Argument> args = ai.identifyArguments(doc2, doc2s);
-				System.out.println("ARguments");
-				for(Argument arg: args){
-					System.out.println(arg.getArgName());
+			
+				//testtime features
+				List<List<String>> trainFeatures = getFeatures(doc1,doc1s);
+				List<List<String>> testFeatures = getFeatures(doc2,doc2s);
+				
+				if(testFeatures.equals(trainFeatures)){
+					System.out.println("FEatures are equal");
 				}
-				List<Pair<Argument,Argument>> sigs = sig.generateSententialInstances(args, doc2s);
-				for(Pair<Argument,Argument> inst : sigs){
-					Argument arg1 = inst.first;
-					Argument arg2 = inst.second;
-					List<String> features =
-					fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), doc2s, doc2);
-					
-					System.out.println(arg1.getArgName() + "\t" + arg2.getArgName());
-					for(String feature: features){
-						System.out.print("\t" + feature);
-					}
-					System.out.println();
-				}
-			}
+				else{
+					System.out.println("Features are not equal");
+				}	
 		}		
+	}
+	
+	private static List<List<String>> getFeatures(Annotation doc, CoreMap sen){
+		//get test time features
+		List<Argument> args = ai.identifyArguments(doc, sen);
+		List<List<String>> featureLists = new ArrayList<>();
+		
+		System.out.println("ARguments");
+		for(Argument arg: args){
+			System.out.println(arg.getArgName());
+		}
+		List<Pair<Argument,Argument>> sigs = sig.generateSententialInstances(args, sen);
+		for(Pair<Argument,Argument> inst : sigs){
+			Argument arg1 = inst.first;
+			Argument arg2 = inst.second;
+			List<String> features =
+			fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), sen, doc);
+			
+			
+			List<String> featureSet = new ArrayList<>();
+			featureSet.add(arg1.getArgName());
+			featureSet.add(arg2.getArgName());
+			for(String feature: features){
+				featureSet.add(feature);
+			}
+			featureLists.add(featureSet);
+		}
+		
+		return featureLists;
 	}
 }
