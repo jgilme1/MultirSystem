@@ -118,8 +118,15 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 		arg1Pos[1] += 1;
 		arg2Pos[1] += 1;
 				
-		return orginalMultirFeatures(tokenStrings, posTags, depParents,
-				depTypes, arg1Pos, arg2Pos, arg1ner, arg2ner);
+		//REMOVE THIS TRY CATCH BLOCK TO DEBUG FEATURE GENERATOR
+		try{
+			return orginalMultirFeatures(tokenStrings, posTags, depParents,
+					depTypes, arg1Pos, arg2Pos, arg1ner, arg2ner);
+		}
+		catch(Exception e){
+			e.printStackTrace();
+			return new ArrayList<String>();
+		}
 	}
 	
 	

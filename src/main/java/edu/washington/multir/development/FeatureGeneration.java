@@ -31,30 +31,28 @@ import edu.washington.multir.featuregeneration.FeatureGenerator;
  */
 public class FeatureGeneration {
 	
+	/**
+	 * 
+	 * @param args
+	 * 			args[0] is name of DB
+	 * @throws SQLException
+	 * @throws IOException
+	 */
 	public static void main(String[] args) throws SQLException, IOException{
     	long start = System.currentTimeMillis();
 
 		//initialize variables
 		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
 		FeatureGenerator fg = new DefaultFeatureGenerator();
-		Corpus c;
+		String dbName = args[0];
+		String dsName = args[0]+"DS";
+		String featuresName = args[0]+"features";
+		Corpus c = new Corpus(dbName,cis,true);
 		BufferedReader in;
 		BufferedWriter bw;
+		in = new BufferedReader(new FileReader(new File(dsName)));
+		bw = new BufferedWriter(new FileWriter(new File(featuresName)));
 
-		// train/test switch
-		if(args[0].equals("train")){
-			in = new BufferedReader(new FileReader(new File("distantSupervisionTrain")));
-			bw =  new BufferedWriter(new FileWriter(new File("featuresTrain")));
-			c = new Corpus(cis,true,true);
-		}
-		else if(args[0].equals("test")){
-			in = new BufferedReader(new FileReader(new File("distantSupervisionTest")));
-			bw =  new BufferedWriter(new FileWriter(new File("featuresTest")));
-			c = new Corpus(cis,true,false);
-		}
-		else{
-			throw new IllegalArgumentException("Argument incorrect");
-		}
 
 		int count =1;
 		String nextLine = in.readLine();

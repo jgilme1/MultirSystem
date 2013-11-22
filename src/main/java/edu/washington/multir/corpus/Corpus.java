@@ -37,9 +37,9 @@ public class Corpus {
 	private static String documentColumnName = "DOCNAME";
 	private static String sentIDColumnName = "SENTID";
 	
-	public Corpus(CorpusInformationSpecification cis, boolean load, boolean train) throws SQLException{
+	public Corpus(String name, CorpusInformationSpecification cis, boolean load) throws SQLException{
 	  this.cis = cis;
-      cd = load ? CorpusDatabase.loadCorpusDatabase(train) : CorpusDatabase.newCorpusDatabase(getSentenceTableSQLSpecification(), getDocumentTableSQLSpecification(), train);
+      cd = load ? CorpusDatabase.loadCorpusDatabase(name) : CorpusDatabase.newCorpusDatabase(name,getSentenceTableSQLSpecification(), getDocumentTableSQLSpecification());
 	}
 	
 	//SQL Sentence Table Specification comes from all the user specified information
