@@ -241,7 +241,7 @@ public class CorpusPreprocessing {
 		}
 	}
 
-	private static String cleanParagraph(String par) {
+	private static synchronized String cleanParagraph(String par) {
         par
         // replace urls
 		.replaceAll("https?://\\S+?(\\s|$)", "U_R_L$1")
@@ -680,9 +680,10 @@ public class CorpusPreprocessing {
 			try{	
 				//pre parse processing
 				for(File f : docs){
-					FutureTask<Annotation> ft = new FutureTask<>(new PreParseProcessDocument(f));
-					ft.run();
-					Annotation a =ft.get();
+//					FutureTask<Annotation> ft = new FutureTask<>(new PreParseProcessDocument(f));
+//					ft.run();
+//					System.err.println(f.getName());
+					Annotation a = preParseProcessDocument(f);
 					annotations.add(new Pair<Annotation,File> (a,f));
 				}
 				System.out.println("Preparse Processed Docs");
@@ -695,9 +696,10 @@ public class CorpusPreprocessing {
 				for(Pair<Annotation,File> p : annotations){
 					Annotation a = p.first;
 					File f = p.second;
-					FutureTask<Annotation> ft = new FutureTask<>(new PostParseProcessDocument(f,a,br));
-					ft.run();
-					ft.get();
+//					FutureTask<Annotation> ft = new FutureTask<>(new PostParseProcessDocument(f,a,br));
+//					ft.run();
+//					ft.get();
+					Annotation  b = postParseProcessDocument(f,a,br);
 				}
 				br.close();
 				System.out.println("Postparse Processed Docs");
@@ -709,5 +711,101 @@ public class CorpusPreprocessing {
 				cjOutputFile.delete();
 			}
 		}
+		
+		private  Annotation preParseProcessDocument(File docFile) throws IOException{
+			
+			String documentString = FileUtils.readFileToString(docFile);
+
+			List<String> paragraphs = cleanDocument(documentString);
+			List<CoreMap> sentences = new ArrayList<CoreMap>();
+			
+			for(String par: paragraphs){
+				par = cleanParagraph(par);
+				//System.out.println("Paragraph: " + par);
+				//tokenize
+				PTBTokenizer<CoreLabel> tok = new PTBTokenizer<CoreLabel>(
+						new StringReader(par), ltf, options);
+				List<CoreLabel> l = tok.tokenize();
+				List<List<CoreLabel>> snts = sen.process(l);
+				
+				//process each sentence 
+				int offset =0;
+				for(List<CoreLabel> snt: snts){
+					//get snt original text
+					String sentenceText = getSentenceTextAnnotation(snt,par);
+					//System.out.println("Sentence text: " + sentenceText);
+					Annotation sentence = new Annotation(sentenceText);
+					
+					//set tokens on Annotation sentence
+					sentence.set(CoreAnnotations.TokensAnnotation.class, snt);
+					sentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class,offset);
+					sentence.set(CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID.class,currentGlobalSentID);
+					currentGlobalSentID++;
+					
+					//get String for tokens separated by white space
+					StringBuilder tokensBuilder = new StringBuilder();
+					for(CoreLabel token: snt){
+						token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, token.beginPosition());
+						token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, token.endPosition());
+						tokensBuilder.append(token.value());
+						tokensBuilder.append(" ");
+					}
+					//preprocess sentence text for charniak-johnson parser
+					sentences.add(sentence);
+				}
+			}
+			Annotation doc = new Annotation(sentences);
+			//get pos and ner information from stanford processing
+			pipeline.annotate(doc);							
+			return doc;
+		}
+		
+		private Annotation postParseProcessDocument(File fileDoc, Annotation a, BufferedReader br) throws IOException{
+			
+			List<CoreMap> sentences = a.get(CoreAnnotations.SentencesAnnotation.class);
+			for(CoreMap sentence : sentences){
+				String cjParse = br.readLine();
+				//System.out.println("CJPARSE = " + cjParse);
+				List<Triple<Integer,String,Integer>> dependencyInformation= new ArrayList<>();
+
+				if(cjParse.length() > 5){
+					//put parse information in a tree and get dependency parses
+					Tree parse = Tree.valueOf(cjParse.replace("|", " "));
+					GrammaticalStructure gs = gsf.newGrammaticalStructure(parse);
+					Collection<TypedDependency> tdl = null;
+					try {
+						tdl = gs.allTypedDependencies();
+					} catch (NullPointerException e) {
+						// there has to be a bug in EnglishGrammaticalStructure.collapseFlatMWP
+						tdl = new ArrayList<TypedDependency>();
+					}
+					
+					//convert dependency information into custom annotation
+					List<TypedDependency> l = new ArrayList<TypedDependency>();
+					l.addAll(tdl);
+					for (int i=0; i < tdl.size(); i++) {
+						TypedDependency td = l.get(i);
+						String name = td.reln().getShortName();
+						if (td.reln().getSpecific() != null)
+							name += "-" + td.reln().getSpecific();
+						Integer governor = td.gov().index();
+						String type = name;
+						Integer child = td.dep().index();
+						if(!name.equals("root")){
+							type = type.replace("-", "_");
+							Triple<Integer,String,Integer> t = new Triple<>(governor,type,child);
+							dependencyInformation.add(t);
+						}
+					}			
+					//set annotation on sentence
+					sentence.set(DefaultCorpusInformationSpecification.SentDependencyInformation.DependencyAnnotation.class,
+							dependencyInformation);
+				}
+			}
+			return a;
+		}
 	}
+
+	
+
 }
