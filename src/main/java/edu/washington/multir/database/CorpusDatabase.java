@@ -21,8 +21,9 @@ public final class CorpusDatabase {
 	private DerbyDb db;
 	private static final String sentenceInformationTableName = "SENTENCETABLE";
 	private static final String documentInformationTableName = "DOCUMENTTABLE";
-	private static final String trainingDatabaseName = "TrainingCorpusDatabase";
-	private static final String testDatabaseName = "TestCorpusDatabase";
+	
+	private List<List<Object>> cachedSentenceValues;
+	private List<List<Object>> cachedDocumentValues;
 	
 	private CorpusDatabase(String name, DerbyDb db){
 		this.name = name;
@@ -30,21 +31,19 @@ public final class CorpusDatabase {
 		cachedSentenceValues = new ArrayList<List<Object>>();
 		cachedDocumentValues = new ArrayList<List<Object>>();
 	}
-	public static CorpusDatabase loadCorpusDatabase(boolean train) throws SQLException{
-		String databaseName = train ? trainingDatabaseName : testDatabaseName;
-		DerbyDb db = new DerbyDb(databaseName);
-		return new CorpusDatabase(databaseName,db);
+	public static CorpusDatabase loadCorpusDatabase(String name) throws SQLException{
+		DerbyDb db = new DerbyDb(name);
+		return new CorpusDatabase(name,db);
 	}
-	public static CorpusDatabase newCorpusDatabase(String sentenceTableSQLSpecification, String documentTableSQLSpecification, boolean train) throws SQLException{
-		String databaseName = train ? trainingDatabaseName : testDatabaseName;
-		DerbyDb db = new DerbyDb(databaseName);
+	public static CorpusDatabase newCorpusDatabase(String name, String sentenceTableSQLSpecification, String documentTableSQLSpecification) throws SQLException{
+		DerbyDb db = new DerbyDb(name);
 		deleteTable(db.connection,sentenceInformationTableName);
 		deleteTable(db.connection,documentInformationTableName);
 		createTable(db.connection,sentenceInformationTableName,sentenceTableSQLSpecification);
 		createTable(db.connection,documentInformationTableName,documentTableSQLSpecification);
 		//add Document index on sentence table
 		db.connection.prepareStatement("CREATE INDEX DOCNAMEINDEX ON " + sentenceInformationTableName + " (DOCNAME)").execute();
-		return new CorpusDatabase(databaseName,db);
+		return new CorpusDatabase(name,db);
 	}
 	private static void deleteTable(Connection connection, String tableName) throws SQLException{
 		try{
@@ -132,8 +131,6 @@ public final class CorpusDatabase {
 		}
 	}
 	
-	private List<List<Object>> cachedSentenceValues;
-	private List<List<Object>> cachedDocumentValues;
 	
 	private void bulkInsert(String tableName, List<String> columnNames, List<Object> values) throws SQLException{
 		List<List<Object>> columnValues = tableName.equals(sentenceInformationTableName) ? cachedSentenceValues : cachedDocumentValues;

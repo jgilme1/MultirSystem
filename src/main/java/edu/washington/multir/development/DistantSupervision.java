@@ -38,7 +38,7 @@ public class DistantSupervision {
 	/**
 	 * 
 	 * @param args
-	 * 		args[0] should be train or test
+	 * 		args[0] should be name of corpus database
 	 * 		args[1] should be relationKBFilePath
 	 * 	    args[2] should be entityKBFielPath
 	 * 	    args[3] should be targetRelationsFilePath
@@ -58,26 +58,13 @@ public class DistantSupervision {
 
 		//initialize variables
 		CorpusInformationSpecification cis =  new DefaultCorpusInformationSpecification();
-		Corpus c;
-		String dsFileName;
+		Corpus c = new Corpus(args[0],cis,true);
+		String dsFileName = args[0]+"DS";
 		ArgumentIdentification ai = NERArgumentIdentification.getInstance();
 		SententialInstanceGeneration sig = NERSententialInstanceGeneration.getInstance();
 		RelationMatching rm = new NERRelationMatching();
 		
-		//choose corpus based on first argument
-		if(args[0].equals("train")){
-			dsFileName = "distantSupervisionTrain";
-			//load train corpus
-			c = new Corpus(cis,true,true);
-		}
-		else if(args[0].equals("test")){
-			dsFileName = "distantSupervisionTest";
-			//load test corpus
-			c = new Corpus(cis,true,false);
-		}
-		else{
-			throw new IllegalArgumentException("Argument incorrect");
-		}
+
 		
 		//parse negative example flag
 		if(args[4].equals("true")){
@@ -108,7 +95,7 @@ public class DistantSupervision {
 				List<Pair<Argument,Argument>> sententialInstances= sig.generateSententialInstances(arguments, sentence);
 				//relation matching
 				List<Triple<KBArgument,KBArgument,String>> distantSupervisionAnnotations = 
-						rm.matchRelations(sententialInstances,kb.getEntityMap(),kb.getEntityPairRelationMap());
+						rm.matchRelations(sententialInstances,kb);
 				//negative example annotations
 				List<Triple<KBArgument,KBArgument,String>> negativeExampleAnnotations =
 						findNegativeExampleAnnotations(sententialInstances,distantSupervisionAnnotations,

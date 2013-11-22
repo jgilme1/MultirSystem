@@ -34,9 +34,11 @@ public class SingleDocumentTrainingFeatures {
 	private static SententialInstanceGeneration sig;
 	private static FeatureGenerator fg;
 	
+	//
+	// args[0] is corpus DB name
 	public static void main(String[] args) throws SQLException, IOException, InterruptedException{
 		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
-		Corpus c = new Corpus(cis,true,true);
+		Corpus c = new Corpus(args[0],cis,true);
 		ai = NERArgumentIdentification.getInstance();
 		sig = NERSententialInstanceGeneration.getInstance();
 		fg = new DefaultFeatureGenerator();
