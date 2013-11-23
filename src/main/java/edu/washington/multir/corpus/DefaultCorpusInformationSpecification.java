@@ -34,12 +34,7 @@ public class DefaultCorpusInformationSpecification extends
 				for(int i =0; i < tokens.size(); i++){
 					CoreLabel token = tokens.get(i);
 					String tokenValue = tokenValues[i];
-					if(token.equals("0")){
-						token.set(CoreAnnotations.NamedEntityTagAnnotation.class, null);
-					}
-					else{
-						token.set(CoreAnnotations.NamedEntityTagAnnotation.class, tokenValue);
-					}
+					token.set(CoreAnnotations.NamedEntityTagAnnotation.class, tokenValue);
 				}
 			}
 			else{
@@ -54,11 +49,11 @@ public class DefaultCorpusInformationSpecification extends
 			StringBuilder sb = new StringBuilder();
 			for(CoreLabel token: tokens){
 				String tokenValue = token.get(CoreAnnotations.NamedEntityTagAnnotation.class);
-				if(tokenValue == null){
-					sb.append("0");
+				if(tokenValue != null){
+					sb.append(tokenValue);
 				}
 				else{
-					sb.append(tokenValue);
+					return "";
 				}
 				sb.append(" ");
 			}
