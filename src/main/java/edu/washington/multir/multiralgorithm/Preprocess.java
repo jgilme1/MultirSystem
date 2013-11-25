@@ -4,6 +4,7 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -23,7 +24,12 @@ import edu.stanford.nlp.util.Pair;
  *
  */
 public class Preprocess {
+	
+	private static Map<String,Integer> keyToIntegerMap = new HashMap<String,Integer>();
+    private static Map<Integer,String> intToKeyMap = new HashMap<Integer,String>();
 
+
+    private static final double GIGABYTE_DIVISOR = 1073741824;
 	/**
 	 * args[0] is path to featuresTrain
 	 * args[1] is path to featuresTest
@@ -35,37 +41,106 @@ public class Preprocess {
 	public static void main(String[] args) 
 	throws IOException {
     	long start = System.currentTimeMillis();
+    	
+    	printMemoryStatistics();
+
+    	
 
 		String trainFile = args[0];
 		String testFile = args[1];
 		String outDir = args[2];
 		String mappingFile = outDir + File.separatorChar + "mapping";
 		String modelFile = outDir + File.separatorChar + "model";
+		
+		System.out.println("GETTING Mapping form training data");
+		Mappings mapping = getMappingFromTrainingData(trainFile,mappingFile);
+		
+		
+			System.out.println("PREPROCESSING TRAIN FEATURES");
 		{
 			String output1 = outDir + File.separatorChar + "train";
-			convertFeatureFileToMILDocument(trainFile, output1, mappingFile, true, true);
+			convertFeatureFileToMILDocument(trainFile, output1, mapping);
 		}
+		
+			System.out.println("FINISHED PREPROCESSING TRAIN FEATURES");
+			printMemoryStatistics();
+			keyToIntegerMap.clear();
+
+		
+			System.out.println("PREPROCESSING TEST FEATURES");
+			printMemoryStatistics();
+
 		
 		{
 			String output2 = outDir + File.separatorChar + "test";
-			convertFeatureFileToMILDocument(testFile, output2, mappingFile, false, false);
+			convertFeatureFileToMILDocument(testFile, output2, mapping);
 		}
+		
+		System.out.println("FINISHED PREPROCESSING TEST FEATURES");
+		printMemoryStatistics();
+		keyToIntegerMap.clear();
+		intToKeyMap.clear();
+
+	
+		System.out.println("Writing model and mapping file");
+		printMemoryStatistics();
+
+
 		
 		{
 			Model m = new Model();
-			Mappings mappings = new Mappings();
-			mappings.read(mappingFile);
-			m.numRelations = mappings.numRelations();
+			m.numRelations = mapping.numRelations();
 			m.numFeaturesPerRelation = new int[m.numRelations];
 			for (int i=0; i < m.numRelations; i++)
-				m.numFeaturesPerRelation[i] = mappings.numFeatures();
+				m.numFeaturesPerRelation[i] = mapping.numFeatures();
 			m.write(modelFile);
+			mapping.write(mappingFile);
 		}
 		
     	long end = System.currentTimeMillis();
     	System.out.println("Preprocessing took " + (end-start) + " millisseconds");
 	}
 	
+
+
+	/**
+	 * Obtain mappings object from training features file onle
+	 * @param trainFile
+	 * @param mappingFile
+	 * @return
+	 * @throws IOException
+	 */
+	private static Mappings getMappingFromTrainingData(String trainFile,
+			String mappingFile) throws IOException {
+
+		Mappings m = new Mappings();
+		//ensure that "NA" gets ID o
+		m.getRelationID("NA", true);
+		BufferedReader br = new BufferedReader(new FileReader(new File(trainFile)));
+		
+		String line;
+		while((line = br.readLine()) != null){
+	    	String[] values = line.split("\t");
+	    	String rel = values[3];
+	    	List<String> features = new ArrayList<>();
+	    	//add all features
+	    	for(int i = 4; i < values.length; i++){
+	    		features.add(values[i]);
+	    	}
+	    	
+	    	// update mappings file
+	    	m.getRelationID(rel, true);
+	    	for(String feature: features){
+	    		m.getFeatureID(feature, true);
+	    	}
+		}
+		
+		br.close();
+		return m;
+	}
+
+
+
 	/**
 	 * Converts featuresTrain or featuresTest to 
 	 * train or test by aggregating the entity pairs
@@ -74,31 +149,14 @@ public class Preprocess {
 	 * 				  format
 	 * @param output - the test/train file in multir,
 	 * 					MILDoc format
-	 * @param mappingFile - the mapping file that holds
-	 * 			int representation of features and 
-	 * 			relations
-	 * @param writeFeatureMapping - boolean flag
-	 * 		    for writing new features, should
-	 * 			be on for training and off for test
-	 * @param writeRelationMapping - boolean flag
-	 * 			for writing new relations, should be
-	 * 			on for training and off for test
+	 * @param m - the mappings object that keeps track of
+	 * 			  relevant relations and features
 	 * @throws IOException
 	 */
-	private static void convertFeatureFileToMILDocument(String input, String output, String mappingFile, 
-			boolean writeFeatureMapping, boolean writeRelationMapping) throws IOException {
+	private static void convertFeatureFileToMILDocument(String input, String output, Mappings m) throws IOException {
 		
 		
-		Mappings m = new Mappings();
-		
-		//if test time, load the mapping
-		if (!writeFeatureMapping || !writeRelationMapping)
-			m.read(mappingFile);
-		//else start writing a new mapping
-		else
-			// ensure that relation NA gets ID 0
-			m.getRelationID("NA", true);
-		
+
 		//open input and output streams
 		DataOutputStream os = new DataOutputStream
 			(new BufferedOutputStream(new FileOutputStream(output)));
@@ -108,9 +166,9 @@ public class Preprocess {
 	    
 	    //create MILDocument data map
 	    //load feature generation data into map from argument pair keys to
-	    //a Pair of List<String> relations and a List<List<String>> for features
+	    //a Pair of List<Integer> relations and a List<List<Integer>> for features
 	    //for each instance
-	    Map<String,Pair<List<String>,List<List<String>>>> relationMentionMap = new HashMap<>();
+	    Map<Integer,Pair<List<Integer>,List<List<Integer>>>> relationMentionMap = new HashMap<>();
 	    
 	    String line;
 	    while((line = br.readLine()) != null){
@@ -120,66 +178,67 @@ public class Preprocess {
 	    	String rel = values[3];
 	    	// entity pair key separated by a delimiter
 	    	String key = arg1Id+"%"+arg2Id;
+	    	Integer intKey = getIntKey(key);
 	    	List<String> features = new ArrayList<>();
 	    	//add all features
 	    	for(int i = 4; i < values.length; i++){
 	    		features.add(values[i]);
 	    	}
+	    	//convert to integer keys from the mappings m object
+	    	List<Integer> featureIntegers = convertFeaturesToIntegers(features,m);
 	    	
 	    	//update map entry
-	    	if(relationMentionMap.containsKey(key)){
-	    		Pair<List<String>, List<List<String>>> p = relationMentionMap.get(key);
-	    		List<String> oldRelations = p.first;
-	    		List<List<String>> oldFeatures = p.second;
-	    		if(!oldRelations.contains(rel)){
-	    			oldRelations.add(rel);
+	    	if(relationMentionMap.containsKey(intKey)){
+	    		Pair<List<Integer>, List<List<Integer>>> p = relationMentionMap.get(intKey);
+	    		List<Integer> oldRelations = p.first;
+	    		List<List<Integer>> oldFeatures = p.second;
+	    		Integer relKey = getIntRelKey(rel,m);
+	    		if(!oldRelations.contains(relKey)){
+	    			oldRelations.add(relKey);
 	    		}
-	    		oldFeatures.add(features);
+	    		oldFeatures.add(featureIntegers);
 	    	}
 	    	
 	    	//new map entry
 	    	else{
-	    		List<String> relations = new ArrayList<>();
-	    		relations.add(rel);
-	    		List<List<String>> newFeatureList = new ArrayList<>();
-	    		newFeatureList.add(features);
-	    		Pair<List<String>, List<List<String>>> p = new Pair<List<String>, List<List<String>>>(relations, newFeatureList);
-	    		relationMentionMap.put(key,p);
+	    		List<Integer> relations = new ArrayList<>();
+	    		relations.add(getIntRelKey(rel,m));
+	    		List<List<Integer>> newFeatureList = new ArrayList<>();
+	    		newFeatureList.add(featureIntegers);
+	    		Pair<List<Integer>, List<List<Integer>>> p = new Pair<List<Integer>, List<List<Integer>>>(relations, newFeatureList);
+	    		relationMentionMap.put(intKey,p);
 	    	}
-	    	if(relationMentionMap.size() % 1000 == 0){
+	    	if(relationMentionMap.size() % 100000 == 0){
 	    		System.out.println("Number of entity pairs read in =" + relationMentionMap.size());
+	    		printMemoryStatistics();
 	    	}
 	    }
 	    
 	    br.close();
-	    
+	    System.out.println("LOADED MAP!");
 	    
 	    MILDocument doc = new MILDocument();	    
     	
 	    //iterate over keys in the map and create MILDocuments
 	    int count =0;
-	    for(String key : relationMentionMap.keySet()){
+	    for(Integer intKey : relationMentionMap.keySet()){
 	    	doc.clear();
 
-	    	String[] keySplit = key.split("%");
+	    	String[] keySplit = getStringKey(intKey).split("%");
 	    	String arg1 = keySplit[0];
 	    	String arg2 = keySplit[1];
-	    	Pair<List<String>,List<List<String>>> p = relationMentionMap.get(key);
-	    	List<String> relations = p.first;
-	    	List<List<String>> features = p.second;
+	    	Pair<List<Integer>,List<List<Integer>>> p = relationMentionMap.get(intKey);
+	    	List<Integer> intRels = p.first;
+	    	List<List<Integer>> intFeatures= p.second;
 	    	
 	    	doc.arg1 = arg1;
 	    	doc.arg2 = arg2;
 	    	
 	    	// set relations
 	    	{
-		    	String[] rels = new String[relations.size()];
-		    	for(int i = 0; i < rels.length; i++){
-		    		rels[i] = relations.get(i);
-		    	}
-		    	int[] irels = new int[rels.length];
-		    	for (int i=0; i < rels.length; i++)
-		    		irels[i] = m.getRelationID(rels[i], writeRelationMapping);
+		    	int[] irels = new int[intRels.size()];
+		    	for (int i=0; i < intRels.size(); i++)
+		    		irels[i] = intRels.get(0);
 		    	Arrays.sort(irels);
 		    	// ignore NA and non-mapped relations
 		    	int countUnique = 0;
@@ -194,19 +253,19 @@ public class Preprocess {
 	    	}
 	    	
 	    	// set mentions
-	    	doc.setCapacity(features.size());
-	    	doc.numMentions = features.size();
+	    	doc.setCapacity(intFeatures.size());
+	    	doc.numMentions = intFeatures.size();
 	    	
-	    	for (int j=0; j < features.size(); j++) {
+	    	for (int j=0; j < intFeatures.size(); j++) {
 		    	doc.Z[j] = -1;
 	    		doc.mentionIDs[j] = j;
 	    		SparseBinaryVector sv = doc.features[j] = new SparseBinaryVector();
 	    		
-	    		List<String> instanceFeatures = features.get(j);
+	    		List<Integer> instanceFeatures = intFeatures.get(j);
 	    		int[] fts = new int[instanceFeatures.size()];
 	    		
 	    		for (int i=0; i < instanceFeatures.size(); i++)
-	    			fts[i] = m.getFeatureID(instanceFeatures.get(i), writeFeatureMapping);
+	    			fts[i] = instanceFeatures.get(i);
 	    		Arrays.sort(fts);
 		    	int countUnique = 0;
 		    	for (int i=0; i < fts.length; i++)
@@ -222,13 +281,68 @@ public class Preprocess {
 	    	doc.write(os);
 	    	count ++;
 	    	
-	    	if(count % 1000 == 0){
+	    	if(count % 100000 == 0){
 	    		System.out.println(count + " entity pairs processed");
+	    		printMemoryStatistics();
 	    	}
 	    }
-		br.close();
 		os.close();
-		if (writeFeatureMapping || writeRelationMapping)
-			m.write(mappingFile);
+	}
+
+	private static Integer getIntRelKey(String rel, Mappings m) {
+		
+		return m.getFeatureID(rel, false);
+		
+	}
+
+
+
+	private static List<Integer> convertFeaturesToIntegers(
+			List<String> features, Mappings m) {
+		
+		List<Integer> intFeatures = new ArrayList<Integer>();
+		
+		for(String feature: features){
+			Integer intFeature = m.getFeatureID(feature, false);
+			if(intFeature != -1){
+				intFeatures.add(intFeature);
+			}
+		}
+		
+		return intFeatures;
+	}
+
+
+
+
+
+	private static String getStringKey(Integer intKey) {
+		if(intToKeyMap.containsKey(intKey)){
+			return intToKeyMap.get(intKey);
+		}
+		else{
+			throw new IllegalStateException();
+		}
+	}
+
+	private static Integer getIntKey(String key) {
+		if(keyToIntegerMap.containsKey(key)){
+			return keyToIntegerMap.get(key);
+		}
+		else{
+			Integer intKey = keyToIntegerMap.size();
+			keyToIntegerMap.put(key, intKey);
+			intToKeyMap.put(intKey, key);
+			return intKey;
+		}
+	}
+	
+	private static void printMemoryStatistics() {
+		double freeMemory = Runtime.getRuntime().freeMemory()/GIGABYTE_DIVISOR;
+		double allocatedMemory = Runtime.getRuntime().totalMemory()/GIGABYTE_DIVISOR;
+		double maxMemory = Runtime.getRuntime().maxMemory()/GIGABYTE_DIVISOR;
+		System.out.println("MAX MEMORY: " + maxMemory);
+		System.out.println("ALLOCATED MEMORY: " + allocatedMemory);
+		System.out.println("FREE MEMORY: " + freeMemory);
 	}
 }
