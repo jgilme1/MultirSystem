@@ -25,16 +25,16 @@ import edu.stanford.nlp.util.Pair;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
 
 public class PreParseProcessor {
-	private static PreParseProcessor instance = new PreParseProcessor();
-	public static PreParseProcessor getInstance() {return instance;}
+	//private static PreParseProcessor instance = new PreParseProcessor();
+	//public static PreParseProcessor getInstance() {return instance;}
 	
 	
 	private final Properties props = new Properties();
 	private final StanfordCoreNLP pipeline;
 	
-	private PreParseProcessor(){
+	public PreParseProcessor(){
 		props.put("annotators", "pos,lemma,ner");
-		//props.put("thread", "8");
+		props.put("thread", "8");
 		props.put("sutime.binders","0");
 		pipeline = new StanfordCoreNLP(props,false);
 	}
@@ -62,6 +62,10 @@ public class PreParseProcessor {
 			
 			List<Pair<Integer,Integer>> sentenceTokenOffsets = tokenOffsets.get(j);
 			
+			System.err.println(startSentId+j);
+			System.err.println(sentText.get(j));
+			System.err.println(tokenString);
+			
 			List<CoreLabel> coreLabelTokens = new ArrayList<>();
 			String[] tokens = tokenString.split("\\s+");
 			for(int i =0; i < tokens.length; i++){
@@ -74,6 +78,10 @@ public class PreParseProcessor {
 				coreLabelToken.setBeginPosition(startOffset+sentStartOffset);
 				coreLabelToken.setEndPosition(endOffset+sentStartOffset);
 				coreLabelTokens.add(coreLabelToken);
+			}
+			
+			if(coreLabelTokens.size() != tokens.length){
+				throw new IllegalStateException("CoreLabel Token length should be equivalent to raw string token length");
 			}
 			
 			senAnno.set(CoreAnnotations.TokensAnnotation.class, coreLabelTokens);
@@ -102,8 +110,6 @@ public class PreParseProcessor {
 	// 7 number of processors
 	public static void main(String[] args) throws IOException{
 		
-		//get PreParseProcessor
-		PreParseProcessor pp = PreParseProcessor.getInstance();
 		
 		Integer numProcessor = Integer.parseInt(args[6]);
 		
@@ -146,6 +152,9 @@ public class PreParseProcessor {
 			sentenceOffsetLine = sentenceOffsetsFileReader.readLine();
 			sentenceTextLine = sentenceTextFileReader.readLine();
 			
+			//print each line
+			printLine(tokenLine,tokenOffsetLine,sentenceOffsetLine,sentenceTextLine);
+			
 			//get information from token file
 			String [] tokenFileValues = tokenLine.split("\t");
 			Integer sentId = Integer.parseInt(tokenFileValues[0]);
@@ -167,6 +176,7 @@ public class PreParseProcessor {
 			
 			if(lineCount == 0){
 				lastDocument = docName;
+				startSentID = sentId;
 			}
 			if((!lastDocument.equals("")) && (!lastDocument.equals(docName))){
 				
@@ -175,17 +185,17 @@ public class PreParseProcessor {
 			
 			if(timeToConstructAnnotationDocument){
 				
-				
+				System.out.println("STORING PREVIOUS DOCUMENT as Document starting at sentid " + startSentID );
 				//add Document Data
 				documentData.add(new DocumentData(listOfSentenceTokens, listOfSentenceTokenOffsets,
 						startSentID, listOfSentenceOffsets, listOfSentenceTexts));
 				
 				if(documentData.size() == 1000){
 					//split up jobs by number of processors
-					runInParallel(pp,preParseProcessedDocuments,documentData,numProcessor);
-					documentData.clear();
+					runInParallel(preParseProcessedDocuments,documentData,numProcessor);
+					documentData = new ArrayList<DocumentData>();
 					writeNERAndPOS(preParseProcessedDocuments,outputNERFileWriter,outputPOSFileWriter);
-					preParseProcessedDocuments.clear();
+					preParseProcessedDocuments = new ArrayList<Annotation>();
 				}
 				
 //				Annotation doc = pp.preParseProcessDocument(listOfSentenceTokens, listOfSentenceTokenOffsets,
@@ -197,10 +207,10 @@ public class PreParseProcessor {
 				lastDocument = docName;
 				startSentID = sentId;
 				
-				listOfSentenceTokens.clear();
-				listOfSentenceTokenOffsets.clear();
-				listOfSentenceTexts.clear();
-				listOfSentenceOffsets.clear();
+				listOfSentenceTokens = new ArrayList<>();
+				listOfSentenceTokenOffsets = new ArrayList<>();
+				listOfSentenceTexts = new ArrayList<>();
+				listOfSentenceOffsets = new ArrayList<>();
 				
 			}
 			
@@ -245,20 +255,20 @@ public class PreParseProcessor {
 		if(!listOfSentenceTokens.isEmpty()){
 			
 			//get Annotation Document
-			Annotation doc = pp.preParseProcessDocument(new DocumentData(listOfSentenceTokens, listOfSentenceTokenOffsets,
+			documentData.add(new DocumentData(listOfSentenceTokens, listOfSentenceTokenOffsets,
 					startSentID, listOfSentenceOffsets, listOfSentenceTexts));
-			preParseProcessedDocuments.add(doc);
+
 			
-			listOfSentenceTokens.clear();
-			listOfSentenceTokenOffsets.clear();
-			listOfSentenceTexts.clear();
-			listOfSentenceOffsets.clear();
-			
+			listOfSentenceTokens = new ArrayList<>();
+			listOfSentenceTokenOffsets = new ArrayList<>();;
+			listOfSentenceTexts = new ArrayList<>();
+			listOfSentenceOffsets = new ArrayList<>();
 		}
 		
-		//System.out.println("Number of documents = " + preParseProcessedDocuments.size());
-		//output
+		runInParallel(preParseProcessedDocuments,documentData,numProcessor);
+		documentData = new ArrayList<>();
 		writeNERAndPOS(preParseProcessedDocuments,outputNERFileWriter,outputPOSFileWriter);
+		preParseProcessedDocuments = new ArrayList<>();
 
 		
 		outputNERFileWriter.close();
@@ -269,7 +279,15 @@ public class PreParseProcessor {
 		sentenceTextFileReader.close();
 	}
 
-	private static void runInParallel(PreParseProcessor pp,
+	private static void printLine(String tokenLine, String tokenOffsetLine,
+			String sentenceOffsetLine, String sentenceTextLine) {
+		System.out.println(tokenLine);
+		System.out.println(tokenOffsetLine);
+		System.out.println(sentenceOffsetLine);
+		System.out.println(sentenceTextLine);
+	}
+
+	private static void runInParallel(
 			List<Annotation> preParseProcessedDocuments,
 			List<DocumentData> documentData, Integer numProcessors) {
 		
@@ -282,12 +300,12 @@ public class PreParseProcessor {
 		for(int j =1; j <= numProcessors; j++){
 	      int newIndex = lastIndex + (numDocuments/numProcessors);
 	      List<DocumentData> part;
-	      if(j == numDocuments){
+	      if(j == numProcessors){
 			  part = new ArrayList<DocumentData>(documentData.subList(lastIndex, numDocuments));
 	      }else{
 			  part = new ArrayList<DocumentData>(documentData.subList(lastIndex,newIndex));			    	  
 	      }
-		  Callable<List<Annotation>> c = new ThreadProcessDocument(part,pp);
+		  Callable<List<Annotation>> c = new ThreadProcessDocument(part,new PreParseProcessor());
 	      pool.submit(c);
 		  lastIndex = newIndex;
 		}
@@ -363,6 +381,21 @@ public class PreParseProcessor {
 		public DocumentData(
 				List<String> sentenceTokens, List<List<Pair<Integer,Integer>>> tokenOffsets, int startSentId, 
 				List<Pair<Integer,Integer>> sentenceOffsets, List<String> sentText ){
+			//check for validity of all arguments.
+			int sentenceTokensLength = sentenceTokens.size();
+			int tokenOffsetsLength = tokenOffsets.size();
+			int sentenceOffsetsLength = sentenceOffsets.size();
+			int sentTextLength = sentText.size();
+			
+			if(!((sentenceTokensLength == tokenOffsetsLength)  &&
+					(sentenceTokensLength == sentenceOffsetsLength) &&
+					(sentenceTokensLength == sentTextLength))){
+				throw new IllegalArgumentException("Inputs don't match up");
+			}
+			
+			
+			
+			
 			this.sentenceTokens = sentenceTokens;
 			this.tokenOffsets = tokenOffsets;
 			this.startSentId = startSentId;
