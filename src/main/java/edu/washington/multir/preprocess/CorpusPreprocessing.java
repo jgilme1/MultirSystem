@@ -693,6 +693,8 @@ public class CorpusPreprocessing {
 				
 				//post parse processing
 				BufferedReader br = new BufferedReader(new FileReader(cjOutputFile));
+				int count = annotations.size();
+				long start = System.currentTimeMillis();
 				for(Pair<Annotation,File> p : annotations){
 					Annotation a = p.first;
 					File f = p.second;
@@ -701,6 +703,8 @@ public class CorpusPreprocessing {
 //					ft.get();
 					Annotation  b = postParseProcessDocument(f,a,br);
 				}
+				long end = System.currentTimeMillis();
+				System.out.println("PostParseProcessed " + count + " docs in " + (end-start) + " milliseconds");
 				br.close();
 				System.out.println("Postparse Processed Docs");
 				
