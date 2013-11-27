@@ -62,9 +62,9 @@ public class PreParseProcessor {
 			
 			List<Pair<Integer,Integer>> sentenceTokenOffsets = tokenOffsets.get(j);
 			
-			System.err.println(startSentId+j);
-			System.err.println(sentText.get(j));
-			System.err.println(tokenString);
+//			System.err.println(startSentId+j);
+//			System.err.println(sentText.get(j));
+//			System.err.println(tokenString);
 			
 			List<CoreLabel> coreLabelTokens = new ArrayList<>();
 			String[] tokens = tokenString.split("\\s+");
@@ -153,7 +153,7 @@ public class PreParseProcessor {
 			sentenceTextLine = sentenceTextFileReader.readLine();
 			
 			//print each line
-			printLine(tokenLine,tokenOffsetLine,sentenceOffsetLine,sentenceTextLine);
+			//printLine(tokenLine,tokenOffsetLine,sentenceOffsetLine,sentenceTextLine);
 			
 			//get information from token file
 			String [] tokenFileValues = tokenLine.split("\t");
@@ -185,7 +185,7 @@ public class PreParseProcessor {
 			
 			if(timeToConstructAnnotationDocument){
 				
-				System.out.println("STORING PREVIOUS DOCUMENT as Document starting at sentid " + startSentID );
+				//System.out.println("STORING PREVIOUS DOCUMENT as Document starting at sentid " + startSentID );
 				//add Document Data
 				documentData.add(new DocumentData(listOfSentenceTokens, listOfSentenceTokenOffsets,
 						startSentID, listOfSentenceOffsets, listOfSentenceTexts));
