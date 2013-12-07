@@ -297,6 +297,7 @@ public class CorpusPreprocessing {
 	
 	public static Annotation getTestDocument(String docPath) throws IOException, InterruptedException{
 		props.put("annotators", "pos,lemma,ner");
+		props.put("sutime.binders","0");
 		pipeline = new StanfordCoreNLP(props,false);
 
 		String documentString = FileUtils.readFileToString(new File(docPath));
@@ -333,13 +334,15 @@ public class CorpusPreprocessing {
 				//set tokens on Annotation sentence
 				sentence.set(CoreAnnotations.TokensAnnotation.class, snt);
 				sentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class,offset);
+				sentence.set(CoreAnnotations.CharacterOffsetEndAnnotation.class,offset+sentenceText.length());
+				
 				
 				
 				//get String for tokens separated by white space
 				StringBuilder tokensBuilder = new StringBuilder();
 				for(CoreLabel token: snt){
-					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, token.beginPosition());
-					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, token.endPosition());
+					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, offset + token.beginPosition());
+					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, offset + token.endPosition());
 					tokensBuilder.append(token.value());
 					tokensBuilder.append(" ");
 				}
@@ -350,6 +353,7 @@ public class CorpusPreprocessing {
 				bw.write(cjPreprocessedString +"\n");
 				
 				sentences.add(sentence);
+				offset = offset + sentenceText.length();
 			}
 		}
 		Annotation doc = new Annotation(sentences);
@@ -362,6 +366,9 @@ public class CorpusPreprocessing {
 		ProcessBuilder pb = new ProcessBuilder();
 		List<String> commandArguments = new ArrayList<String>();
 		commandArguments.add("./parse.sh");
+		commandArguments.add("-T50");
+		commandArguments.add("-K");
+		commandArguments.add("-S");
 		pb.command(commandArguments);
 		pb.directory(parserDirectory);
 		pb.redirectInput(cjInputFile);
@@ -385,7 +392,7 @@ public class CorpusPreprocessing {
 			GrammaticalStructure gs = gsf.newGrammaticalStructure(parse);
 			Collection<TypedDependency> tdl = null;
 			try {
-				tdl = /*gs.allTypedDependencies();*/ gs.typedDependenciesCCprocessed();
+				tdl = gs.allTypedDependencies(); // gs.typedDependenciesCCprocessed();
 			} catch (NullPointerException e) {
 				// there has to be a bug in EnglishGrammaticalStructure.collapseFlatMWP
 				tdl = new ArrayList<TypedDependency>();
@@ -399,14 +406,16 @@ public class CorpusPreprocessing {
 				String name = td.reln().getShortName();
 				if (td.reln().getSpecific() != null)
 					name += "-" + td.reln().getSpecific();
-				Integer governor = td.gov().index()-1;
+				Integer governor = td.gov().index();
 				String type = name;
-				Integer child = td.dep().index()-1;
-				if(!name.equals("root")){
-					type = type.replace("-", "_");
-					Triple<Integer,String,Integer> t = new Triple<>(governor,type,child);
-					dependencyInformation.add(t);
-				}
+				Integer child = td.dep().index();
+//				if(!name.equals("root")){
+//					type = type.replace("-", "_");
+//					Triple<Integer,String,Integer> t = new Triple<>(governor,type,child);
+//					dependencyInformation.add(t);
+//				}
+				Triple<Integer,String,Integer> t = new Triple<>(governor,type,child);
+				dependencyInformation.add(t);
 
 			}			
 			//set annotation on sentence

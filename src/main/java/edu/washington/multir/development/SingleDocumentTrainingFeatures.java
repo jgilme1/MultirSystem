@@ -44,8 +44,8 @@ public class SingleDocumentTrainingFeatures {
 		fg = new DefaultFeatureGenerator();
 		
 		
-		Annotation traind = c.getDocument("AFP_ENG_19941021.0120.LDC2007T07");
-		Annotation testd = CorpusPreprocessing.getTestDocument("/homes/gws/jgilme1/AFP_ENG_19941021.0120.LDC2007T07.sgm");
+		Annotation traind = c.getDocument("XIN_ENG_20021028.0184.LDC2007T07");
+		Annotation testd = CorpusPreprocessing.getTestDocument("/homes/gws/jgilme1/XIN_ENG_20021028.0184.LDC2007T07.sgm");
 		compareDocuments(traind,testd);
 		
 		
@@ -145,15 +145,15 @@ public class SingleDocumentTrainingFeatures {
 				System.err.println(doc1NER.toString().trim());
 				System.err.println(doc2NER.toString().trim());
 			}
-			
-			try{
-				assert doc1Offsets.toString().trim().equals(doc2Offsets.toString().trim()) : "Offsets are equal";
-			}
-			catch(java.lang.AssertionError e){
-				System.err.println("Offsets are not equal");
-				System.err.println(doc1Offsets.toString().trim());
-				System.err.println(doc2Offsets.toString().trim());
-			}
+//			
+//			try{
+//				assert doc1Offsets.toString().trim().equals(doc2Offsets.toString().trim()) : "Offsets are equal";
+//			}
+//			catch(java.lang.AssertionError e){
+//				System.err.println("Offsets are not equal");
+//				System.err.println(doc1Offsets.toString().trim());
+//				System.err.println(doc2Offsets.toString().trim());
+//			}
 			
 			try{
 				assert doc1POS.toString().trim().equals(doc2POS.toString().trim()) : "POS is equal";
