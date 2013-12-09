@@ -11,8 +11,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import edu.stanford.nlp.util.Pair;
 
@@ -27,6 +29,7 @@ public class Preprocess {
 	
 	private static Map<String,Integer> keyToIntegerMap = new HashMap<String,Integer>();
     private static Map<Integer,String> intToKeyMap = new HashMap<Integer,String>();
+    private static Set<String> alreadySeenFeatures = new HashSet<String>();
 
 
     private static final double GIGABYTE_DIVISOR = 1073741824;
@@ -44,8 +47,7 @@ public class Preprocess {
     	
     	printMemoryStatistics();
 
-    	
-
+  
 		String trainFile = args[0];
 		String testFile = args[1];
 		String outDir = args[2];
@@ -55,6 +57,12 @@ public class Preprocess {
 		System.out.println("GETTING Mapping form training data");
 		Mappings mapping = getMappingFromTrainingData(trainFile,mappingFile);
 		
+//		//print all relations in mapping
+//		Map<String,Integer> rel2RelID = mapping.getRel2RelID();
+//		System.out.println("Printing rel to relID map");
+//		for(String rel: rel2RelID.keySet()){
+//			System.out.println(rel + "\t" + rel2RelID.get(rel));
+//		}
 		
 			System.out.println("PREPROCESSING TRAIN FEATURES");
 		{
@@ -130,7 +138,16 @@ public class Preprocess {
 	    	
 	    	// update mappings file
 	    	m.getRelationID(rel, true);
+	    	List<String> relevantFeatures = new ArrayList<String>();
 	    	for(String feature: features){
+	    		if(alreadySeenFeatures.contains(feature)){
+	    			relevantFeatures.add(feature);
+	    		}
+	    		else{
+	    			alreadySeenFeatures.add(feature);
+	    		}
+	    	}
+	    	for(String feature: relevantFeatures){
 	    		m.getFeatureID(feature, true);
 	    	}
 		}
@@ -154,9 +171,6 @@ public class Preprocess {
 	 * @throws IOException
 	 */
 	private static void convertFeatureFileToMILDocument(String input, String output, Mappings m) throws IOException {
-		
-		
-
 		//open input and output streams
 		DataOutputStream os = new DataOutputStream
 			(new BufferedOutputStream(new FileOutputStream(output)));
@@ -194,7 +208,7 @@ public class Preprocess {
 	    		List<List<Integer>> oldFeatures = p.second;
 	    		Integer relKey = getIntRelKey(rel,m);
 	    		if(!oldRelations.contains(relKey)){
-	    			oldRelations.add(relKey);
+	    		  oldRelations.add(relKey);
 	    		}
 	    		oldFeatures.add(featureIntegers);
 	    	}
@@ -234,11 +248,13 @@ public class Preprocess {
 	    	doc.arg1 = arg1;
 	    	doc.arg2 = arg2;
 	    	
+	//    	System.out.println(arg1+"\t"+arg2);
+	    	
 	    	// set relations
 	    	{
 		    	int[] irels = new int[intRels.size()];
 		    	for (int i=0; i < intRels.size(); i++)
-		    		irels[i] = intRels.get(0);
+		    		irels[i] = intRels.get(i);
 		    	Arrays.sort(irels);
 		    	// ignore NA and non-mapped relations
 		    	int countUnique = 0;
@@ -250,6 +266,19 @@ public class Preprocess {
 		    	for (int i=0; i < irels.length; i++)
 		    		if (irels[i] > 0 && (i == 0 || irels[i-1] != irels[i]))
 		    			doc.Y[pos++] = irels[i];
+		    	
+//		    	System.out.println("Int rels");
+//		    	for(int ir: irels){
+//		    		System.out.print(ir + " ");
+//		    	}
+//		    	System.out.println("Original rels ");
+//		    	for(Integer ir : intRels){
+//		    		System.out.print(ir + " ");
+//		    	}
+//		    	System.out.println();
+//		    	if((irels[0] !=0) && (intFeatures.size() ==1)){
+//		    		System.out.println("Singleton =\t" + arg1 + "\t" + arg2);
+//		    	}
 	    	}
 	    	
 	    	// set mentions
@@ -277,6 +306,12 @@ public class Preprocess {
 		    	for (int i=0; i < fts.length; i++)
 		    		if (fts[i] != -1 && (i == 0 || fts[i-1] != fts[i]))
 		    			sv.ids[pos++] = fts[i];
+		    	
+//		    	System.out.println("Int features");
+//		    	for(int ft: fts){
+//		    		System.out.print(ft + " ");
+//		    	}
+//		    	System.out.println();
 	    	}
 	    	doc.write(os);
 	    	count ++;
@@ -285,13 +320,15 @@ public class Preprocess {
 	    		System.out.println(count + " entity pairs processed");
 	    		printMemoryStatistics();
 	    	}
+	    	
+
 	    }
 		os.close();
 	}
 
 	private static Integer getIntRelKey(String rel, Mappings m) {
 		
-		return m.getFeatureID(rel, false);
+		return m.getRelationID(rel, false);
 		
 	}
 

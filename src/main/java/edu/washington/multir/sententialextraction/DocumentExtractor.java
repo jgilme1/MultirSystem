@@ -88,15 +88,18 @@ public class DocumentExtractor {
 		
 		List<CoreMap> sentences = doc.get(CoreAnnotations.SentencesAnnotation.class);
 		for(CoreMap s : sentences){
-			
+			String senText = s.get(CoreAnnotations.TextAnnotation.class);
 			List<Argument> args = ai.identifyArguments(doc, s);
 			List<Pair<Argument,Argument>> sigs = sig.generateSententialInstances(args, s);
 			for(Pair<Argument,Argument> p : sigs){
 				Argument arg1 = p.first;
 				Argument arg2 = p.second;
+				System.out.println("Argument 1 = " + arg1.getArgName());
+				System.out.println("Argument 2 = " + arg2.getArgName());
+				System.out.println("Sentence = " + senText);
 				List<String> features = 
 						fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), s, doc);
-				Pair<String,Double> relationConfidencePair = getPrediction(features,arg1,arg2);
+				Pair<String,Double> relationConfidencePair = getPrediction(features,arg1,arg2,senText);
 				if(relationConfidencePair !=null){
 					String extractionString = arg1.getArgName() + " " + relationConfidencePair.first + " " + arg2.getArgName();
 					extractions.add(new Pair<String,Double>(extractionString,relationConfidencePair.second));
@@ -123,7 +126,7 @@ public class DocumentExtractor {
 	 * @return
 	 */
 	private Pair<String,Double> getPrediction(List<String> features, Argument arg1,
-			Argument arg2) {
+			Argument arg2, String senText) {
 		
 		MILDocument doc = new MILDocument();
 		
@@ -138,7 +141,9 @@ public class DocumentExtractor {
 		SortedSet<Integer> ftrset = new TreeSet<Integer>();
 		int totalfeatures = 0;
 		int featuresInMap = 0;
+		System.out.println("Features:");
 		for (String f : features) {
+			System.out.println(f);
 			totalfeatures ++;
 			int ftrid = mapping.getFeatureID(f, false);
 			if (ftrid >= 0) {
@@ -146,21 +151,40 @@ public class DocumentExtractor {
 				ftrset.add(ftrid);
 			}
 		}
-		System.out.println("Total Features = " + totalfeatures);
-		System.out.println("Num features in training = " + featuresInMap);
+		//if( arg1.getArgName().equals("China") && (arg2.getArgName().equals("Beijing"))){
+//			System.out.println("Total Features = " + totalfeatures);
+//			for(String f : features){
+//				System.out.println(f);
+//			}
+//			System.out.println("Num features in training = " + featuresInMap);
+		//}
 		
 		sv.num = ftrset.size();
 		sv.ids = new int[sv.num];
 		
+		System.out.println("Features...");
 		int k = 0;
 		for (int f : ftrset) {
+			System.out.print(f + " ");
 			sv.ids[k++] = f;
 		}
+		System.out.println();
 		
 		String relation = "";
 		Double conf = 0.0;
 		Parse parse = FullInference.infer(doc, scorer, params);
+		
+		
+		double [] scores = parse.allScores[0];
+		int i =0;
+		for(double s: scores){
+			System.out.println(i + "\t" + s);
+			i++;
+		}
 
+		//System.out.println(senText);
+		//System.out.println(arg1.getArgName() + "\t" + arg2.getArgName());
+		System.out.println("Score = " +parse.score);
 		int[] Yp = parse.Y;
 		if (parse.Z[0] > 0) {
 			relation = relID2rel.get(parse.Z[0]);
@@ -177,12 +201,18 @@ public class DocumentExtractor {
 	}
 	
 	
+	/**
+	 * args[0] is path to Multir Files directory
+	 * @param args
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	public static void main(String[] args) throws IOException, InterruptedException{
 		
-		DocumentExtractor de = new DocumentExtractor("/scratch2/code/multir-reimplementation/MultirSystem/multirAlgorithmFiles/",
+		DocumentExtractor de = new DocumentExtractor(args[0],
 				new DefaultFeatureGenerator(), NERArgumentIdentification.getInstance(), NERSententialInstanceGeneration.getInstance());
 		
-		de.extractFromDocument("/homes/gws/jgilme1/AFP_ENG_19941021.0120.LDC2007T07.sgm");
+		de.extractFromDocument("/homes/gws/jgilme1/NYT_ENG_20070527.0189.LDC2009T13.sgm");
 		
 	}
 
