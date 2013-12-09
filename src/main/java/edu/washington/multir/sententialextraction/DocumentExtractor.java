@@ -174,13 +174,6 @@ public class DocumentExtractor {
 		Double conf = 0.0;
 		Parse parse = FullInference.infer(doc, scorer, params);
 		
-		
-		double [] scores = parse.allScores[0];
-		int i =0;
-		for(double s: scores){
-			System.out.println(i + "\t" + s);
-			i++;
-		}
 
 		//System.out.println(senText);
 		//System.out.println(arg1.getArgName() + "\t" + arg2.getArgName());
@@ -212,7 +205,7 @@ public class DocumentExtractor {
 		DocumentExtractor de = new DocumentExtractor(args[0],
 				new DefaultFeatureGenerator(), NERArgumentIdentification.getInstance(), NERSententialInstanceGeneration.getInstance());
 		
-		de.extractFromDocument("/homes/gws/jgilme1/NYT_ENG_20070527.0189.LDC2009T13.sgm");
+		de.extractFromDocument("/homes/gws/jgilme1/NYT_ENG_20000503.0255.LDC2007T07.sgm");
 		
 	}
 
