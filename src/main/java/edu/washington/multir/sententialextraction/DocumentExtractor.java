@@ -94,6 +94,9 @@ public class DocumentExtractor {
 			for(Pair<Argument,Argument> p : sigs){
 				Argument arg1 = p.first;
 				Argument arg2 = p.second;
+				System.out.println("Argument 1 = " + arg1.getArgName());
+				System.out.println("Argument 2 = " + arg2.getArgName());
+				System.out.println("Sentence = " + senText);
 				List<String> features = 
 						fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), s, doc);
 				Pair<String,Double> relationConfidencePair = getPrediction(features,arg1,arg2,senText);
@@ -138,7 +141,9 @@ public class DocumentExtractor {
 		SortedSet<Integer> ftrset = new TreeSet<Integer>();
 		int totalfeatures = 0;
 		int featuresInMap = 0;
+		System.out.println("Features:");
 		for (String f : features) {
+			System.out.println(f);
 			totalfeatures ++;
 			int ftrid = mapping.getFeatureID(f, false);
 			if (ftrid >= 0) {
@@ -157,18 +162,28 @@ public class DocumentExtractor {
 		sv.num = ftrset.size();
 		sv.ids = new int[sv.num];
 		
+		System.out.println("Features...");
 		int k = 0;
 		for (int f : ftrset) {
-			System.out.println(f);
+			System.out.print(f + " ");
 			sv.ids[k++] = f;
 		}
+		System.out.println();
 		
 		String relation = "";
 		Double conf = 0.0;
 		Parse parse = FullInference.infer(doc, scorer, params);
+		
+		
+		double [] scores = parse.allScores[0];
+		int i =0;
+		for(double s: scores){
+			System.out.println(i + "\t" + s);
+			i++;
+		}
 
-		System.out.println(senText);
-		System.out.println(arg1.getArgName() + "\t" + arg2.getArgName());
+		//System.out.println(senText);
+		//System.out.println(arg1.getArgName() + "\t" + arg2.getArgName());
 		System.out.println("Score = " +parse.score);
 		int[] Yp = parse.Y;
 		if (parse.Z[0] > 0) {
@@ -197,7 +212,7 @@ public class DocumentExtractor {
 		DocumentExtractor de = new DocumentExtractor(args[0],
 				new DefaultFeatureGenerator(), NERArgumentIdentification.getInstance(), NERSententialInstanceGeneration.getInstance());
 		
-		de.extractFromDocument("/homes/gws/jgilme1/XIN_ENG_20021028.0184.LDC2007T07.sgm");
+		de.extractFromDocument("/homes/gws/jgilme1/NYT_ENG_20070527.0189.LDC2009T13.sgm");
 		
 	}
 

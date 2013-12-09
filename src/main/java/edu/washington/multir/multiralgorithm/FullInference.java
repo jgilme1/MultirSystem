@@ -30,11 +30,6 @@ public class FullInference {
 			
 			if (p.score > scores[parse.Z[m]])
 				scores[parse.Z[m]] = p.score;
-			
-			//print all scores..
-			for(double s : p.scores){
-				System.out.println(s);
-			}
 		}
 
 		// parse.y is an array the size of the number of relations that
