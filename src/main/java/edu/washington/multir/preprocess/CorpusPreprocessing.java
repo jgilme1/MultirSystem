@@ -296,17 +296,24 @@ public class CorpusPreprocessing {
 	
 	
 	public static Annotation getTestDocument(String docPath) throws IOException, InterruptedException{
-		props.put("annotators", "pos,lemma,ner");
-		props.put("sutime.binders","0");
-		pipeline = new StanfordCoreNLP(props,false);
-
 		String documentString = FileUtils.readFileToString(new File(docPath));
+		String[] docSplit = docPath.split("/");
+		String docName = docSplit[docSplit.length-1].split("\\.")[0];
+		return getTestDocumentFromRawString(documentString,docName);
+	}
+	
+	public static Annotation getTestDocumentFromRawString(String documentString,String docName) throws IOException, InterruptedException{
+		
+		if(pipeline == null){
+			props.put("annotators", "pos,lemma,ner");
+			props.put("sutime.binders","0");
+			pipeline = new StanfordCoreNLP(props,false);
+		}
+
 
 		List<String> paragraphs = cleanDocument(documentString);
 		List<CoreMap> sentences = new ArrayList<CoreMap>();
 		
-		String[] docSplit = docPath.split("/");
-		String docName = docSplit[docSplit.length-1].split("\\.")[0];
 		
 		File cjInputFile = File.createTempFile(docName, "cjinput");
 		File cjOutputFile = File.createTempFile(docName, "cjoutput");
@@ -472,5 +479,89 @@ public class CorpusPreprocessing {
 
 		
 		return doc;
+	}
+	
+	
+	public static Annotation preParseProcess(String documentString){
+		if(pipeline == null){
+			props.put("annotators", "pos,lemma,ner");
+			props.put("sutime.binders","0");
+			pipeline = new StanfordCoreNLP(props,false);
+		}
+
+
+		List<String> paragraphs = cleanDocument(documentString);
+		List<CoreMap> sentences = new ArrayList<CoreMap>();
+				
+		for(String par: paragraphs){
+			par = cleanParagraph(par);
+			
+			//tokenize
+			PTBTokenizer<CoreLabel> tok = new PTBTokenizer<CoreLabel>(
+					new StringReader(par), ltf, options);
+			List<CoreLabel> l = tok.tokenize();
+			List<List<CoreLabel>> snts = sen.process(l);
+			
+			//process each sentence 
+			int offset =0;
+			for(List<CoreLabel> snt: snts){
+				//get snt original text
+				String sentenceText = getSentenceTextAnnotation(snt,par);
+				Annotation sentence = new Annotation(sentenceText);
+				
+				//set tokens on Annotation sentence
+				sentence.set(CoreAnnotations.TokensAnnotation.class, snt);
+				sentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class,offset);
+				sentence.set(CoreAnnotations.CharacterOffsetEndAnnotation.class,offset+sentenceText.length());
+
+				for(CoreLabel token: snt){
+					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, offset + token.beginPosition());
+					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, offset + token.endPosition());
+				}
+				sentences.add(sentence);
+				offset = offset + sentenceText.length();
+			}
+		}
+		Annotation doc = new Annotation(sentences);
+		//get pos and ner information from stanford processing
+		pipeline.annotate(doc);	
+		return doc;
+	}
+
+
+	public static void postParseProcessSentence(CoreMap sentence, String cjParse) {
+
+			//initialize custom Dependency Parse Structure
+			List<Triple<Integer,String,Integer>> dependencyInformation= new ArrayList<>();
+			
+			//put parse information in a tree and get dependency parses
+			Tree parse = Tree.valueOf(cjParse.replaceAll("\\|", " "));
+			GrammaticalStructure gs = gsf.newGrammaticalStructure(parse);
+			Collection<TypedDependency> tdl = null;
+			try {
+				tdl = gs.allTypedDependencies(); 
+			} catch (NullPointerException e) {
+				tdl = new ArrayList<TypedDependency>();
+			}
+			
+			//convert dependency information into custom annotation
+			List<TypedDependency> l = new ArrayList<TypedDependency>();
+			l.addAll(tdl);
+			for (int i=0; i < tdl.size(); i++) {
+				TypedDependency td = l.get(i);
+				String name = td.reln().getShortName();
+				if (td.reln().getSpecific() != null)
+					name += "-" + td.reln().getSpecific();
+				Integer governor = td.gov().index();
+				String type = name;
+				Integer child = td.dep().index();
+				Triple<Integer,String,Integer> t = new Triple<>(governor,type,child);
+				dependencyInformation.add(t);
+
+			}			
+			//set annotation on sentence
+			sentence.set(DefaultCorpusInformationSpecification.SentDependencyInformation.DependencyAnnotation.class,
+					dependencyInformation);
+			
 	}
 }

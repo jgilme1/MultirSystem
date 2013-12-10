@@ -114,6 +114,14 @@ public class DocumentExtractor {
 			System.out.println(extrString + "\t" + confidence);
 		}
 	}
+	
+	public Pair<String,Double> extractFromSententialInstance(Argument arg1, Argument arg2, CoreMap sentence, Annotation doc){
+		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
+		List<String> features = 
+				fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), sentence, doc);
+		Pair<String,Double> relationConfidencePair = getPrediction(features,arg1,arg2,senText);
+		return relationConfidencePair;
+	}
 
 	/**
 	 * Conver features and args to MILDoc
