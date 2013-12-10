@@ -9,6 +9,8 @@ public class FullInference {
 		parse.doc = doc;
 		parse.Z = new int[doc.numMentions];
 		
+		parse.allScores = new double[doc.numMentions][params.model.numRelations];
+		
 		parseScorer.setParameters(params);
 		
 		Viterbi viterbi = new Viterbi(params.model, parseScorer);
@@ -30,6 +32,7 @@ public class FullInference {
 			
 			if (p.score > scores[parse.Z[m]])
 				scores[parse.Z[m]] = p.score;
+			parse.allScores[m] = p.scores;
 		}
 
 		// parse.y is an array the size of the number of relations that

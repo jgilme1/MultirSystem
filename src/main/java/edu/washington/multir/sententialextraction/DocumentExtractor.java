@@ -101,7 +101,7 @@ public class DocumentExtractor {
 						fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), s, doc);
 				Pair<String,Double> relationConfidencePair = getPrediction(features,arg1,arg2,senText);
 				if(relationConfidencePair !=null){
-					String extractionString = arg1.getArgName() + " " + relationConfidencePair.first + " " + arg2.getArgName();
+					String extractionString = arg1.getArgName() + " " + relationConfidencePair.first + " " + arg2.getArgName() + "\n" + senText;
 					extractions.add(new Pair<String,Double>(extractionString,relationConfidencePair.second));
 				}
 			}
@@ -181,11 +181,11 @@ public class DocumentExtractor {
 		int[] Yp = parse.Y;
 		if (parse.Z[0] > 0) {
 			relation = relID2rel.get(parse.Z[0]);
-//			Arrays.sort(parse.allScores[0]);
-//			double secondHighestScore = parse.allScores[0][parse.allScores[0].length-2];
-//			double combinedScore = parse.score + secondHighestScore;
-//			double confidence = (combinedScore <= 0.0 || parse.score <= 0.0) ? .1 : (parse.score/combinedScore);
-//			conf = confidence;
+			Arrays.sort(parse.allScores[0]);
+			double secondHighestScore = parse.allScores[0][parse.allScores[0].length-2];
+			double combinedScore = parse.score + secondHighestScore;
+			double confidence = (combinedScore <= 0.0 || parse.score <= 0.0) ? .1 : (parse.score/combinedScore);
+			conf = confidence;
 		} else {
 			return null;
 		}
