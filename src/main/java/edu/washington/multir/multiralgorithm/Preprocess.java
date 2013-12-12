@@ -2,11 +2,13 @@ package edu.washington.multir.multiralgorithm;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +17,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.io.LineIterator;
 
 import edu.stanford.nlp.util.Pair;
 
@@ -48,11 +52,19 @@ public class Preprocess {
     	printMemoryStatistics();
 
   
-		String trainFile = args[0];
-		String testFile = args[1];
-		String outDir = args[2];
+		String originalTrainFile = args[0];
+		//String testFile = args[1];
+		String outDir = args[1];
 		String mappingFile = outDir + File.separatorChar + "mapping";
 		String modelFile = outDir + File.separatorChar + "model";
+		
+		
+		//clean train file.
+		String trainFile = originalTrainFile+".clean";
+		System.out.println("Cleaning train file");
+		cleanTrainFile(originalTrainFile,trainFile);
+		
+		
 		
 		System.out.println("GETTING Mapping form training data");
 		Mappings mapping = getMappingFromTrainingData(trainFile,mappingFile);
@@ -74,19 +86,19 @@ public class Preprocess {
 			printMemoryStatistics();
 			keyToIntegerMap.clear();
 
-		
-			System.out.println("PREPROCESSING TEST FEATURES");
-			printMemoryStatistics();
-
-		
-		{
-			String output2 = outDir + File.separatorChar + "test";
-			convertFeatureFileToMILDocument(testFile, output2, mapping);
-		}
-		
-		System.out.println("FINISHED PREPROCESSING TEST FEATURES");
-		printMemoryStatistics();
-		keyToIntegerMap.clear();
+//		
+//			System.out.println("PREPROCESSING TEST FEATURES");
+//			printMemoryStatistics();
+//
+//		
+//		{
+//			String output2 = outDir + File.separatorChar + "test";
+//			convertFeatureFileToMILDocument(testFile, output2, mapping);
+//		}
+//		
+//		System.out.println("FINISHED PREPROCESSING TEST FEATURES");
+//		printMemoryStatistics();
+//		keyToIntegerMap.clear();
 		intToKeyMap.clear();
 
 	
@@ -111,6 +123,80 @@ public class Preprocess {
 	
 
 
+	private static void cleanTrainFile(String originalTrainFile,
+			String trainFile) throws IOException {
+		
+		BufferedReader br = new BufferedReader(new FileReader(new File(originalTrainFile)));
+		BufferedWriter bw = new BufferedWriter(new FileWriter(new File(trainFile)));
+		
+		LineIterator li = new LineIterator(br);
+		String line = li.nextLine();
+		String prevLine = line;
+		String newLine = null;
+		while(li.hasNext()){
+			line = li.nextLine();
+			if(linesRepresentSameInstance(prevLine,line)){
+				newLine = makeNewLine(prevLine,line);
+				prevLine = newLine;
+			}
+			else{
+				bw.write(prevLine+"\n");
+				prevLine = line;
+			}
+
+		}
+		bw.write(prevLine+"\n");
+
+
+		br.close();
+		bw.close();
+		
+		
+	}
+	
+	private static boolean linesRepresentSameInstance(String prevLine, String nextLine){
+		String[] prevLineValues = prevLine.split("\t");
+		String[] nextLineValues = nextLine.split("\t");
+		
+		if( (prevLineValues[0].equals(nextLineValues[0]))
+			&&  (prevLineValues[1].equals(nextLineValues[1]))
+			&& (prevLineValues[2].equals(nextLineValues[2])) ){
+			
+			if(nextLineValues.length == prevLineValues.length){
+				for(int i =4; i < nextLineValues.length; i++){
+					if(!prevLineValues[i].equals(nextLineValues[i])){
+						return false;
+					}
+				}
+				return true;
+			}
+			
+		}
+		return false;
+		
+	}
+	
+	private static String makeNewLine(String prevLine, String nextLine){
+		String[] prevLineValues = prevLine.split("\t");
+		String[] nextLineValues = nextLine.split("\t");
+		
+		String newRelValue = prevLineValues[3]+"|"+nextLineValues[3];
+		
+		StringBuilder sb = new StringBuilder();
+		for(int i =0; i < prevLineValues.length; i++){
+			if(i == 3){
+				sb.append(newRelValue);
+			}
+			else{
+				sb.append(prevLineValues[i]);
+			}
+			sb.append("\t");
+		}
+		return sb.toString().trim();
+	}
+
+
+
 	/**
 	 * Obtain mappings object from training features file onle
 	 * @param trainFile
@@ -130,6 +216,7 @@ public class Preprocess {
 		while((line = br.readLine()) != null){
 	    	String[] values = line.split("\t");
 	    	String rel = values[3];
+	    	String[] rels = rel.split("\\|");
 	    	List<String> features = new ArrayList<>();
 	    	//add all features
 	    	for(int i = 4; i < values.length; i++){
@@ -137,7 +224,9 @@ public class Preprocess {
 	    	}
 	    	
 	    	// update mappings file
-	    	m.getRelationID(rel, true);
+	    	for(String r : rels){
+	    	  m.getRelationID(r, true);
+	    	}
 	    	List<String> relevantFeatures = new ArrayList<String>();
 	    	for(String feature: features){
 	    		if(alreadySeenFeatures.contains(feature)){
@@ -189,7 +278,8 @@ public class Preprocess {
 	    	String[] values = line.split("\t");
 	    	String arg1Id = values[1];
 	    	String arg2Id = values[2];
-	    	String rel = values[3];
+	    	String relString = values[3];
+	    	String[] rels = relString.split("\\|");
 	    	// entity pair key separated by a delimiter
 	    	String key = arg1Id+"%"+arg2Id;
 	    	Integer intKey = getIntKey(key);
@@ -206,9 +296,11 @@ public class Preprocess {
 	    		Pair<List<Integer>, List<List<Integer>>> p = relationMentionMap.get(intKey);
 	    		List<Integer> oldRelations = p.first;
 	    		List<List<Integer>> oldFeatures = p.second;
-	    		Integer relKey = getIntRelKey(rel,m);
-	    		if(!oldRelations.contains(relKey)){
-	    		  oldRelations.add(relKey);
+	    		for(String rel : rels){
+		    		Integer relKey = getIntRelKey(rel,m);
+		    		if(!oldRelations.contains(relKey)){
+		    		  oldRelations.add(relKey);
+		    		}
 	    		}
 	    		oldFeatures.add(featureIntegers);
 	    	}
@@ -216,7 +308,9 @@ public class Preprocess {
 	    	//new map entry
 	    	else{
 	    		List<Integer> relations = new ArrayList<>();
-	    		relations.add(getIntRelKey(rel,m));
+	    		for(String rel : rels){
+		    		relations.add(getIntRelKey(rel,m));
+	    		}
 	    		List<List<Integer>> newFeatureList = new ArrayList<>();
 	    		newFeatureList.add(featureIntegers);
 	    		Pair<List<Integer>, List<List<Integer>>> p = new Pair<List<Integer>, List<List<Integer>>>(relations, newFeatureList);
