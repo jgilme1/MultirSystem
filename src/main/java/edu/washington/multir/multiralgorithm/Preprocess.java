@@ -49,20 +49,14 @@ public class Preprocess {
 
   
 		String trainFile = args[0];
-		String testFile = args[1];
-		String outDir = args[2];
+		String outDir = args[1];
 		String mappingFile = outDir + File.separatorChar + "mapping";
 		String modelFile = outDir + File.separatorChar + "model";
 		
 		System.out.println("GETTING Mapping form training data");
 		Mappings mapping = getMappingFromTrainingData(trainFile,mappingFile);
 		
-//		//print all relations in mapping
-//		Map<String,Integer> rel2RelID = mapping.getRel2RelID();
-//		System.out.println("Printing rel to relID map");
-//		for(String rel: rel2RelID.keySet()){
-//			System.out.println(rel + "\t" + rel2RelID.get(rel));
-//		}
+
 		
 			System.out.println("PREPROCESSING TRAIN FEATURES");
 		{
@@ -74,20 +68,7 @@ public class Preprocess {
 			printMemoryStatistics();
 			keyToIntegerMap.clear();
 
-		
-			System.out.println("PREPROCESSING TEST FEATURES");
-			printMemoryStatistics();
-
-		
-		{
-			String output2 = outDir + File.separatorChar + "test";
-			convertFeatureFileToMILDocument(testFile, output2, mapping);
-		}
-		
-		System.out.println("FINISHED PREPROCESSING TEST FEATURES");
-		printMemoryStatistics();
-		keyToIntegerMap.clear();
-		intToKeyMap.clear();
+			intToKeyMap.clear();
 
 	
 		System.out.println("Writing model and mapping file");
@@ -130,6 +111,7 @@ public class Preprocess {
 		while((line = br.readLine()) != null){
 	    	String[] values = line.split("\t");
 	    	String rel = values[3];
+	    	String []rels = rel.split("\\|");
 	    	List<String> features = new ArrayList<>();
 	    	//add all features
 	    	for(int i = 4; i < values.length; i++){
@@ -137,7 +119,9 @@ public class Preprocess {
 	    	}
 	    	
 	    	// update mappings file
-	    	m.getRelationID(rel, true);
+	    	for(String r: rels){
+	    	  m.getRelationID(r, true);
+	    	}
 	    	List<String> relevantFeatures = new ArrayList<String>();
 	    	for(String feature: features){
 	    		if(alreadySeenFeatures.contains(feature)){
@@ -189,7 +173,8 @@ public class Preprocess {
 	    	String[] values = line.split("\t");
 	    	String arg1Id = values[1];
 	    	String arg2Id = values[2];
-	    	String rel = values[3];
+	    	String relString = values[3];
+	    	String[] rels = relString.split("\\|");
 	    	// entity pair key separated by a delimiter
 	    	String key = arg1Id+"%"+arg2Id;
 	    	Integer intKey = getIntKey(key);
@@ -206,9 +191,11 @@ public class Preprocess {
 	    		Pair<List<Integer>, List<List<Integer>>> p = relationMentionMap.get(intKey);
 	    		List<Integer> oldRelations = p.first;
 	    		List<List<Integer>> oldFeatures = p.second;
-	    		Integer relKey = getIntRelKey(rel,m);
-	    		if(!oldRelations.contains(relKey)){
-	    		  oldRelations.add(relKey);
+	    		for(String rel: rels){
+	    			Integer relKey = getIntRelKey(rel,m);
+	    			if(!oldRelations.contains(relKey)){
+	    				oldRelations.add(relKey);
+	    			}
 	    		}
 	    		oldFeatures.add(featureIntegers);
 	    	}
@@ -216,7 +203,9 @@ public class Preprocess {
 	    	//new map entry
 	    	else{
 	    		List<Integer> relations = new ArrayList<>();
-	    		relations.add(getIntRelKey(rel,m));
+	    		for(String rel: rels){
+	    			relations.add(getIntRelKey(rel,m));
+	    		}
 	    		List<List<Integer>> newFeatureList = new ArrayList<>();
 	    		newFeatureList.add(featureIntegers);
 	    		Pair<List<Integer>, List<List<Integer>>> p = new Pair<List<Integer>, List<List<Integer>>>(relations, newFeatureList);
