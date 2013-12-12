@@ -13,6 +13,7 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
+import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.multiralgorithm.FullInference;
 import edu.washington.multir.multiralgorithm.MILDocument;
 import edu.washington.multir.multiralgorithm.Parse;
@@ -99,10 +100,10 @@ public class DocumentExtractor {
 				System.out.println("Sentence = " + senText);
 				List<String> features = 
 						fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), s, doc);
-				Pair<String,Double> relationConfidencePair = getPrediction(features,arg1,arg2,senText);
-				if(relationConfidencePair !=null){
-					String extractionString = arg1.getArgName() + " " + relationConfidencePair.first + " " + arg2.getArgName() + "\n" + senText;
-					extractions.add(new Pair<String,Double>(extractionString,relationConfidencePair.second));
+				Triple<String,Double,Double> relationConfidenceTriple = getPrediction(features,arg1,arg2,senText);
+				if(relationConfidenceTriple !=null){
+					String extractionString = arg1.getArgName() + " " + relationConfidenceTriple.first + " " + arg2.getArgName() + "\n" + senText;
+					extractions.add(new Pair<String,Double>(extractionString,relationConfidenceTriple.second));
 				}
 			}
 		}
@@ -115,12 +116,12 @@ public class DocumentExtractor {
 		}
 	}
 	
-	public Pair<String,Double> extractFromSententialInstance(Argument arg1, Argument arg2, CoreMap sentence, Annotation doc){
+	public Triple<String,Double,Double> extractFromSententialInstance(Argument arg1, Argument arg2, CoreMap sentence, Annotation doc){
 		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
 		List<String> features = 
 				fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), sentence, doc);
-		Pair<String,Double> relationConfidencePair = getPrediction(features,arg1,arg2,senText);
-		return relationConfidencePair;
+		Triple<String,Double,Double> relationConfidenceTriple = getPrediction(features,arg1,arg2,senText);
+		return relationConfidenceTriple;
 	}
 
 	/**
@@ -133,7 +134,7 @@ public class DocumentExtractor {
 	 * @param arg2
 	 * @return
 	 */
-	private Pair<String,Double> getPrediction(List<String> features, Argument arg1,
+	private Triple<String,Double,Double> getPrediction(List<String> features, Argument arg1,
 			Argument arg2, String senText) {
 		
 		MILDocument doc = new MILDocument();
@@ -190,15 +191,26 @@ public class DocumentExtractor {
 		if (parse.Z[0] > 0) {
 			relation = relID2rel.get(parse.Z[0]);
 			Arrays.sort(parse.allScores[0]);
-			double secondHighestScore = parse.allScores[0][parse.allScores[0].length-2];
-			double combinedScore = parse.score + secondHighestScore;
+//			double secondHighestScore = parse.allScores[0][parse.allScores[0].length-2];
+//			double combinedScore = parse.score + secondHighestScore;
+			double combinedScore = parse.score;
+			
+			for(int i =0; i < parse.allScores[0].length-1; i++){
+				double s = parse.allScores[0][i];
+				if( s > 0.0){
+					combinedScore +=s;
+				}
+			}
 			double confidence = (combinedScore <= 0.0 || parse.score <= 0.0) ? .1 : (parse.score/combinedScore);
+			if(combinedScore == parse.score && parse.score > 0.0){
+				confidence = .001;
+			}
 			conf = confidence;
 		} else {
 			return null;
 		}
 
-		return new Pair<String,Double>(relation,conf);
+		return new Triple<String,Double,Double>(relation,conf,parse.score);
 	}
 	
 	

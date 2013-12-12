@@ -8,6 +8,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,6 +21,7 @@ import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
+import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.argumentidentification.NERArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERSententialInstanceGeneration;
 import edu.washington.multir.data.Argument;
@@ -79,7 +82,7 @@ public class SententialEvaluation {
 //		annotations = loadAnnotations(annotationFilePath);
 //		
 //		
-//		writeCJParses(annotations,"sentential-by-relation.cjparses.input.txt");
+//		writeCJParses(annotations,"sentential.cjparses.input.txt");
 		
 	}
 	
@@ -180,7 +183,7 @@ public class SententialEvaluation {
 		List<CoreMap> sentences = doc.get(CoreAnnotations.SentencesAnnotation.class);
 		Argument arg1 = new Argument(a.r.arg1.getArgName(),a.r.arg1.getStartOffset(),a.r.arg1.getEndOffset());
 		Argument arg2 = new Argument(a.r.arg2.getArgName(),a.r.arg2.getStartOffset(),a.r.arg2.getEndOffset());
-		Pair<String,Double> result = de.extractFromSententialInstance(arg1, arg2, sentences.get(0), doc);
+		Triple<String,Double,Double> result = de.extractFromSententialInstance(arg1, arg2, sentences.get(0), doc);
 		
 		if(result == null){
 			return null;
@@ -192,6 +195,7 @@ public class SententialEvaluation {
 			e.sentence = a.sentence;
 			e.ID = a.ID;
 			e.conf = result.second;
+			e.score = result.third;
 			
 			Relation r = new Relation();
 			r.rel = result.first;
@@ -209,6 +213,30 @@ public class SententialEvaluation {
 	private static void score(List<Label> annotations,
 			List<Extraction> extractions) {
 		
+		//sort extractions and print in order
+		Collections.sort(extractions,new ExtractionScoreComparable());
+		
+		for(int i =1; i < extractions.size(); i++){
+			Pair<Double,Double> pr = getPR(new ArrayList<Extraction>(extractions.subList(0, i)),annotations,false);
+			System.out.println(pr.first + "\t" + pr.second + "\t" + fscore(pr.first,pr.second));
+		}
+		Pair<Double,Double> finalPr = getPR(extractions,annotations,true);
+		System.out.println(finalPr.first + "\t" + finalPr.second + "\t" + fscore(finalPr.first,finalPr.second));		
+	}
+
+
+	private static double fscore(double precision, double recall){
+		
+		double numerator = 2 * recall * precision;
+		double denom = recall + precision;
+		
+		return (denom == 0.0)? 0.0 : (numerator/denom);
+	}
+
+
+	private static Pair<Double, Double> getPR(List<Extraction> extractions,
+			List<Label> annotations, boolean print) {
+		
 		
 		int numberOfTotalCorrectLabels =0;
 		int numberOfTotalCorrectExtractions = 0;
@@ -221,6 +249,7 @@ public class SententialEvaluation {
 		}
 		
 		for(Extraction e: extractions){
+			Relation r = e.r;
 			//find Label
 			Label matchingLabel = null;
 			for(Label l : annotations){
@@ -235,18 +264,24 @@ public class SententialEvaluation {
 				//if its the right extraction
 				if(e.r.rel.equals(matchingLabel.r.rel)){
 					numberOfTotalCorrectExtractions++;
+					totalExtractions++;
+					if(print) System.out.print(r.arg1.getArgName()+ "\t" + r.arg2.getArgName() + "\t" + r.rel  +"\t" + e.score + "\t" + "CORRECT\n");
+				}
+			}
+			else{
+				if(e.r.rel.equals(matchingLabel.r.rel)){
+					totalExtractions++;
+					if(print) System.out.print(r.arg1.getArgName()+ "\t" + r.arg2.getArgName() + "\t" + r.rel  +"\t" + e.score +"\t" + "INCORRECT\n");
 				}
 			}
 			
-			totalExtractions++;
+//			totalExtractions++;
 		}
 		
 		
 		double recall = (numberOfTotalCorrectLabels == 0)? 0.0 : (((double)numberOfTotalCorrectExtractions) / ((double)numberOfTotalCorrectLabels));
-		double precision = (totalExtractions == 0) ? 0.0 : (((double)numberOfTotalCorrectExtractions) / ((double)totalExtractions));
-		
-		System.out.println("Recall = " + recall);
-		System.out.println("Precision = " + precision);
+		double precision = (totalExtractions == 0) ? 1.0 : (((double)numberOfTotalCorrectExtractions) / ((double)totalExtractions));
+		return new Pair<Double,Double>(precision,recall);
 	}
 
 
@@ -291,6 +326,7 @@ public class SententialEvaluation {
 		String sentence;
 		Integer ID;
 		double conf;
+		double score;
 	}
 
 	
@@ -332,7 +368,7 @@ public class SententialEvaluation {
 				//create Annotation object and store it
 				Label a = new Label();
 				a.ID = id;
-				a.b = (label.equals("y") || (label.equals("indirect")))? true : false;
+				a.b = (label.equals("y") || label.equals("indirect"))? true : false;
 				a.sentence = rawSentence;
 				Relation r = new Relation();
 				r.rel = relString;
@@ -415,6 +451,15 @@ public class SententialEvaluation {
 		if(a.sentence == null){
 			return false;
 		}
+		
+		//not labeled properly in annotations file
+		if(a.r.rel.equals("/location/administrative_division/country")){
+			return false;
+		}
+		if(a.r.rel.contains("/location/")){
+			return false;
+		}
+		
 		return true;
 	}
 
@@ -460,5 +505,35 @@ public class SententialEvaluation {
 			}
 		}
 		return null;
+	}
+	
+	private static class ExtractionScoreComparable implements Comparator<Extraction>{
+
+		@Override
+		public int compare(Extraction arg0, Extraction arg1) {
+			
+			if(arg0.score > arg1.score){
+				return -1;
+			}
+			else{
+				return 1;
+			}
+		}
+		
+	}
+	
+	private static class ExtractionConfidenceComparable implements Comparator<Extraction>{
+
+		@Override
+		public int compare(Extraction arg0, Extraction arg1) {
+			
+			if(arg0.conf > arg1.conf){
+				return -1;
+			}
+			else{
+				return 1;
+			}
+		}
+		
 	}
 }
