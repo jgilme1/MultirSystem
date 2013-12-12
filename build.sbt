@@ -4,6 +4,10 @@ version := "0.1"
 
 scalaVersion := "2.10.1"
 
+fork := true
+
+javaOptions in run += "-Xmx8G"
+
 libraryDependencies ++= Seq(
   "org.apache.commons" % "commons-io" % "1.3.2",
   "org.apache.commons" % "commons-lang3" % "3.1",
