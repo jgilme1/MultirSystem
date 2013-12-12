@@ -31,6 +31,10 @@ import edu.washington.multir.featuregeneration.FeatureGenerator;
  */
 public class FeatureGeneration {
 	
+	
+	private static FeatureGenerator fg;
+	private static CorpusInformationSpecification cis;
+	private static Corpus c;
 	/**
 	 * 
 	 * @param args
@@ -42,73 +46,45 @@ public class FeatureGeneration {
     	long start = System.currentTimeMillis();
 
 		//initialize variables
-		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
-		FeatureGenerator fg = new DefaultFeatureGenerator();
+		cis = new DefaultCorpusInformationSpecification();
+		fg = new DefaultFeatureGenerator();
 		String dbName = args[0];
 		String dsName = args[0]+"DS";
 		String featuresName = args[0]+"features";
-		Corpus c = new Corpus(dbName,cis,true);
+		c = new Corpus(dbName,cis,true);
 		BufferedReader in;
 		BufferedWriter bw;
 		in = new BufferedReader(new FileReader(new File(dsName)));
 		bw = new BufferedWriter(new FileWriter(new File(featuresName)));
 
-
-		int count =1;
 		String nextLine = in.readLine();
-		List<String> lines = new ArrayList<String>();
-		
+		List<SententialArgumentPair> saps = new ArrayList<>();
+		int count =0;
 		while(nextLine != null){
-			lines.add(nextLine);			
-			//every 1000 do a batch SQL query to speed up processing time
-			if(count % 1000 == 0){
-				
-				//issue Solr Query
-				StringBuilder sb = new StringBuilder();
-				Map<Integer,Pair<CoreMap,Annotation>> sentAnnotationsMap = getSentAnnotationsMap(lines,c);
-				
-				for(String line : lines){	
-					//try block in case some of the distantsupervision input is 
-					//malformed.
-					try{
-						String [] lineValues = line.split("\t");
-						int arg1StartOffset = Integer.parseInt(lineValues[1]);
-						int arg1EndOffset = Integer.parseInt(lineValues[2]);
-						int arg2StartOffset = Integer.parseInt(lineValues[5]);
-						int arg2EndOffset = Integer.parseInt(lineValues[6]);
-						int sentId = Integer.parseInt(lineValues[8]);
-						Pair<CoreMap,Annotation> annotations = sentAnnotationsMap.get(sentId);
-						CoreMap sentence = annotations.first;
-						Annotation doc = annotations.second;
-						List<String> features = fg.generateFeatures(arg1StartOffset,arg1EndOffset,arg2StartOffset,arg2EndOffset,sentence,doc);
-						int globalSentID = sentence.get(CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID.class);
-						sb.append(String.valueOf(globalSentID));
-						String arg1Id = lineValues[0];
-						String arg2Id = lineValues[4];
-						String rel = lineValues[9];
-						sb.append("\t");
-						sb.append(arg1Id);
-						sb.append("\t");
-						sb.append(arg2Id);
-						sb.append("\t");
-						sb.append(rel);
-						for(String feature: features){
-							sb.append("\t");
-							sb.append(feature);
-						}
-						sb.append("\n");
-					}
-					catch(NumberFormatException e){
-						e.printStackTrace();
-					}
+			SententialArgumentPair sap = SententialArgumentPair.parseSAP(nextLine);
+			boolean mergeSap = false;
+			if(saps.size()>0){
+				if(saps.get(saps.size()-1).matchesSAP(sap)){
+					mergeSap = true;
 				}
-				lines.clear();
-				System.out.println(count + " distant supervision annotations processed");
-				bw.write(sb.toString());
 			}
+			if(mergeSap){
+				saps.get(saps.size()-1).mergeSAP(sap);
+			}
+			else{
+				//check if sap size is large enough
+				if((saps.size() != 0) && (saps.size() % 1000 == 0)){
+					count += 1000;
+					//process saps
+					processSaps(saps,bw);
+					saps = new ArrayList<>();
+					if(count % 10000 == 0) System.out.println(count + "sentential argument pairs processed");
+				}
+				saps.add(sap);
+			}			
 			nextLine = in.readLine();
-			count ++;
 		}
+		processSaps(saps,bw);
 		bw.close();
 		in.close();
 		
@@ -116,18 +92,127 @@ public class FeatureGeneration {
     	System.out.println("Feature Generation took " + (end-start) + " millisseconds");	
 	}
 
+	private static void processSaps(List<SententialArgumentPair> saps,
+			BufferedWriter bw) throws SQLException, IOException {
+		
+		Map<Integer,Pair<CoreMap,Annotation>> sentAnnotationMap = getSentAnnotationsMap(saps);
+		
+		for(SententialArgumentPair sap : saps){
+			
+			Pair<CoreMap,Annotation> senAnnoPair = sentAnnotationMap.get(sap.sentID);
+			List<String> features = fg.generateFeatures(sap.arg1Offsets.first,sap.arg1Offsets.second
+					,sap.arg2Offsets.first,sap.arg2Offsets.second,senAnnoPair.first,senAnnoPair.second);
+			bw.write(makeFeatureString(sap,features)+"\n");
+		}
+		
+	}
+
+	private static String makeFeatureString(SententialArgumentPair sap,
+			List<String> features) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.valueOf(sap.getSentID()));
+		sb.append("\t");
+		sb.append(sap.getArg1Id());
+		sb.append("\t");
+		sb.append(sap.getArg2Id());
+		sb.append("\t");
+		for(String rel : sap.getRelations()){
+			sb.append(rel);
+			sb.append("|");
+		}
+		sb.setLength(sb.length()-1);
+		sb.append("\t");
+		for(String f: features){
+			sb.append(f);
+			sb.append("\t");
+		}
+		return sb.toString().trim();
+	}
+
 	private static Map<Integer, Pair<CoreMap,Annotation>> getSentAnnotationsMap(
-			List<String> lines, Corpus c) throws SQLException {
+			List<SententialArgumentPair> saps) throws SQLException {
 		
 		Set<Integer> sentIds = new HashSet<Integer>();
 		
-		for(String line: lines){
-			String[] values = line.split("\t");
-			Integer sentID = Integer.parseInt(values[8]);
-			sentIds.add(sentID);
+		for(SententialArgumentPair sap : saps){
+			sentIds.add(sap.sentID);
 		}
 		
 		return c.getAnnotationPairsForEachSentence(sentIds);
+	}
+	
+	private static class SententialArgumentPair{
+		
+		private Integer sentID;
+		private Pair<Integer,Integer> arg1Offsets;
+		private Pair<Integer,Integer> arg2Offsets;
+		private List<String> relations;
+		private String arg1ID;
+		private String arg2ID;
+		
+		private SententialArgumentPair(Integer sentID, Pair<Integer,Integer> arg1Offsets,
+										Pair<Integer,Integer> arg2Offsets, String relation,
+										String arg1ID, String arg2ID){
+			this.sentID = sentID;
+			this.arg1Offsets = arg1Offsets;
+			this.arg2Offsets = arg2Offsets;
+			relations = new ArrayList<String>();
+			relations.add(relation);
+			this.arg1ID = arg1ID;
+			this.arg2ID = arg2ID;
+		}
+		
+		
+		public boolean matchesSAP(SententialArgumentPair other){
+			if( (other.sentID.equals(this.sentID))
+				&& (other.arg1Offsets.equals(this.arg1Offsets))
+				&& (other.arg2Offsets.equals(this.arg2Offsets))
+				&& (other.arg1ID.equals(this.arg1ID))
+				&& (other.arg2ID.equals(this.arg2ID))){
+				return true;
+			}
+			return false;
+		}
+		
+		public void mergeSAP(SententialArgumentPair other){
+			if(this.matchesSAP(other)){
+				
+				for(String rel : other.relations){
+					if(!this.relations.contains(rel)){
+						this.relations.add(rel);
+					}
+				}
+			}
+			else{
+				throw new IllegalArgumentException("SententialArgumentPair other must match this SententialArgumentPair");
+			}
+			
+		}
+		
+		public static SententialArgumentPair parseSAP(String dsLine){
+			try{
+				String[] values = dsLine.split("\t");
+				Integer arg1Start = Integer.parseInt(values[1]);
+				Integer arg1End = Integer.parseInt(values[2]);
+				Pair<Integer,Integer> arg1Offsets = new Pair<>(arg1Start,arg1End);
+				Integer arg2Start = Integer.parseInt(values[5]);
+				Integer arg2End = Integer.parseInt(values[6]);
+				Pair<Integer,Integer> arg2Offsets = new Pair<>(arg2Start,arg2End);
+				Integer sentId = Integer.parseInt(values[8]);
+				
+				
+				return new SententialArgumentPair(sentId,arg1Offsets,arg2Offsets,values[9],values[0],values[4]);
+			}
+			catch(Exception e){
+				throw new IllegalArgumentException("Line cannot be parsed into a SententialArgumentPair");
+			}
+		}
+		
+		
+		public String getArg1Id(){return arg1ID;}
+		public String getArg2Id(){return arg2ID;}
+		public List<String> getRelations(){return relations;}
+		public Integer getSentID(){return sentID;}
 	}
 
 }
