@@ -1,5 +1,6 @@
 package edu.washington.multir.knowledgebase;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,6 +12,8 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
+
+import edu.washington.multir.util.BufferedIOUtils;
 
 /**
  * The KnowledgeBase consists of a flat KB representation
@@ -67,11 +70,11 @@ public class KnowledgeBase {
 		//create a map of the filtered KB and silmultaneously
 		//keep track of the relevant entities
 		long start = System.currentTimeMillis();
-		LineIterator li = FileUtils.lineIterator(new File(relationKBFilePath));
+		BufferedReader relationReader = BufferedIOUtils.getBufferedReader(new File(relationKBFilePath));
 		int index =0;
-		while(li.hasNext()){
-			String line = li.nextLine();
-			String[] lineValues = line.split("\t");
+		String relationLine;
+		while((relationLine = relationReader.readLine())!=null){
+			String[] lineValues = relationLine.split("\t");
 			String e1 = lineValues[0];
 			String e2 = lineValues[1];
 			String rel = lineValues[2];
@@ -94,19 +97,19 @@ public class KnowledgeBase {
 			}
 			index ++;
 		}
-		li.close();
+		relationReader.close();
 		long end = System.currentTimeMillis();
 		
 		
 		//load the name to ids entity map
 		File inputFile = new File(entityKBFilePath);
-		LineIterator entityli = FileUtils.lineIterator(inputFile);	
+		BufferedReader entityReader = BufferedIOUtils.getBufferedReader(inputFile);	
 		Map<String,List<String>> entityMap= new HashMap<String,List<String>>();
 		
 		int lineNumber =0;
-		while(entityli.hasNext()){
-			String line = entityli.nextLine();
-			String[] vals = line.split("\t");
+		String entityLine;
+		while((entityLine = entityReader.readLine())!=null){
+			String[] vals = entityLine.split("\t");
 			String entityId = vals[0];
 			String entityName = vals[1];
 			
@@ -129,7 +132,7 @@ public class KnowledgeBase {
 			}
 			lineNumber++;
 		}
-		entityli.close();
+		entityReader.close();
 		
 		
 		System.out.println("Time took = " + (end- start) + " milliseconds");
