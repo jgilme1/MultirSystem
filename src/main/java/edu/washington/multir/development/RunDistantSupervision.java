@@ -1,19 +1,8 @@
 package edu.washington.multir.development;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
-import edu.stanford.nlp.ling.CoreAnnotations;
-import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.util.CoreMap;
-import edu.stanford.nlp.util.Pair;
-import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.argumentidentification.ArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERRelationMatching;
@@ -23,9 +12,6 @@ import edu.washington.multir.argumentidentification.SententialInstanceGeneration
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
-import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID;
-import edu.washington.multir.data.Argument;
-import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.distantsupervision.DistantSupervision;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 
@@ -51,8 +37,6 @@ public class RunDistantSupervision {
 	
 	
 	public static void main(String[] args) throws SQLException, IOException{
-    	long start = System.currentTimeMillis();
-
 		//initialize variables
 		CorpusInformationSpecification cis =  new DefaultCorpusInformationSpecification();
 		Corpus c = new Corpus(args[0],cis,true);

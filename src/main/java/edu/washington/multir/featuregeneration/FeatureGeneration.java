@@ -1,10 +1,9 @@
-package edu.washington.multir.development;
+package edu.washington.multir.featuregeneration;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -18,44 +17,26 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
-import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
-import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
-import edu.washington.multir.featuregeneration.FeatureGenerator;
+import edu.washington.multir.util.BufferedIOUtils;
 
-/**
- * App for doing feature generation. Before this is run
- * DistantSupervision and AddNegativeExamples should have
- * been run.
- * @author jgilme1
- *
- */
 public class FeatureGeneration {
 	
+	private FeatureGenerator fg;
+	private Corpus c;
 	
-	private static FeatureGenerator fg;
-	private static CorpusInformationSpecification cis;
-	private static Corpus c;
-	/**
-	 * 
-	 * @param args
-	 * 			args[0] is name of DB
-	 * @throws SQLException
-	 * @throws IOException
-	 */
-	public static void main(String[] args) throws SQLException, IOException{
+	public FeatureGeneration(FeatureGenerator fg){
+		this.fg = fg;
+	}
+	
+	public void run(String dsFileName, String featureFileName, Corpus c, CorpusInformationSpecification cis) throws FileNotFoundException, IOException, SQLException{
     	long start = System.currentTimeMillis();
+    	this.c = c;
 
 		//initialize variables
-		cis = new DefaultCorpusInformationSpecification();
-		fg = new DefaultFeatureGenerator();
-		String dbName = args[0];
-		String dsName = args[0]+"DS";
-		String featuresName = args[0]+"features";
-		c = new Corpus(dbName,cis,true);
 		BufferedReader in;
 		BufferedWriter bw;
-		in = new BufferedReader(new FileReader(new File(dsName)));
-		bw = new BufferedWriter(new FileWriter(new File(featuresName)));
+		in = BufferedIOUtils.getBufferedReader(new File(dsFileName));
+		bw = BufferedIOUtils.getBufferedWriter(new File(featureFileName));
 
 		String nextLine = in.readLine();
 		List<SententialArgumentPair> saps = new ArrayList<>();
@@ -92,7 +73,7 @@ public class FeatureGeneration {
     	System.out.println("Feature Generation took " + (end-start) + " millisseconds");	
 	}
 
-	private static void processSaps(List<SententialArgumentPair> saps,
+	private void processSaps(List<SententialArgumentPair> saps,
 			BufferedWriter bw) throws SQLException, IOException {
 		
 		Map<Integer,Pair<CoreMap,Annotation>> sentAnnotationMap = getSentAnnotationsMap(saps);
@@ -107,7 +88,7 @@ public class FeatureGeneration {
 		
 	}
 
-	private static String makeFeatureString(SententialArgumentPair sap,
+	private  String makeFeatureString(SententialArgumentPair sap,
 			List<String> features) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.valueOf(sap.getSentID()));
@@ -129,7 +110,7 @@ public class FeatureGeneration {
 		return sb.toString().trim();
 	}
 
-	private static Map<Integer, Pair<CoreMap,Annotation>> getSentAnnotationsMap(
+	private  Map<Integer, Pair<CoreMap,Annotation>> getSentAnnotationsMap(
 			List<SententialArgumentPair> saps) throws SQLException {
 		
 		Set<Integer> sentIds = new HashSet<Integer>();
