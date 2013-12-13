@@ -24,6 +24,7 @@ import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDI
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
+import edu.washington.multir.util.BufferedIOUtils;
 
 public class DistantSupervision {
 
@@ -47,7 +48,8 @@ public class DistantSupervision {
 	
 	public void run(String outputFileName,KnowledgeBase kb, Corpus c) throws SQLException, IOException{
     	long start = System.currentTimeMillis();
-		PrintWriter dsWriter = new PrintWriter(new FileWriter(new File(outputFileName)));
+		//PrintWriter dsWriter = new PrintWriter(new FileWriter(new File(outputFileName)));
+    	PrintWriter dsWriter = new PrintWriter(BufferedIOUtils.getBufferedWriter(new File(outputFileName)));
 		Iterator<Annotation> di = c.getDocumentIterator();
 		int count =0;
 		while(di.hasNext()){
