@@ -56,7 +56,7 @@ public class RunDistantSupervision {
 		//initialize variables
 		CorpusInformationSpecification cis =  new DefaultCorpusInformationSpecification();
 		Corpus c = new Corpus(args[0],cis,true);
-		String dsFileName = args[0]+"DS";
+		String dsFileName = args[0]+"DS.gz";
 		
 		
 		ArgumentIdentification ai = NERArgumentIdentification.getInstance();
