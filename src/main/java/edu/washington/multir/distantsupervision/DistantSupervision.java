@@ -1,5 +1,7 @@
-package edu.washington.multir.development;
+package edu.washington.multir.distantsupervision;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.SQLException;
@@ -15,72 +17,37 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.argumentidentification.ArgumentIdentification;
-import edu.washington.multir.argumentidentification.NERArgumentIdentification;
-import edu.washington.multir.argumentidentification.NERRelationMatching;
-import edu.washington.multir.argumentidentification.NERSententialInstanceGeneration;
 import edu.washington.multir.argumentidentification.RelationMatching;
 import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
 import edu.washington.multir.corpus.Corpus;
-import edu.washington.multir.corpus.CorpusInformationSpecification;
-import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
 import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID;
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 
-/**
- * An app for running distant supervision
- * @author jgilme1
- *
- */
 public class DistantSupervision {
-	
-	/**
-	 * 
-	 * @param args
-	 * 		args[0] should be name of corpus database
-	 * 		args[1] should be relationKBFilePath
-	 * 	    args[2] should be entityKBFielPath
-	 * 	    args[3] should be targetRelationsFilePath
-	 *      args[4] should be true / false for negative examples
-	 * @throws SQLException
-	 * @throws IOException
-	 */
-	
-	//negative example flag
-	private static boolean neFlag;
-	private static List<Triple<KBArgument,KBArgument,String>> negativeExampleCandidates;
+
+	private ArgumentIdentification ai;
+	private SententialInstanceGeneration sig;
+	private RelationMatching rm;
+	private boolean negativeExampleFlag;
+	private List<Triple<KBArgument,KBArgument,String>> negativeExampleCandidates;
 	private static final int NECONSTANT = 10;
+
 	
 	
-	public static void main(String[] args) throws SQLException, IOException{
+	public DistantSupervision(ArgumentIdentification ai, SententialInstanceGeneration sig, RelationMatching rm, boolean b){
+		this.ai = ai;
+		this.sig = sig;
+		this.rm =rm;
+		negativeExampleFlag = b;
+		negativeExampleCandidates = new ArrayList<>();
+	}
+	
+	
+	public void run(String outputFileName,KnowledgeBase kb, Corpus c) throws SQLException, IOException{
     	long start = System.currentTimeMillis();
-
-		//initialize variables
-		CorpusInformationSpecification cis =  new DefaultCorpusInformationSpecification();
-		Corpus c = new Corpus(args[0],cis,true);
-		String dsFileName = args[0]+"DS";
-		ArgumentIdentification ai = NERArgumentIdentification.getInstance();
-		SententialInstanceGeneration sig = NERSententialInstanceGeneration.getInstance();
-		RelationMatching rm = new NERRelationMatching();
-		
-
-		
-		//parse negative example flag
-		if(args[4].equals("true")){
-			neFlag = true;
-			negativeExampleCandidates = new ArrayList<>();
-		}
-		else if(args[4].equals("false")){
-			neFlag = false;
-		}
-		else{
-			throw new IllegalArgumentException("The 5 argument should be true or false");
-		}
-		
-		KnowledgeBase kb = new KnowledgeBase(args[1],args[2],args[3]);
-
-		PrintWriter dsWriter = new PrintWriter(dsFileName);
+		PrintWriter dsWriter = new PrintWriter(new FileWriter(new File(outputFileName)));
 		Iterator<Annotation> di = c.getDocumentIterator();
 		int count =0;
 		while(di.hasNext()){
@@ -115,14 +82,15 @@ public class DistantSupervision {
     	System.out.println("Distant Supervision took " + (end-start) + " millisseconds");
 	}
 	
-	private static List<Triple<KBArgument, KBArgument, String>> findNegativeExampleAnnotations(
+	
+	private  List<Triple<KBArgument, KBArgument, String>> findNegativeExampleAnnotations(
 			List<Pair<Argument, Argument>> sententialInstances,
 			List<Triple<KBArgument, KBArgument, String>> distantSupervisionAnnotations,
 			Map<String,List<String>> entityMap) {
 		
 		List<Triple<KBArgument,KBArgument,String>> negativeExampleAnnotations = new ArrayList<>();
 		
-		if(neFlag){			
+		if(negativeExampleFlag){			
 			for(Pair<Argument,Argument> p : sententialInstances){
 				//check that at least one argument is not in distantSupervisionAnnotations
 				Argument arg1 = p.first;
@@ -172,14 +140,14 @@ public class DistantSupervision {
 		}
 		return negativeExampleAnnotations;
 	}
-
+	
 	/**
 	 * Write out distant supervision annotation information
 	 * @param distantSupervisionAnnotations
 	 * @param dsWriter
 	 * @param sentGlobalID
 	 */
-	private static void writeDistantSupervisionAnnotations(
+	private void writeDistantSupervisionAnnotations(
 			List<Triple<KBArgument, KBArgument, String>> distantSupervisionAnnotations, PrintWriter dsWriter,
 			int sentGlobalID) {
 		for(Triple<KBArgument,KBArgument,String> dsAnno : distantSupervisionAnnotations){
@@ -208,4 +176,13 @@ public class DistantSupervision {
 			dsWriter.write("\n");
 		}
 	}
+	
+	
+	public static class DistantSupervisionAnnotation{
+		KBArgument arg1;
+		KBArgument arg2;
+		String rel;
+		Integer sentID;
+	}
+	
 }
