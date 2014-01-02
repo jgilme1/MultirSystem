@@ -31,8 +31,8 @@ import edu.washington.multir.sententialextraction.DocumentExtractor;
 
 public class SententialEvaluation {
 	
-	private static Pattern argument1Pattern = Pattern.compile("\\[([^\\[\\]]+)\\]1");
-	private static Pattern argument2Pattern = Pattern.compile("\\[([^\\[\\]]+)\\]2");
+	public static Pattern argument1Pattern = Pattern.compile("\\[([^\\[\\]]+)\\]1");
+	public static Pattern argument2Pattern = Pattern.compile("\\[([^\\[\\]]+)\\]2");
 	
 	
 	private static Pattern punctPattern = Pattern.compile("\\S(\\s)[\\.!,?:;]");
@@ -203,6 +203,8 @@ public class SententialEvaluation {
 			r.arg2 = arg2;
 			
 			e.r = r;
+			
+			if(!a.r.rel.equals(r.rel)) System.out.println(e.ID +"\t" + r.rel + "\t" + r.arg1.getArgName() + "\t" + r.arg2.getArgName());
 			return e;
 		}
 	}
@@ -392,7 +394,7 @@ public class SententialEvaluation {
 	}
 
 
-	private static String convertTokenizedSentence(String tokenizedSentence) {
+	public static String convertTokenizedSentence(String tokenizedSentence) {
 	//	System.out.println("CONVERTING TOKENIZED STRING");
 		try{
 			String rawSentence = tokenizedSentence;
@@ -456,15 +458,15 @@ public class SententialEvaluation {
 		if(a.r.rel.equals("/location/administrative_division/country")){
 			return false;
 		}
-		if(a.r.rel.contains("/location/")){
-			return false;
-		}
+//		if(a.r.rel.contains("/location/")){
+//			return false;
+//		}
 		
 		return true;
 	}
 
 
-	private static Integer getArgumentOccurrence(String annoSentence, Pattern argPattern) {
+	public static Integer getArgumentOccurrence(String annoSentence, Pattern argPattern) {
 //		System.out.println(annoSentence);
 		Matcher m = argPattern.matcher(annoSentence);
 		if(m.find()){
@@ -494,7 +496,7 @@ public class SententialEvaluation {
 			
 	}
 	
-	private static Pair<Integer,Integer> getOffsetsOfArgument(String argString, Integer occurenceNum, String rawSentence){
+	public static Pair<Integer,Integer> getOffsetsOfArgument(String argString, Integer occurenceNum, String rawSentence){
 		Pattern p = Pattern.compile(argString);
 		Matcher m = p.matcher(rawSentence);
 		int i =0;
