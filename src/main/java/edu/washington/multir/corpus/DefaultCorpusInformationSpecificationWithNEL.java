@@ -29,11 +29,11 @@ public class DefaultCorpusInformationSpecificationWithNEL extends DefaultCorpusI
 		public void read(String s, CoreMap c) {	
 			String[] nelStringInformation = s.split("\\s+");
 			List<Triple<Pair<Integer,Integer>,String,Float>> nelInformation = new ArrayList<>();
-			
+
 			int numGroups = (nelStringInformation.length > 0) ? nelStringInformation.length/5 : 0;
 			int currIndex = 0;
 			for(int group = 1; group <= numGroups; group++){
-				currIndex += (group-1)*5;
+				currIndex = (group-1)*5;
 				Integer tokenStart = Integer.parseInt(nelStringInformation[currIndex]);
 				Integer tokenEnd = Integer.parseInt(nelStringInformation[currIndex+1]);
 				String entityID = nelStringInformation[currIndex+3];
@@ -44,6 +44,7 @@ public class DefaultCorpusInformationSpecificationWithNEL extends DefaultCorpusI
 			}
 			
 			c.set(NamedEntityLinkingAnnotation.class, nelInformation);
+
 		}
 		@Override
 		public String write(CoreMap c) {
