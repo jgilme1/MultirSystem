@@ -150,9 +150,9 @@ public class DocumentExtractor {
 		SortedSet<Integer> ftrset = new TreeSet<Integer>();
 		int totalfeatures = 0;
 		int featuresInMap = 0;
-		System.out.println("Features:");
+		//System.out.println("Features:");
 		for (String f : features) {
-			System.out.println(f);
+			//System.out.println(f);
 			totalfeatures ++;
 			int ftrid = mapping.getFeatureID(f, false);
 			if (ftrid >= 0) {
@@ -171,13 +171,13 @@ public class DocumentExtractor {
 		sv.num = ftrset.size();
 		sv.ids = new int[sv.num];
 		
-		System.out.println("Features...");
+		//System.out.println("Features...");
 		int k = 0;
 		for (int f : ftrset) {
-			System.out.print(f + " ");
+			//System.out.print(f + " ");
 			sv.ids[k++] = f;
 		}
-		System.out.println();
+		//System.out.println();
 		
 		String relation = "";
 		Double conf = 0.0;
@@ -186,7 +186,7 @@ public class DocumentExtractor {
 
 		//System.out.println(senText);
 		//System.out.println(arg1.getArgName() + "\t" + arg2.getArgName());
-		System.out.println("Score = " +parse.score);
+		//System.out.println("Score = " +parse.score);
 		int[] Yp = parse.Y;
 		if (parse.Z[0] > 0) {
 			relation = relID2rel.get(parse.Z[0]);
