@@ -37,9 +37,7 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 		List<Argument> nerArguments = NERArgumentIdentification.getInstance().identifyArguments(d, s);
 		List<CoreLabel> tokens = s.get(CoreAnnotations.TokensAnnotation.class);
 		
-		for(Argument nerArg: nerArguments){
-			arguments.add(new KBArgument(nerArg,"nil"));
-		}
+		arguments.addAll(nerArguments);
 		
 		
 		//then grab all the NERL arguments
@@ -51,17 +49,21 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 				//get character offsets
 				Integer startTokenOffset = trip.first.first;
 				Integer endTokenOffset = trip.first.second;
-				Integer startCharacterOffset = tokens.get(startTokenOffset).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-				Integer endCharacterOffset = tokens.get(endTokenOffset-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
-
-				
-				//get argument string
-				String sentText = s.get(CoreAnnotations.TextAnnotation.class);
-				String argumentString = sentText.substring(startCharacterOffset, endCharacterOffset);
-				
-				//add argument to list
-				KBArgument nelArgument = new KBArgument(new Argument(argumentString,startTokenOffset,endTokenOffset),id);
-				arguments.add(nelArgument);
+				if(startTokenOffset >= 0 && startTokenOffset < tokens.size() && endTokenOffset >= 0 && endTokenOffset < tokens.size()){
+					Integer startCharacterOffset = tokens.get(startTokenOffset).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+					Integer endCharacterOffset = tokens.get(endTokenOffset-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+	
+					
+					//get argument string
+					String sentText = s.get(CoreAnnotations.TextAnnotation.class);
+					if(sentText != null && startCharacterOffset !=null && endCharacterOffset!=null){
+						String argumentString = sentText.substring(startCharacterOffset, endCharacterOffset);
+						
+						//add argument to list
+						KBArgument nelArgument = new KBArgument(new Argument(argumentString,startTokenOffset,endTokenOffset),id);
+						arguments.add(nelArgument);
+					}
+				}
 			}
 		}
 		return arguments;
