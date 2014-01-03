@@ -60,7 +60,7 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 						String argumentString = sentText.substring(startCharacterOffset, endCharacterOffset);
 						
 						//add argument to list
-						KBArgument nelArgument = new KBArgument(new Argument(argumentString,startTokenOffset,endTokenOffset),id);
+						KBArgument nelArgument = new KBArgument(new Argument(argumentString,startCharacterOffset,endCharacterOffset),id);
 						arguments.add(nelArgument);
 					}
 				}
