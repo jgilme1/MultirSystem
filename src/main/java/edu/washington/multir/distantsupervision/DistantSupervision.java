@@ -1,7 +1,6 @@
 package edu.washington.multir.distantsupervision;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.SQLException;
@@ -32,17 +31,12 @@ public class DistantSupervision {
 	private SententialInstanceGeneration sig;
 	private RelationMatching rm;
 	private boolean negativeExampleFlag;
-	private List<Triple<KBArgument,KBArgument,String>> negativeExampleCandidates;
-	private static final int NECONSTANT = 10;
 
-	
-	
 	public DistantSupervision(ArgumentIdentification ai, SententialInstanceGeneration sig, RelationMatching rm, boolean b){
 		this.ai = ai;
 		this.sig = sig;
 		this.rm =rm;
 		negativeExampleFlag = b;
-		negativeExampleCandidates = new ArrayList<>();
 	}
 	
 	
@@ -61,7 +55,7 @@ public class DistantSupervision {
 				//argument identification
 				List<Argument> arguments =  ai.identifyArguments(d,sentence);
 				//sentential instance generation
-				List<Pair<Argument,Argument>> sententialInstances= sig.generateSententialInstances(arguments, sentence);
+				List<Pair<Argument,Argument>> sententialInstances = sig.generateSententialInstances(arguments, sentence);
 				//relation matching
 				List<Triple<KBArgument,KBArgument,String>> distantSupervisionAnnotations = 
 						rm.matchRelations(sententialInstances,kb);
@@ -131,18 +125,31 @@ public class DistantSupervision {
 						KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
 						KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
 						Triple<KBArgument,KBArgument,String> t = new Triple<>(kbarg1,kbarg2,"NA");
-						negativeExampleCandidates.add(t);
-						if(negativeExampleCandidates.size() == NECONSTANT){
-							negativeExampleAnnotations.add(t);
-							negativeExampleCandidates.clear();
-						}
+						if(!containsNegativeAnnotation(negativeExampleAnnotations,t)) negativeExampleAnnotations.add(t);
 					}
 				}
 			}
 		}
-		return negativeExampleAnnotations;
+		Collections.shuffle(negativeExampleAnnotations);
+		int toIndex = Math.min(distantSupervisionAnnotations.size()+1,negativeExampleAnnotations.size());
+		return negativeExampleAnnotations.subList(0, toIndex);
 	}
 	
+	private boolean containsNegativeAnnotation(
+			List<Triple<KBArgument, KBArgument, String>> negativeExampleAnnotations,
+			Triple<KBArgument, KBArgument, String> t) {
+		for(Triple<KBArgument,KBArgument,String> trip : negativeExampleAnnotations){
+			if( (trip.first.getStartOffset() == t.first.getStartOffset()) &&
+				(trip.first.getEndOffset() == t.first.getEndOffset()) &&
+				(trip.second.getStartOffset() == t.second.getStartOffset()) &&
+				(trip.second.getEndOffset() == t.second.getEndOffset()) ){
+				return true;
+			}
+		}	
+		return false;
+	}
+
+
 	/**
 	 * Write out distant supervision annotation information
 	 * @param distantSupervisionAnnotations

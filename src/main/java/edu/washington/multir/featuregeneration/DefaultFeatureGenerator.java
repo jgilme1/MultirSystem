@@ -24,7 +24,7 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 	public List<String> generateFeatures(Integer arg1StartOffset,
 			Integer arg1EndOffset, Integer arg2StartOffset,
 			Integer arg2EndOffset, CoreMap sentence, Annotation document) {
-		
+		//System.out.println("Generating features...");
 		
 		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
 		
@@ -487,10 +487,27 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 		// identify head words of arg1 and arg2
 		// (start at end, while inside entity, jump)
 		int head1 = arg1Pos[1]-1;
-		while (depParents[head1] >= arg1Pos[0] && depParents[head1] < arg1Pos[1]) head1 = depParents[head1];
+		int loopIterationCount =0;
+		while (depParents[head1] >= arg1Pos[0] && depParents[head1] < arg1Pos[1]) {
+			  head1 = depParents[head1];
+			  //avoid infinite loop
+			  if(loopIterationCount == 100){
+				  break;
+			  }
+			  loopIterationCount++;
+		}
 		int head2 = arg2Pos[1]-1;
 		//System.out.println(head1 + " " + head2);
-		while (depParents[head2] >= arg2Pos[0] && depParents[head2] < arg2Pos[1]) head2 = depParents[head2];
+		loopIterationCount =0;
+		while (depParents[head2] >= arg2Pos[0] && depParents[head2] < arg2Pos[1]) {
+			head2 = depParents[head2];
+			//avoid infinite loop
+			  if(loopIterationCount == 100){
+				  break;
+			  }
+			  loopIterationCount++;
+		}
+
 		
 		
 		// find path of dependencies from first to second

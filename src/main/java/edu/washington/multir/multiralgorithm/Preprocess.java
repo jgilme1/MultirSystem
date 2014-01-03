@@ -35,8 +35,7 @@ public class Preprocess {
     private static final double GIGABYTE_DIVISOR = 1073741824;
 	/**
 	 * args[0] is path to featuresTrain
-	 * args[1] is path to featuresTest
-	 * args[2] is path directory for new multir files like
+	 * args[1] is path directory for new multir files like
 	 * 			mapping, model, train, test..
 	 * @param args
 	 * @throws IOException

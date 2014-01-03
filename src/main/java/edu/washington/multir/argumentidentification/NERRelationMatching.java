@@ -18,6 +18,16 @@ import edu.washington.multir.knowledgebase.KnowledgeBase;
  *
  */
 public class NERRelationMatching implements RelationMatching {
+	
+	private static NERRelationMatching instance = null;
+	
+	public NERRelationMatching getInstance(){
+		if(instance == null){
+			instance = new NERRelationMatching();
+		}
+		return instance;
+	}
+	private NERRelationMatching(){}
 
 	@Override
 	public List<Triple<KBArgument,KBArgument,String>> matchRelations(

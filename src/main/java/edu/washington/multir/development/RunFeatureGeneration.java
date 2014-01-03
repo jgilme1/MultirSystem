@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL;
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
 import edu.washington.multir.featuregeneration.FeatureGeneration;
 import edu.washington.multir.featuregeneration.FeatureGenerator;
@@ -30,7 +31,7 @@ public class RunFeatureGeneration {
 	 */
 	public static void main(String[] args) throws SQLException, IOException{
 		//initialize variables
-		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
+		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecificationWithNEL();
 		FeatureGenerator fg = new DefaultFeatureGenerator();
 		Corpus c = new Corpus(args[0],cis,true);
 		
