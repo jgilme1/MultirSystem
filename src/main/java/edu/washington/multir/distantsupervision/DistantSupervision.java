@@ -31,6 +31,9 @@ public class DistantSupervision {
 	private SententialInstanceGeneration sig;
 	private RelationMatching rm;
 	private boolean negativeExampleFlag;
+	private List<Triple<KBArgument,KBArgument,String>> globalNegativeExampleAnnotations = new ArrayList<>();
+	private int distantSupervisionAnnotationCount = 0;
+	private double positiveToNegativeRatio = 1.0;
 
 	public DistantSupervision(ArgumentIdentification ai, SententialInstanceGeneration sig, RelationMatching rm, boolean b){
 		this.ai = ai;
@@ -39,7 +42,11 @@ public class DistantSupervision {
 		negativeExampleFlag = b;
 	}
 	
-	
+	public DistantSupervision(ArgumentIdentification ai, SententialInstanceGeneration sig, RelationMatching rm, boolean b, double ratio){
+		this(ai,sig,rm,b);
+		if(ratio > 0.0) positiveToNegativeRatio = ratio;
+	}
+
 	public void run(String outputFileName,KnowledgeBase kb, Corpus c) throws SQLException, IOException{
     	long start = System.currentTimeMillis();
 		//PrintWriter dsWriter = new PrintWriter(new FileWriter(new File(outputFileName)));
@@ -59,6 +66,7 @@ public class DistantSupervision {
 				//relation matching
 				List<Triple<KBArgument,KBArgument,String>> distantSupervisionAnnotations = 
 						rm.matchRelations(sententialInstances,kb);
+				distantSupervisionAnnotationCount += distantSupervisionAnnotations.size();
 				//negative example annotations
 				List<Triple<KBArgument,KBArgument,String>> negativeExampleAnnotations =
 						findNegativeExampleAnnotations(sententialInstances,distantSupervisionAnnotations,
@@ -85,7 +93,6 @@ public class DistantSupervision {
 			Map<String,List<String>> entityMap) {
 		
 		List<Triple<KBArgument,KBArgument,String>> negativeExampleAnnotations = new ArrayList<>();
-		
 		if(negativeExampleFlag){			
 			for(Pair<Argument,Argument> p : sententialInstances){
 				//check that at least one argument is not in distantSupervisionAnnotations
@@ -106,7 +113,6 @@ public class DistantSupervision {
 						break;
 					}
 				}
-				
 				if(canBeNegativeExample){
 					//look for KBIDs, select a random pair
 					List<String> arg1Ids = new ArrayList<>();
@@ -130,9 +136,15 @@ public class DistantSupervision {
 				}
 			}
 		}
-		Collections.shuffle(negativeExampleAnnotations);
-		int toIndex = Math.min(distantSupervisionAnnotations.size()+1,negativeExampleAnnotations.size());
-		return negativeExampleAnnotations.subList(0, toIndex);
+		//Collections.shuffle(negativeExampleAnnotations);
+		globalNegativeExampleAnnotations.addAll(negativeExampleAnnotations);
+		if(globalNegativeExampleAnnotations.size() > 1000000){
+			Collections.shuffle(globalNegativeExampleAnnotations);
+			return globalNegativeExampleAnnotations.subList(0,(int)Math.floor(positiveToNegativeRatio*distantSupervisionAnnotationCount));
+		}
+		else{
+			return new ArrayList<>();
+		}
 	}
 	
 	private boolean containsNegativeAnnotation(
@@ -186,12 +198,10 @@ public class DistantSupervision {
 		}
 	}
 	
-	
 	public static class DistantSupervisionAnnotation{
 		KBArgument arg1;
 		KBArgument arg2;
 		String rel;
 		Integer sentID;
 	}
-	
 }
