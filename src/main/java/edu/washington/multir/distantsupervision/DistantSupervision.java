@@ -31,7 +31,7 @@ public class DistantSupervision {
 	private SententialInstanceGeneration sig;
 	private RelationMatching rm;
 	private boolean negativeExampleFlag;
-	private List<Triple<KBArgument,KBArgument,String>> globalNegativeExampleAnnotations = new ArrayList<>();
+	private List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> globalNegativeExampleAnnotations = new ArrayList<>();
 	private int distantSupervisionAnnotationCount = 0;
 	private double positiveToNegativeRatio = 1.0;
 
@@ -67,32 +67,42 @@ public class DistantSupervision {
 				List<Triple<KBArgument,KBArgument,String>> distantSupervisionAnnotations = 
 						rm.matchRelations(sententialInstances,kb);
 				distantSupervisionAnnotationCount += distantSupervisionAnnotations.size();
+				//adding sentence IDs
+				List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> dsAnnotationWithSentIDs = new ArrayList<>();
+				for(Triple<KBArgument,KBArgument,String> trip : distantSupervisionAnnotations){
+					Integer i = new Integer(sentGlobalID);
+					Pair<Triple<KBArgument,KBArgument,String>,Integer> p = new Pair<>(trip,i);
+					dsAnnotationWithSentIDs.add(p);
+				}
 				//negative example annotations
-				List<Triple<KBArgument,KBArgument,String>> negativeExampleAnnotations =
+				List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> negativeExampleAnnotations =
 						findNegativeExampleAnnotations(sententialInstances,distantSupervisionAnnotations,
-								kb.getEntityMap());
+								kb.getEntityMap(),sentGlobalID);
 				
 				//writeArguments(arguments,argumentWriter);
-				writeDistantSupervisionAnnotations(distantSupervisionAnnotations,dsWriter,sentGlobalID);
-				writeDistantSupervisionAnnotations(negativeExampleAnnotations,dsWriter,sentGlobalID);
+				writeDistantSupervisionAnnotations(dsAnnotationWithSentIDs,dsWriter);
+				writeDistantSupervisionAnnotations(negativeExampleAnnotations,dsWriter);
 			}
 			count++;
 			if( count % 1000 == 0){
 				System.out.println(count + " documents processed");
 			}
 		}
+		Collections.shuffle(globalNegativeExampleAnnotations);
+		writeDistantSupervisionAnnotations(globalNegativeExampleAnnotations.subList(0,(int)Math.floor(positiveToNegativeRatio*distantSupervisionAnnotationCount)),dsWriter);
+		
 		dsWriter.close();
     	long end = System.currentTimeMillis();
     	System.out.println("Distant Supervision took " + (end-start) + " millisseconds");
 	}
 	
 	
-	private  List<Triple<KBArgument, KBArgument, String>> findNegativeExampleAnnotations(
+	private  List<Pair<Triple<KBArgument, KBArgument, String>,Integer>> findNegativeExampleAnnotations(
 			List<Pair<Argument, Argument>> sententialInstances,
 			List<Triple<KBArgument, KBArgument, String>> distantSupervisionAnnotations,
-			Map<String,List<String>> entityMap) {
+			Map<String,List<String>> entityMap, Integer sentGlobalID) {
 		
-		List<Triple<KBArgument,KBArgument,String>> negativeExampleAnnotations = new ArrayList<>();
+		List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> negativeExampleAnnotations = new ArrayList<>();
 		if(negativeExampleFlag){			
 			for(Pair<Argument,Argument> p : sententialInstances){
 				//check that at least one argument is not in distantSupervisionAnnotations
@@ -131,7 +141,8 @@ public class DistantSupervision {
 						KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
 						KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
 						Triple<KBArgument,KBArgument,String> t = new Triple<>(kbarg1,kbarg2,"NA");
-						if(!containsNegativeAnnotation(negativeExampleAnnotations,t)) negativeExampleAnnotations.add(t);
+						Pair<Triple<KBArgument,KBArgument,String>,Integer> negativeAnnotationPair = new Pair<>(t,sentGlobalID);
+						if(!containsNegativeAnnotation(negativeExampleAnnotations,t)) negativeExampleAnnotations.add(negativeAnnotationPair);
 					}
 				}
 			}
@@ -139,8 +150,12 @@ public class DistantSupervision {
 		//Collections.shuffle(negativeExampleAnnotations);
 		globalNegativeExampleAnnotations.addAll(negativeExampleAnnotations);
 		if(globalNegativeExampleAnnotations.size() > 1000000){
-			Collections.shuffle(globalNegativeExampleAnnotations);
-			return globalNegativeExampleAnnotations.subList(0,(int)Math.floor(positiveToNegativeRatio*distantSupervisionAnnotationCount));
+			negativeExampleAnnotations = globalNegativeExampleAnnotations;
+			Collections.shuffle(negativeExampleAnnotations);
+			int oldCount = distantSupervisionAnnotationCount;
+			distantSupervisionAnnotationCount =0;
+			globalNegativeExampleAnnotations = new ArrayList<>();
+			return negativeExampleAnnotations.subList(0,(int)Math.floor(positiveToNegativeRatio*oldCount));			
 		}
 		else{
 			return new ArrayList<>();
@@ -148,9 +163,10 @@ public class DistantSupervision {
 	}
 	
 	private boolean containsNegativeAnnotation(
-			List<Triple<KBArgument, KBArgument, String>> negativeExampleAnnotations,
+			List<Pair<Triple<KBArgument, KBArgument, String>,Integer>> negativeExampleAnnotations,
 			Triple<KBArgument, KBArgument, String> t) {
-		for(Triple<KBArgument,KBArgument,String> trip : negativeExampleAnnotations){
+		for(Pair<Triple<KBArgument,KBArgument,String>,Integer> p : negativeExampleAnnotations){
+			Triple<KBArgument,KBArgument,String> trip = p.first;
 			if( (trip.first.getStartOffset() == t.first.getStartOffset()) &&
 				(trip.first.getEndOffset() == t.first.getEndOffset()) &&
 				(trip.second.getStartOffset() == t.second.getStartOffset()) &&
@@ -169,12 +185,13 @@ public class DistantSupervision {
 	 * @param sentGlobalID
 	 */
 	private void writeDistantSupervisionAnnotations(
-			List<Triple<KBArgument, KBArgument, String>> distantSupervisionAnnotations, PrintWriter dsWriter,
-			int sentGlobalID) {
-		for(Triple<KBArgument,KBArgument,String> dsAnno : distantSupervisionAnnotations){
-			KBArgument arg1 = dsAnno.first;
-			KBArgument arg2 = dsAnno.second;
-			String rel = dsAnno.third;
+			List<Pair<Triple<KBArgument, KBArgument, String>,Integer>> distantSupervisionAnnotations, PrintWriter dsWriter) {
+		for(Pair<Triple<KBArgument,KBArgument,String>,Integer> dsAnno : distantSupervisionAnnotations){
+			Triple<KBArgument,KBArgument,String> trip = dsAnno.first;
+			Integer sentGlobalID = dsAnno.second;
+			KBArgument arg1 = trip.first;
+			KBArgument arg2 = trip.second;
+			String rel = trip.third;
 			dsWriter.write(arg1.getKbId());
 			dsWriter.write("\t");
 			dsWriter.write(String.valueOf(arg1.getStartOffset()));
