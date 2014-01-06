@@ -33,6 +33,7 @@ public class RunDistantSupervision {
 	 * 	    args[2] should be entityKBFielPath
 	 * 	    args[3] should be targetRelationsFilePath
 	 *      args[4] should be true / false for negative examples
+	 *      args[5] is optional, and is a ratio of positive to negative examples
 	 * @throws SQLException
 	 * @throws IOException
 	 */
@@ -53,7 +54,14 @@ public class RunDistantSupervision {
 		
 		boolean neFlag = (args[4].equals("true"))? true : false;
 		
-		DistantSupervision ds = new DistantSupervision(ai,sig,rm,neFlag);
+		double ratio = 0.0;
+		if(neFlag){
+			if(args.length == 6){
+				ratio = Double.parseDouble(args[5]);
+			}
+		}
+		
+		DistantSupervision ds = new DistantSupervision(ai,sig,rm,neFlag,ratio);
 		ds.run(dsFileName, kb, c);
 		
 	}

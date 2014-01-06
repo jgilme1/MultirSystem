@@ -7,6 +7,7 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.util.Interval;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL.SentNamedEntityLinkingInformation.NamedEntityLinkingAnnotation;
@@ -34,12 +35,10 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 	public List<Argument> identifyArguments(Annotation d, CoreMap s) {
 		//first grab all the NER arguments and store are nil links
 		List<Argument> arguments = new ArrayList<>();
+		List<Argument> nelArguments = new ArrayList<>();
 		List<Argument> nerArguments = NERArgumentIdentification.getInstance().identifyArguments(d, s);
 		List<CoreLabel> tokens = s.get(CoreAnnotations.TokensAnnotation.class);
-		
-		arguments.addAll(nerArguments);
-		
-		
+
 		//then grab all the NERL arguments
 		List<Triple<Pair<Integer,Integer>,String,Float>> nelAnnotation = s.get(NamedEntityLinkingAnnotation.class);
 		for(Triple<Pair<Integer,Integer>,String,Float> trip : nelAnnotation){
@@ -61,11 +60,27 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 						
 						//add argument to list
 						KBArgument nelArgument = new KBArgument(new Argument(argumentString,startCharacterOffset,endCharacterOffset),id);
-						arguments.add(nelArgument);
+						nelArguments.add(nelArgument);
 					}
 				}
 			}
 		}
+		arguments.addAll(nelArguments);
+		//add NER arguments if they don't intersect with NEL arguments
+		for(Argument nerArg : nerArguments){
+			boolean intersects = false;
+			for(Argument nelArg: nelArguments){
+				Interval<Integer> nerArgInterval = Interval.toInterval(nerArg.getStartOffset(), nerArg.getEndOffset());
+				Interval<Integer> nelArgInterval = Interval.toInterval(nelArg.getStartOffset(), nelArg.getEndOffset());
+				if(nerArgInterval.intersect(nelArgInterval) !=null){
+					intersects = true;
+				}
+			}
+			if(!intersects){
+				arguments.add(nerArg);
+			}
+		}
+		
 		return arguments;
 	}
 }
