@@ -34,6 +34,7 @@ public class DistantSupervision {
 	private List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> globalNegativeExampleAnnotations = new ArrayList<>();
 	private int distantSupervisionAnnotationCount = 0;
 	private double positiveToNegativeRatio = 1.0;
+	private static final int NEGATIVE_EXAMPLE_FLUSH_CONSTANT = 1000;
 
 	public DistantSupervision(ArgumentIdentification ai, SententialInstanceGeneration sig, RelationMatching rm, boolean b){
 		this.ai = ai;
@@ -149,7 +150,7 @@ public class DistantSupervision {
 		}
 		//Collections.shuffle(negativeExampleAnnotations);
 		globalNegativeExampleAnnotations.addAll(negativeExampleAnnotations);
-		if(globalNegativeExampleAnnotations.size() > 100000){
+		if(globalNegativeExampleAnnotations.size() > NEGATIVE_EXAMPLE_FLUSH_CONSTANT){
 			negativeExampleAnnotations = globalNegativeExampleAnnotations;
 			Collections.shuffle(negativeExampleAnnotations);
 			int oldCount = distantSupervisionAnnotationCount;
