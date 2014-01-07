@@ -66,6 +66,10 @@ public class Corpus {
 		StringBuilder sqlTableSpecificationBuilder = new StringBuilder();
 		sqlTableSpecificationBuilder.append("( " + documentColumnName + " VARCHAR(128),\n");
 		//add Document Information types
+		for(DocumentInformationI docInformation: cis.documentInformation){
+			String columnName = docInformation.name();
+			sqlTableSpecificationBuilder.append(columnName + " VARCHAR(40000)");
+		}
 		sqlTableSpecificationBuilder.append("PRIMARY KEY (DOCNAME))");
 		return sqlTableSpecificationBuilder.toString();
 	}
@@ -311,6 +315,7 @@ public class Corpus {
 
 					List<SentInformationI> sentenceInformationSpecifications = new ArrayList<SentInformationI>();
 					List<TokenInformationI> tokenInformationSpecifications = new ArrayList<TokenInformationI>();
+					List<DocumentInformationI> documentInformationSpecifications = new ArrayList<DocumentInformationI>();
 
 					// for all SentInformationI instances that require separate
 					// files
@@ -330,6 +335,13 @@ public class Corpus {
 						tokenDataLineReaders
 								.add(new BufferedReader(new FileReader(
 										new File(path + "/" + ti.name()))));
+					}
+					
+					for (DocumentInformationI di : cis.documentInformation){
+						documentInformationSpecifications.add(di);
+						documentDataLineReaders.
+							add(new BufferedReader(new FileReader(
+									new File(path + "/" + di.name()))));
 					}
 
 					int linesProcessed = 0;
@@ -396,6 +408,17 @@ public class Corpus {
 							cachedDocumentLines
 									.add(formatValue(docName) + "\n");
 							previousDocumentName = docName;
+							
+							int documentLineIteratorIndex = 0;
+							while(documentLineIteratorIndex < documentDataLineReaders.size()){
+								String nextLine = documentDataLineReaders.get(documentLineIteratorIndex).readLine();
+								String[] splitValues = nextLine.split("\t");
+								String values = " ";
+								if (splitValues.length >1){
+									values = splitValues[1];
+								}
+								
+							}
 						}
 
 						if (linesProcessed % 500000 == 0) {
@@ -472,6 +495,9 @@ public class Corpus {
     	for(TokenInformationI ti: cis.tokenInformation){
     		requiredFileNames.add(ti.name());
     	}
+    	for(DocumentInformationI di : cis.documentInformation){
+    		requiredFileNames.add(di.name());
+    	}
     	for(String name : requiredFileNames){
     		if(!fileNames.contains(name)){
     			System.err.println(name + "file does not exist");
@@ -501,36 +527,38 @@ public class Corpus {
 		
 		Map<Integer,Pair<CoreMap,String>> mapFromSentToAnnotationAndDocName = new HashMap<>();
 		
-		while(sentenceResults.next()){
-			//keep track of needed documents.
-			String docName = sentenceResults.getString(documentColumnName);
-			Integer sentId = sentenceResults.getInt(sentIDColumnName);
-			relevantDocuments.add(docName);
-			CoreMap s = parseSentence(sentenceResults);
-			if(!mapFromSentToAnnotationAndDocName.containsKey(sentId)){
-				mapFromSentToAnnotationAndDocName.put(sentId, new Pair<CoreMap,String>(s,docName));
+		if(sentenceResults != null){
+			while(sentenceResults.next()){
+				//keep track of needed documents.
+				String docName = sentenceResults.getString(documentColumnName);
+				Integer sentId = sentenceResults.getInt(sentIDColumnName);
+				relevantDocuments.add(docName);
+				CoreMap s = parseSentence(sentenceResults);
+				if(!mapFromSentToAnnotationAndDocName.containsKey(sentId)){
+					mapFromSentToAnnotationAndDocName.put(sentId, new Pair<CoreMap,String>(s,docName));
+				}
 			}
-		}
-		
-		//get document map
-		Map<String,Annotation> docNameToAnnoMap = new HashMap<String,Annotation>();
-		List<String> docNames = new ArrayList<>();
-		for(String docName: relevantDocuments){
-			docNames.add(docName);
-		}
-		List<Annotation> docAnnotations = getDocuments(docNames);
-		for(int i =0; i < docAnnotations.size(); i++){
-			String docName = docNames.get(i);
-			Annotation doc = docAnnotations.get(i);
-			docNameToAnnoMap.put(docName,doc);
-		}
-		
-		for(Integer key : mapFromSentToAnnotationAndDocName.keySet()){
-			Pair<CoreMap,String> s = mapFromSentToAnnotationAndDocName.get(key);
-			CoreMap sent = s.first;
-			Annotation doc = docNameToAnnoMap.get(s.second);
-			Pair<CoreMap,Annotation> newPair = new Pair<CoreMap,Annotation>(sent,doc);
-			sentIdToAnnotationsMap.put(key, newPair);
+			
+			//get document map
+			Map<String,Annotation> docNameToAnnoMap = new HashMap<String,Annotation>();
+			List<String> docNames = new ArrayList<>();
+			for(String docName: relevantDocuments){
+				docNames.add(docName);
+			}
+			List<Annotation> docAnnotations = getDocuments(docNames);
+			for(int i =0; i < docAnnotations.size(); i++){
+				String docName = docNames.get(i);
+				Annotation doc = docAnnotations.get(i);
+				docNameToAnnoMap.put(docName,doc);
+			}
+			
+			for(Integer key : mapFromSentToAnnotationAndDocName.keySet()){
+				Pair<CoreMap,String> s = mapFromSentToAnnotationAndDocName.get(key);
+				CoreMap sent = s.first;
+				Annotation doc = docNameToAnnoMap.get(s.second);
+				Pair<CoreMap,Annotation> newPair = new Pair<CoreMap,Annotation>(sent,doc);
+				sentIdToAnnotationsMap.put(key, newPair);
+			}
 		}
 		return sentIdToAnnotationsMap;
 	}

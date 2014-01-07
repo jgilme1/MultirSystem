@@ -21,6 +21,7 @@ public abstract class CorpusInformationSpecification {
 	
 	protected final List<SentInformationI> sentenceInformation;
 	protected final List<TokenInformationI>  tokenInformation;
+	protected final List<DocumentInformationI> documentInformation;
 	private static final LabelFactory coreLabelFactory = CoreLabel.factory();
 	
 	private List<String> sentenceColumnNames = null;
@@ -31,6 +32,7 @@ public abstract class CorpusInformationSpecification {
 		//initialize Lists of sentenceInformation and tokenInformation
 		sentenceInformation = new ArrayList<SentInformationI>();
 		tokenInformation = new ArrayList<TokenInformationI>();
+		documentInformation = new ArrayList<DocumentInformationI>();
 		
 		//set default sentenceInformation
 		sentenceInformation.add(sentGlobalIDInformationInstance);
