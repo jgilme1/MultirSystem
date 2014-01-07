@@ -26,11 +26,9 @@ import edu.stanford.nlp.util.Pair;
  *
  */
 public class Preprocess {
-	
 	private static Map<String,Integer> keyToIntegerMap = new HashMap<String,Integer>();
     private static Map<Integer,String> intToKeyMap = new HashMap<Integer,String>();
-    private static Set<String> alreadySeenFeatures = new HashSet<String>();
-
+    private static final int FEATURE_THRESHOLD = 2;
 
     private static final double GIGABYTE_DIVISOR = 1073741824;
 	/**
@@ -102,11 +100,13 @@ public class Preprocess {
 			String mappingFile) throws IOException {
 
 		Mappings m = new Mappings();
+		Map<String,Integer> featureOccurrenceMap = new HashMap<String,Integer>();
 		//ensure that "NA" gets ID o
 		m.getRelationID("NA", true);
 		BufferedReader br = new BufferedReader(new FileReader(new File(trainFile)));
 		
 		String line;
+		int count = 0 ;
 		while((line = br.readLine()) != null){
 	    	String[] values = line.split("\t");
 	    	String rel = values[3];
@@ -121,17 +121,27 @@ public class Preprocess {
 	    	for(String r: rels){
 	    	  m.getRelationID(r, true);
 	    	}
-	    	List<String> relevantFeatures = new ArrayList<String>();
 	    	for(String feature: features){
-	    		if(alreadySeenFeatures.contains(feature)){
-	    			relevantFeatures.add(feature);
-	    		}
-	    		else{
-	    			alreadySeenFeatures.add(feature);
+	    		Integer featId = m.getFeatureID(feature, false);
+	    		if(featId == -1){
+		    		if(featureOccurrenceMap.containsKey(feature)){
+		    			Integer occurrence = featureOccurrenceMap.get(feature);
+		    			if(occurrence >= FEATURE_THRESHOLD){
+		    				featureOccurrenceMap.remove(feature);
+			    			featId = m.getFeatureID(feature, true);
+		    			}
+		    			else{
+		    				featureOccurrenceMap.put(feature, occurrence +1);
+		    			}
+		    		}
+		    		else{
+		    			featureOccurrenceMap.put(feature, new Integer(1));
+		    		}
 	    		}
 	    	}
-	    	for(String feature: relevantFeatures){
-	    		m.getFeatureID(feature, true);
+	    	count++;
+	    	if(count % 100000 == 0){
+	    		System.out.println(count + " training instances processed");
 	    	}
 		}
 		
