@@ -56,11 +56,11 @@ public class FeatureGeneration {
 			else{
 				//check if sap size is large enough
 				if((saps.size() != 0) && (saps.size() % 100000 == 0)){
-					count += 1000;
+					count += 100000;
 					//process saps
 					processSaps(saps,bw);
 					saps = new ArrayList<>();
-					if(count % 10000 == 0) System.out.println(count + "sentential argument pairs processed");
+					if(count % 100000 == 0) System.out.println(count + "sentential argument pairs processed");
 				}
 				saps.add(sap);
 			}			
