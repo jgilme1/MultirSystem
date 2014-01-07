@@ -24,11 +24,10 @@ public class FeatureGeneration {
 	
 	private FeatureGenerator fg;
 	private Corpus c;
-	
+	private static final int TRAINING_INSTANCES_IN_MEMORY_CONSTANT = 10000;
 	public FeatureGeneration(FeatureGenerator fg){
 		this.fg = fg;
-	}
-	
+	}	
 	public void run(String dsFileName, String featureFileName, Corpus c, CorpusInformationSpecification cis) throws FileNotFoundException, IOException, SQLException{
     	long start = System.currentTimeMillis();
     	this.c = c;
@@ -55,12 +54,10 @@ public class FeatureGeneration {
 			}
 			else{
 				//check if sap size is large enough
-				if((saps.size() != 0) && (saps.size() % 100000 == 0)){
-					count += 100000;
+				if((saps.size() != 0) && (saps.size() % TRAINING_INSTANCES_IN_MEMORY_CONSTANT == 0)){
 					//process saps
 					processSaps(saps,bw);
 					saps = new ArrayList<>();
-					if(count % 100000 == 0) System.out.println(count + "sentential argument pairs processed");
 				}
 				saps.add(sap);
 			}			
