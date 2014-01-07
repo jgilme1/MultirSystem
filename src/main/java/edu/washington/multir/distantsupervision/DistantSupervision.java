@@ -149,7 +149,7 @@ public class DistantSupervision {
 		}
 		//Collections.shuffle(negativeExampleAnnotations);
 		globalNegativeExampleAnnotations.addAll(negativeExampleAnnotations);
-		if(globalNegativeExampleAnnotations.size() > 1000000){
+		if(globalNegativeExampleAnnotations.size() > 100000){
 			negativeExampleAnnotations = globalNegativeExampleAnnotations;
 			Collections.shuffle(negativeExampleAnnotations);
 			int oldCount = distantSupervisionAnnotationCount;

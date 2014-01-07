@@ -22,6 +22,7 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
+import edu.washington.multir.argumentidentification.NELArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERSententialInstanceGeneration;
 import edu.washington.multir.data.Argument;
@@ -65,7 +66,7 @@ public class SententialEvaluation {
 		
 		//get extractions
 		de = new DocumentExtractor(args[2],
-				new DefaultFeatureGenerator(), NERArgumentIdentification.getInstance(), NERSententialInstanceGeneration.getInstance());
+				new DefaultFeatureGenerator(), NELArgumentIdentification.getInstance(), NERSententialInstanceGeneration.getInstance());
 		List<Extraction> extractions;
 		extractions = extract(annotations);
 		
