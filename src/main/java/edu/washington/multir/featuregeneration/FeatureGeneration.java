@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -23,15 +24,14 @@ public class FeatureGeneration {
 	
 	private FeatureGenerator fg;
 	private Corpus c;
-	
+	private static final int TRAINING_INSTANCES_IN_MEMORY_CONSTANT = 10000;
 	public FeatureGeneration(FeatureGenerator fg){
 		this.fg = fg;
-	}
-	
+	}	
 	public void run(String dsFileName, String featureFileName, Corpus c, CorpusInformationSpecification cis) throws FileNotFoundException, IOException, SQLException{
     	long start = System.currentTimeMillis();
     	this.c = c;
-
+    	int lines =0;
 		//initialize variables
 		BufferedReader in;
 		BufferedWriter bw;
@@ -54,16 +54,18 @@ public class FeatureGeneration {
 			}
 			else{
 				//check if sap size is large enough
-				if((saps.size() != 0) && (saps.size() % 1000 == 0)){
-					count += 1000;
+				if((saps.size() != 0) && (saps.size() % TRAINING_INSTANCES_IN_MEMORY_CONSTANT == 0)){
 					//process saps
 					processSaps(saps,bw);
 					saps = new ArrayList<>();
-					if(count % 10000 == 0) System.out.println(count + "sentential argument pairs processed");
 				}
 				saps.add(sap);
 			}			
 			nextLine = in.readLine();
+			lines ++;
+			if(lines % 10000 == 0){
+				System.out.println("Lines read = " + lines);
+			}
 		}
 		processSaps(saps,bw);
 		bw.close();
@@ -76,7 +78,21 @@ public class FeatureGeneration {
 	private void processSaps(List<SententialArgumentPair> saps,
 			BufferedWriter bw) throws SQLException, IOException {
 		
-		Map<Integer,Pair<CoreMap,Annotation>> sentAnnotationMap = getSentAnnotationsMap(saps);
+		Map<Integer,Pair<CoreMap,Annotation>> sentAnnotationMap = new HashMap<>();
+		Set<Integer> sentIds = new HashSet<Integer>();
+		for(SententialArgumentPair sap: saps){
+			sentIds.add(sap.sentID);
+		}
+		List<Integer> sentIdList = new ArrayList<Integer>(sentIds);
+		int count = sentIds.size() / 1000;
+		for(int i =0; i <= count; i++){
+			int startIndex = 1000*i;
+			int endIndex = Math.min(startIndex + 1000,sentIdList.size());
+			Map<Integer,Pair<CoreMap,Annotation>> smallSentAnnotationMap = c.getAnnotationPairsForEachSentence(
+					new HashSet<Integer>(sentIdList.subList(startIndex, endIndex)));
+			sentAnnotationMap.putAll(smallSentAnnotationMap);
+			System.out.println(endIndex + " sentences collected");
+		}
 		
 		for(SententialArgumentPair sap : saps){
 			
