@@ -405,9 +405,9 @@ public class Corpus {
 
 						// get DocumentInformation values if applicable
 						if (!docName.equals(previousDocumentName)) {
-							cachedDocumentLines
-									.add(formatValue(docName) + "\n");
-							previousDocumentName = docName;
+							StringBuilder documentLine = new StringBuilder();
+							documentLine.append(formatValue(docName));
+							documentLine.append("\t");
 							
 							int documentLineIteratorIndex = 0;
 							while(documentLineIteratorIndex < documentDataLineReaders.size()){
@@ -417,8 +417,13 @@ public class Corpus {
 								if (splitValues.length >1){
 									values = splitValues[1];
 								}
-								
+								documentLine.append(formatValue(values));
+								documentLine.append("\t");
 							}
+							documentLine.deleteCharAt(documentLine.length() -1);
+							documentLine.append("\n");
+							cachedDocumentLines.add(documentLine.toString());
+							previousDocumentName = docName;
 						}
 
 						if (linesProcessed % 500000 == 0) {
