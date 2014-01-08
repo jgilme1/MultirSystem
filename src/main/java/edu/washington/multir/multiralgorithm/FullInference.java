@@ -1,10 +1,13 @@
 package edu.washington.multir.multiralgorithm;
 
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class FullInference {
 
 	public static Parse infer(MILDocument doc,
-			Scorer parseScorer, Parameters params) {
+			Scorer parseScorer, Parameters params, Map<Integer,Map<Integer,Double>> mentionFeatureScoreMap) {
 		Parse parse = new Parse();
 		parse.doc = doc;
 		parse.Z = new int[doc.numMentions];
@@ -22,7 +25,9 @@ public class FullInference {
 		// loop over all mentions of the instance, finding the highest probability
 		// relation for each and storing it in scores..
 		for (int m = 0; m < doc.numMentions; m++) {
-			Viterbi.Parse p = viterbi.parse(doc, m);
+			Map<Integer,Double> featureScoreMap = new HashMap<Integer,Double>();
+			Viterbi.Parse p = viterbi.parse(doc, m,featureScoreMap);
+			mentionFeatureScoreMap.put(m, featureScoreMap);
 			
 			parse.Z[m] = p.state;
 			if (p.state > 0 && !binaryYs[p.state]) {

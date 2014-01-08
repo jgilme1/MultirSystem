@@ -100,7 +100,7 @@ public class DocumentExtractor {
 				System.out.println("Sentence = " + senText);
 				List<String> features = 
 						fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), s, doc);
-				Triple<String,Double,Double> relationConfidenceTriple = getPrediction(features,arg1,arg2,senText);
+				Triple<String,Double,Double> relationConfidenceTriple = getPrediction(features,arg1,arg2,senText).first;
 				if(relationConfidenceTriple !=null){
 					String extractionString = arg1.getArgName() + " " + relationConfidenceTriple.first + " " + arg2.getArgName() + "\n" + senText;
 					extractions.add(new Pair<String,Double>(extractionString,relationConfidenceTriple.second));
@@ -120,8 +120,16 @@ public class DocumentExtractor {
 		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
 		List<String> features = 
 				fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), sentence, doc);
-		Triple<String,Double,Double> relationConfidenceTriple = getPrediction(features,arg1,arg2,senText);
-		return relationConfidenceTriple;
+		Pair<Triple<String,Double,Double>,Map<Integer,Double>> p = getPrediction(features,arg1,arg2,senText);
+		return p.first;
+	}
+	
+	public Pair<Triple<String,Double,Double>,Map<Integer,Double>> extractFromSententialInstanceWithFeatureScores(Argument arg1, Argument arg2, CoreMap sentence, Annotation doc){
+		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
+		List<String> features = 
+				fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), sentence, doc);
+		Pair<Triple<String,Double,Double>,Map<Integer,Double>> p = getPrediction(features,arg1,arg2,senText);
+		return p;
 	}
 
 	/**
@@ -134,7 +142,7 @@ public class DocumentExtractor {
 	 * @param arg2
 	 * @return
 	 */
-	private Triple<String,Double,Double> getPrediction(List<String> features, Argument arg1,
+	private Pair<Triple<String,Double,Double>,Map<Integer,Double>> getPrediction(List<String> features, Argument arg1,
 			Argument arg2, String senText) {
 		
 		MILDocument doc = new MILDocument();
@@ -181,7 +189,8 @@ public class DocumentExtractor {
 		
 		String relation = "";
 		Double conf = 0.0;
-		Parse parse = FullInference.infer(doc, scorer, params);
+		Map<Integer,Map<Integer,Double>> mentionFeatureScoreMap = new HashMap<>();
+		Parse parse = FullInference.infer(doc, scorer, params,mentionFeatureScoreMap);
 		
 
 		//System.out.println(senText);
@@ -210,8 +219,12 @@ public class DocumentExtractor {
 			return null;
 		}
 
-		return new Triple<String,Double,Double>(relation,conf,parse.score);
+		Triple<String,Double,Double> t = new Triple<>(relation,conf,parse.score);
+		Pair<Triple<String,Double,Double>,Map<Integer,Double>> p = new Pair<>(t,mentionFeatureScoreMap.get(0));
+		return p;
 	}
+	
+	public Mappings getMapping(){return mapping;}
 	
 	
 	/**

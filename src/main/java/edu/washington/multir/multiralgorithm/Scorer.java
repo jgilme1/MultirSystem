@@ -1,5 +1,7 @@
 package edu.washington.multir.multiralgorithm;
 
+import java.util.Map;
+
 
 public class Scorer {
 	private Parameters params;
@@ -7,10 +9,10 @@ public class Scorer {
 	public Scorer() {}
 	
 	// scoring on mention documents, all 2*numRelation	
-	public double scoreMentionRelation(MILDocument doc, int m, int rel) {
+	public double scoreMentionRelation(MILDocument doc, int m, int rel, Map<Integer,Double> featureScoreMap) {
 		double sum = 0;
 		DenseVector p = params.relParameters[rel];
-		sum += p.dotProduct(doc.features[m]);
+		sum += p.dotProduct(doc.features[m], featureScoreMap);
 		return sum;
 	}
 	
