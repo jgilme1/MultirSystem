@@ -123,7 +123,7 @@ public class Preprocess {
 	    	}
 	    	for(String feature: features){
 	    		Integer featId = m.getFeatureID(feature, false);
-	    		if(featId == -1){
+	    		if(featId.equals(-1)){
 		    		if(featureOccurrenceMap.containsKey(feature)){
 		    			Integer occurrence = featureOccurrenceMap.get(feature);
 		    			if(occurrence >= FEATURE_THRESHOLD){
