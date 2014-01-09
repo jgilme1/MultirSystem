@@ -21,7 +21,7 @@ public class NERRelationMatching implements RelationMatching {
 	
 	private static NERRelationMatching instance = null;
 	
-	public NERRelationMatching getInstance(){
+	public static NERRelationMatching getInstance(){
 		if(instance == null){
 			instance = new NERRelationMatching();
 		}
