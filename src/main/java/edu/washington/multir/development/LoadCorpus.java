@@ -25,16 +25,23 @@ public class LoadCorpus {
 	 * args[1] - path to the corpus information directory
 	 * args[2] - name of temporary sentence file for batch insertion into Derby DB
 	 * args[3] - name of temporary document file for batch insertion into Derby DB
+	 * args[4] - name of the Corpus Information class to load in e.g. "DefaultCorpusInformationSpecification"
 	 * @param args
 	 * @throws SQLException
 	 * @throws IOException
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalAccessException 
+	 * @throws InstantiationException 
 	 */
-	public static void main(String[] args) throws SQLException, IOException{
-		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecificationWithNEL();
+	public static void main(String[] args) throws SQLException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException{
+		ClassLoader cl = ClassLoader.getSystemClassLoader();
+		String corpusInformationClassPrefix = "edu.washington.multir.corpus.";
+		Class<?> corpusInformationClass = cl.loadClass(corpusInformationClassPrefix+args[4]);
+		CorpusInformationSpecification cis = (CorpusInformationSpecification) corpusInformationClass.newInstance();
     	Corpus c = new Corpus(args[0],cis,false);
     	long start = System.currentTimeMillis();
     	c.loadCorpus(new File(args[1]), args[2], args[3]);
     	long end = System.currentTimeMillis();
-    	System.out.println("Loading DB took " + (end-start) + " millisseconds");
+    	System.out.println("Loading DB took " + (end-start) + " millisseconds");    	
 	}
 }

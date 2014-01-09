@@ -42,14 +42,14 @@ public class RunDistantSupervision {
 	
 	public static void main(String[] args) throws SQLException, IOException{
 		//initialize variables
-		CorpusInformationSpecification cis =  new DefaultCorpusInformationSpecificationWithNEL();
+		CorpusInformationSpecification cis =  new DefaultCorpusInformationSpecification();
 		Corpus c = new Corpus(args[0],cis,true);
 		String dsFileName = args[0]+"DS";
 		
 		
-		ArgumentIdentification ai = NELArgumentIdentification.getInstance();
+		ArgumentIdentification ai = NERArgumentIdentification.getInstance();
 		SententialInstanceGeneration sig = NERSententialInstanceGeneration.getInstance();
-		RelationMatching rm = NELRelationMatching.getInstance();
+		RelationMatching rm = NERRelationMatching.getInstance();
 		KnowledgeBase kb = new KnowledgeBase(args[1],args[2],args[3]);
 		
 		boolean neFlag = (args[4].equals("true"))? true : false;
