@@ -78,7 +78,7 @@ public class DistantSupervision {
 				//negative example annotations
 				List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> negativeExampleAnnotations =
 						findNegativeExampleAnnotations(sententialInstances,distantSupervisionAnnotations,
-								kb.getEntityMap(),sentGlobalID);
+								kb,sentGlobalID);
 				
 				//writeArguments(arguments,argumentWriter);
 				writeDistantSupervisionAnnotations(dsAnnotationWithSentIDs,dsWriter);
@@ -101,8 +101,10 @@ public class DistantSupervision {
 	private  List<Pair<Triple<KBArgument, KBArgument, String>,Integer>> findNegativeExampleAnnotations(
 			List<Pair<Argument, Argument>> sententialInstances,
 			List<Triple<KBArgument, KBArgument, String>> distantSupervisionAnnotations,
-			Map<String,List<String>> entityMap, Integer sentGlobalID) {
+			KnowledgeBase KB, Integer sentGlobalID) {
 		
+		Map<String,List<String>> entityMap = KB.getEntityMap();
+		Map<String,List<String>> relationMap = KB.getEntityPairRelationMap();
 		List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> negativeExampleAnnotations = new ArrayList<>();
 		if(negativeExampleFlag){			
 			for(Pair<Argument,Argument> p : sententialInstances){
@@ -127,23 +129,38 @@ public class DistantSupervision {
 				if(canBeNegativeExample){
 					//look for KBIDs, select a random pair
 					List<String> arg1Ids = new ArrayList<>();
-					if(entityMap.containsKey(arg1.getArgName())){
-						arg1Ids = entityMap.get(arg1.getArgName());
+					if(arg1 instanceof KBArgument){
+						   arg1Ids.add(((KBArgument) arg1).getKbId());
 					}
+					else{
+						if(entityMap.containsKey(arg1.getArgName())){
+							arg1Ids = entityMap.get(arg1.getArgName());
+						}						
+					}
+
 					List<String> arg2Ids = new ArrayList<>();
-					if(entityMap.containsKey(arg2.getArgName())){
-						arg2Ids = entityMap.get(arg2.getArgName());
+					if(arg2 instanceof KBArgument){
+						arg2Ids.add(((KBArgument) arg2).getKbId());
+					}
+					else{
+						if(entityMap.containsKey(arg2.getArgName())){
+							arg2Ids = entityMap.get(arg2.getArgName());
+						}
 					}
 					if( (!arg1Ids.isEmpty()) && (!arg2Ids.isEmpty())){
-						Collections.shuffle(arg1Ids);
-						Collections.shuffle(arg2Ids);
-						String arg1Id = arg1Ids.get(0);
-						String arg2Id = arg2Ids.get(0);
-						KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
-						KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
-						Triple<KBArgument,KBArgument,String> t = new Triple<>(kbarg1,kbarg2,"NA");
-						Pair<Triple<KBArgument,KBArgument,String>,Integer> negativeAnnotationPair = new Pair<>(t,sentGlobalID);
-						if(!containsNegativeAnnotation(negativeExampleAnnotations,t)) negativeExampleAnnotations.add(negativeAnnotationPair);
+						//check that no pair of entities represented by these
+						//argument share a relation:
+						if(noRelationsHold(arg1Ids,arg2Ids,relationMap)){
+							Collections.shuffle(arg1Ids);
+							Collections.shuffle(arg2Ids);
+							String arg1Id = arg1Ids.get(0);
+							String arg2Id = arg2Ids.get(0);
+							KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
+							KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
+							Triple<KBArgument,KBArgument,String> t = new Triple<>(kbarg1,kbarg2,"NA");
+							Pair<Triple<KBArgument,KBArgument,String>,Integer> negativeAnnotationPair = new Pair<>(t,sentGlobalID);
+							if(!containsNegativeAnnotation(negativeExampleAnnotations,t)) negativeExampleAnnotations.add(negativeAnnotationPair);
+						}
 					}
 				}
 			}
@@ -156,13 +173,28 @@ public class DistantSupervision {
 			int oldCount = distantSupervisionAnnotationCount;
 			distantSupervisionAnnotationCount =0;
 			globalNegativeExampleAnnotations = new ArrayList<>();
-			return negativeExampleAnnotations.subList(0,(int)Math.floor(positiveToNegativeRatio*oldCount));			
+			int toIndex = Math.min(negativeExampleAnnotations.size(), (int)Math.floor(positiveToNegativeRatio*oldCount));
+			return negativeExampleAnnotations.subList(0,toIndex);
 		}
 		else{
 			return new ArrayList<>();
 		}
 	}
 	
+	private boolean noRelationsHold(List<String> arg1Ids, List<String> arg2Ids,
+			Map<String, List<String>> relationMap) {
+		
+		for(String arg1ID : arg1Ids){
+			for(String arg2ID: arg2Ids){
+				String key = arg1ID+arg2ID;
+				if(relationMap.containsKey(key)){
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
 	private boolean containsNegativeAnnotation(
 			List<Pair<Triple<KBArgument, KBArgument, String>,Integer>> negativeExampleAnnotations,
 			Triple<KBArgument, KBArgument, String> t) {
