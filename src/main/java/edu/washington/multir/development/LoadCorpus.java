@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL;
 
 /**
  * An app for taking a prespecified corpus
@@ -29,7 +30,7 @@ public class LoadCorpus {
 	 * @throws IOException
 	 */
 	public static void main(String[] args) throws SQLException, IOException{
-		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecification();
+		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecificationWithNEL();
     	Corpus c = new Corpus(args[0],cis,false);
     	long start = System.currentTimeMillis();
     	c.loadCorpus(new File(args[1]), args[2], args[3]);

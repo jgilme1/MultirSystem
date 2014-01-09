@@ -2,13 +2,11 @@ package edu.washington.multir.multiralgorithm;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,8 +15,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.commons.io.LineIterator;
 
 import edu.stanford.nlp.util.Pair;
 
@@ -30,17 +26,14 @@ import edu.stanford.nlp.util.Pair;
  *
  */
 public class Preprocess {
-	
 	private static Map<String,Integer> keyToIntegerMap = new HashMap<String,Integer>();
     private static Map<Integer,String> intToKeyMap = new HashMap<Integer,String>();
-    private static Set<String> alreadySeenFeatures = new HashSet<String>();
-
+    private static final int FEATURE_THRESHOLD = 2;
 
     private static final double GIGABYTE_DIVISOR = 1073741824;
 	/**
 	 * args[0] is path to featuresTrain
-	 * args[1] is path to featuresTest
-	 * args[2] is path directory for new multir files like
+	 * args[1] is path directory for new multir files like
 	 * 			mapping, model, train, test..
 	 * @param args
 	 * @throws IOException
@@ -52,29 +45,15 @@ public class Preprocess {
     	printMemoryStatistics();
 
   
-		String originalTrainFile = args[0];
-		//String testFile = args[1];
+		String trainFile = args[0];
 		String outDir = args[1];
 		String mappingFile = outDir + File.separatorChar + "mapping";
 		String modelFile = outDir + File.separatorChar + "model";
 		
-		
-		//clean train file.
-		String trainFile = originalTrainFile+".clean";
-		System.out.println("Cleaning train file");
-		cleanTrainFile(originalTrainFile,trainFile);
-		
-		
-		
 		System.out.println("GETTING Mapping form training data");
 		Mappings mapping = getMappingFromTrainingData(trainFile,mappingFile);
 		
-//		//print all relations in mapping
-//		Map<String,Integer> rel2RelID = mapping.getRel2RelID();
-//		System.out.println("Printing rel to relID map");
-//		for(String rel: rel2RelID.keySet()){
-//			System.out.println(rel + "\t" + rel2RelID.get(rel));
-//		}
+
 		
 			System.out.println("PREPROCESSING TRAIN FEATURES");
 		{
@@ -86,20 +65,7 @@ public class Preprocess {
 			printMemoryStatistics();
 			keyToIntegerMap.clear();
 
-//		
-//			System.out.println("PREPROCESSING TEST FEATURES");
-//			printMemoryStatistics();
-//
-//		
-//		{
-//			String output2 = outDir + File.separatorChar + "test";
-//			convertFeatureFileToMILDocument(testFile, output2, mapping);
-//		}
-//		
-//		System.out.println("FINISHED PREPROCESSING TEST FEATURES");
-//		printMemoryStatistics();
-//		keyToIntegerMap.clear();
-		intToKeyMap.clear();
+			intToKeyMap.clear();
 
 	
 		System.out.println("Writing model and mapping file");
@@ -123,80 +89,6 @@ public class Preprocess {
 	
 
 
-	private static void cleanTrainFile(String originalTrainFile,
-			String trainFile) throws IOException {
-		
-		BufferedReader br = new BufferedReader(new FileReader(new File(originalTrainFile)));
-		BufferedWriter bw = new BufferedWriter(new FileWriter(new File(trainFile)));
-		
-		LineIterator li = new LineIterator(br);
-		String line = li.nextLine();
-		String prevLine = line;
-		String newLine = null;
-		while(li.hasNext()){
-			line = li.nextLine();
-			if(linesRepresentSameInstance(prevLine,line)){
-				newLine = makeNewLine(prevLine,line);
-				prevLine = newLine;
-			}
-			else{
-				bw.write(prevLine+"\n");
-				prevLine = line;
-			}
-
-		}
-		bw.write(prevLine+"\n");
-
-
-		br.close();
-		bw.close();
-		
-		
-	}
-	
-	private static boolean linesRepresentSameInstance(String prevLine, String nextLine){
-		String[] prevLineValues = prevLine.split("\t");
-		String[] nextLineValues = nextLine.split("\t");
-		
-		if( (prevLineValues[0].equals(nextLineValues[0]))
-			&&  (prevLineValues[1].equals(nextLineValues[1]))
-			&& (prevLineValues[2].equals(nextLineValues[2])) ){
-			
-			if(nextLineValues.length == prevLineValues.length){
-				for(int i =4; i < nextLineValues.length; i++){
-					if(!prevLineValues[i].equals(nextLineValues[i])){
-						return false;
-					}
-				}
-				return true;
-			}
-			
-		}
-		return false;
-		
-	}
-	
-	private static String makeNewLine(String prevLine, String nextLine){
-		String[] prevLineValues = prevLine.split("\t");
-		String[] nextLineValues = nextLine.split("\t");
-		
-		String newRelValue = prevLineValues[3]+"|"+nextLineValues[3];
-		
-		StringBuilder sb = new StringBuilder();
-		for(int i =0; i < prevLineValues.length; i++){
-			if(i == 3){
-				sb.append(newRelValue);
-			}
-			else{
-				sb.append(prevLineValues[i]);
-			}
-			sb.append("\t");
-		}
-		return sb.toString().trim();
-	}
-
-
-
 	/**
 	 * Obtain mappings object from training features file onle
 	 * @param trainFile
@@ -208,15 +100,17 @@ public class Preprocess {
 			String mappingFile) throws IOException {
 
 		Mappings m = new Mappings();
+		Map<String,Integer> featureOccurrenceMap = new HashMap<String,Integer>();
 		//ensure that "NA" gets ID o
 		m.getRelationID("NA", true);
 		BufferedReader br = new BufferedReader(new FileReader(new File(trainFile)));
 		
 		String line;
+		int count = 0 ;
 		while((line = br.readLine()) != null){
 	    	String[] values = line.split("\t");
 	    	String rel = values[3];
-	    	String[] rels = rel.split("\\|");
+	    	String []rels = rel.split("\\|");
 	    	List<String> features = new ArrayList<>();
 	    	//add all features
 	    	for(int i = 4; i < values.length; i++){
@@ -224,20 +118,30 @@ public class Preprocess {
 	    	}
 	    	
 	    	// update mappings file
-	    	for(String r : rels){
+	    	for(String r: rels){
 	    	  m.getRelationID(r, true);
 	    	}
-	    	List<String> relevantFeatures = new ArrayList<String>();
 	    	for(String feature: features){
-	    		if(alreadySeenFeatures.contains(feature)){
-	    			relevantFeatures.add(feature);
-	    		}
-	    		else{
-	    			alreadySeenFeatures.add(feature);
+	    		Integer featId = m.getFeatureID(feature, false);
+	    		if(featId.equals(-1)){
+		    		if(featureOccurrenceMap.containsKey(feature)){
+		    			Integer occurrence = featureOccurrenceMap.get(feature);
+		    			if(occurrence >= FEATURE_THRESHOLD){
+		    				featureOccurrenceMap.remove(feature);
+			    			featId = m.getFeatureID(feature, true);
+		    			}
+		    			else{
+		    				featureOccurrenceMap.put(feature, occurrence +1);
+		    			}
+		    		}
+		    		else{
+		    			featureOccurrenceMap.put(feature, new Integer(1));
+		    		}
 	    		}
 	    	}
-	    	for(String feature: relevantFeatures){
-	    		m.getFeatureID(feature, true);
+	    	count++;
+	    	if(count % 100000 == 0){
+	    		System.out.println(count + " training instances processed");
 	    	}
 		}
 		
@@ -296,11 +200,11 @@ public class Preprocess {
 	    		Pair<List<Integer>, List<List<Integer>>> p = relationMentionMap.get(intKey);
 	    		List<Integer> oldRelations = p.first;
 	    		List<List<Integer>> oldFeatures = p.second;
-	    		for(String rel : rels){
-		    		Integer relKey = getIntRelKey(rel,m);
-		    		if(!oldRelations.contains(relKey)){
-		    		  oldRelations.add(relKey);
-		    		}
+	    		for(String rel: rels){
+	    			Integer relKey = getIntRelKey(rel,m);
+	    			if(!oldRelations.contains(relKey)){
+	    				oldRelations.add(relKey);
+	    			}
 	    		}
 	    		oldFeatures.add(featureIntegers);
 	    	}
@@ -308,8 +212,8 @@ public class Preprocess {
 	    	//new map entry
 	    	else{
 	    		List<Integer> relations = new ArrayList<>();
-	    		for(String rel : rels){
-		    		relations.add(getIntRelKey(rel,m));
+	    		for(String rel: rels){
+	    			relations.add(getIntRelKey(rel,m));
 	    		}
 	    		List<List<Integer>> newFeatureList = new ArrayList<>();
 	    		newFeatureList.add(featureIntegers);

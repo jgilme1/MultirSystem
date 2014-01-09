@@ -501,36 +501,38 @@ public class Corpus {
 		
 		Map<Integer,Pair<CoreMap,String>> mapFromSentToAnnotationAndDocName = new HashMap<>();
 		
-		while(sentenceResults.next()){
-			//keep track of needed documents.
-			String docName = sentenceResults.getString(documentColumnName);
-			Integer sentId = sentenceResults.getInt(sentIDColumnName);
-			relevantDocuments.add(docName);
-			CoreMap s = parseSentence(sentenceResults);
-			if(!mapFromSentToAnnotationAndDocName.containsKey(sentId)){
-				mapFromSentToAnnotationAndDocName.put(sentId, new Pair<CoreMap,String>(s,docName));
+		if(sentenceResults != null){
+			while(sentenceResults.next()){
+				//keep track of needed documents.
+				String docName = sentenceResults.getString(documentColumnName);
+				Integer sentId = sentenceResults.getInt(sentIDColumnName);
+				relevantDocuments.add(docName);
+				CoreMap s = parseSentence(sentenceResults);
+				if(!mapFromSentToAnnotationAndDocName.containsKey(sentId)){
+					mapFromSentToAnnotationAndDocName.put(sentId, new Pair<CoreMap,String>(s,docName));
+				}
 			}
-		}
-		
-		//get document map
-		Map<String,Annotation> docNameToAnnoMap = new HashMap<String,Annotation>();
-		List<String> docNames = new ArrayList<>();
-		for(String docName: relevantDocuments){
-			docNames.add(docName);
-		}
-		List<Annotation> docAnnotations = getDocuments(docNames);
-		for(int i =0; i < docAnnotations.size(); i++){
-			String docName = docNames.get(i);
-			Annotation doc = docAnnotations.get(i);
-			docNameToAnnoMap.put(docName,doc);
-		}
-		
-		for(Integer key : mapFromSentToAnnotationAndDocName.keySet()){
-			Pair<CoreMap,String> s = mapFromSentToAnnotationAndDocName.get(key);
-			CoreMap sent = s.first;
-			Annotation doc = docNameToAnnoMap.get(s.second);
-			Pair<CoreMap,Annotation> newPair = new Pair<CoreMap,Annotation>(sent,doc);
-			sentIdToAnnotationsMap.put(key, newPair);
+			
+			//get document map
+			Map<String,Annotation> docNameToAnnoMap = new HashMap<String,Annotation>();
+			List<String> docNames = new ArrayList<>();
+			for(String docName: relevantDocuments){
+				docNames.add(docName);
+			}
+			List<Annotation> docAnnotations = getDocuments(docNames);
+			for(int i =0; i < docAnnotations.size(); i++){
+				String docName = docNames.get(i);
+				Annotation doc = docAnnotations.get(i);
+				docNameToAnnoMap.put(docName,doc);
+			}
+			
+			for(Integer key : mapFromSentToAnnotationAndDocName.keySet()){
+				Pair<CoreMap,String> s = mapFromSentToAnnotationAndDocName.get(key);
+				CoreMap sent = s.first;
+				Annotation doc = docNameToAnnoMap.get(s.second);
+				Pair<CoreMap,Annotation> newPair = new Pair<CoreMap,Annotation>(sent,doc);
+				sentIdToAnnotationsMap.put(key, newPair);
+			}
 		}
 		return sentIdToAnnotationsMap;
 	}
