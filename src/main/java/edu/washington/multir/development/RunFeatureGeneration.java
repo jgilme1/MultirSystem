@@ -2,8 +2,19 @@ package edu.washington.multir.development;
 
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.sql.SQLException;
+import java.util.List;
 
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
+import edu.washington.multir.argumentidentification.ArgumentIdentification;
+import edu.washington.multir.argumentidentification.RelationMatching;
+import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
@@ -28,14 +39,47 @@ public class RunFeatureGeneration {
 	 * 			args[2] is path to output features file
 	 * @throws SQLException
 	 * @throws IOException
+	 * @throws ClassNotFoundException 
+	 * @throws ParseException 
+	 * @throws IllegalAccessException 
+	 * @throws InstantiationException 
 	 */
-	public static void main(String[] args) throws SQLException, IOException{
-		//initialize variables
-		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecificationWithNEL();
-		FeatureGenerator fg = new DefaultFeatureGenerator();
-		Corpus c = new Corpus(args[0],cis,true);
+	public static void main(String[] args) throws SQLException, IOException, ClassNotFoundException, ParseException, InstantiationException, IllegalAccessException{
+		Options options = new Options();
+		options.addOption("cis",true,"corpusInformationSpecification algorithm class");
+		options.addOption("fg",true,"featureGeneration algorithm class");
+		CommandLineParser parser = new BasicParser();
+		CommandLine cmd = parser.parse(options, args);
+		List<String> remainingArgs = cmd.getArgList();
+		
+		ClassLoader cl = ClassLoader.getSystemClassLoader();
+		CorpusInformationSpecification cis = null;
+		FeatureGenerator fg = null;
+		
+		String corpusInformationSpecificationName = cmd.getOptionValue("cis");
+		String featureGenerationName = cmd.getOptionValue("fg");
+		
+		if(corpusInformationSpecificationName != null){
+			String corpusInformationSpecificationClassPrefix = "edu.washington.multir.corpus.";
+			Class<?> c = cl.loadClass(corpusInformationSpecificationClassPrefix+corpusInformationSpecificationName);
+			cis = (CorpusInformationSpecification) c.newInstance();
+		}
+		else{
+			throw new IllegalArgumentException("corpusInformationSpecification Class Argument is invalid");
+		}
+		
+		if(featureGenerationName != null){
+			String featureGenerationClassPrefix = "edu.washington.multir.featuregeneration.";
+			Class<?> c = cl.loadClass(featureGenerationClassPrefix+featureGenerationName);
+			fg = (FeatureGenerator) c.newInstance();
+		}
+		else{
+			throw new IllegalArgumentException("argumentIdentification Class Argument is invalid");
+		}
+		
+		Corpus c = new Corpus(remainingArgs.get(0),cis,true);
 		
 		FeatureGeneration featureGeneration = new FeatureGeneration(fg);
-		featureGeneration.run(args[1],args[2],c,cis);
+		featureGeneration.run(remainingArgs.get(1),remainingArgs.get(2),c,cis);
 	}
 }

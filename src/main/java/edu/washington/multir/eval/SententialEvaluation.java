@@ -7,6 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -16,17 +18,26 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
+import edu.washington.multir.argumentidentification.ArgumentIdentification;
 import edu.washington.multir.argumentidentification.NELArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERSententialInstanceGeneration;
+import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
+import edu.washington.multir.featuregeneration.FeatureGenerator;
 import edu.washington.multir.preprocess.CorpusPreprocessing;
 import edu.washington.multir.sententialextraction.DocumentExtractor;
 
@@ -48,25 +59,72 @@ public class SententialEvaluation {
 	private static List<String> cjParses;
 	
 	
-	public static void main(String[] args) throws IOException, InterruptedException{
+	public static void main(String[] args) throws IOException, InterruptedException, ParseException, ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, InstantiationException{
+		
+		ArgumentIdentification ai = null;
+		FeatureGenerator fg = null;
+		SententialInstanceGeneration sig = null;
+		ClassLoader cl = ClassLoader.getSystemClassLoader();
+
+		
+		Options options = new Options();
+		options.addOption("ai",true,"argumentIdentification algorithm class");
+		options.addOption("sig",true,"sententialInstanceGeneration algorithm class");
+		options.addOption("fg",true,"relationMatching algorithm class");
+		
+		CommandLineParser parser = new BasicParser();
+		CommandLine cmd = parser.parse(options, args);
+		List<String> remainingArgs = cmd.getArgList();
+		
+		String argumentIdentificationName = cmd.getOptionValue("ai");
+		String sententialInstanceGenerationName = cmd.getOptionValue("sig");
+		String featureGenerationName = cmd.getOptionValue("fg");
+		
+		if(argumentIdentificationName != null){
+			String argumentIdentificationClassPrefix = "edu.washington.multir.argumentidentification.";
+			Class<?> c = cl.loadClass(argumentIdentificationClassPrefix+argumentIdentificationName);
+			Method m = c.getMethod("getInstance");
+			ai = (ArgumentIdentification) m.invoke(null);
+		}
+		else{
+			throw new IllegalArgumentException("argumentIdentification Class Argument is invalid");
+		}
+		
+		if(sententialInstanceGenerationName != null){
+			String sententialInstanceClassPrefix = "edu.washington.multir.argumentidentification.";
+			Class<?> c = cl.loadClass(sententialInstanceClassPrefix+sententialInstanceGenerationName);
+			Method m = c.getMethod("getInstance");
+			sig = (SententialInstanceGeneration) m.invoke(null);
+		}
+		else{
+			throw new IllegalArgumentException("sententialInstanceGeneration Class Argument is invalid");
+		}
+		
+		if(featureGenerationName != null){
+			String featureGenerationClassPrefix = "edu.washington.multir.featuregeneration.";
+			Class<?> c = cl.loadClass(featureGenerationClassPrefix+featureGenerationName);
+			fg = (FeatureGenerator) c.newInstance();
+		}
+		else{
+			throw new IllegalArgumentException("argumentIdentification Class Argument is invalid");
+		}
 		
 		//initialize cjParses
 		cjParses = new ArrayList<>();
-		loadCjParses(args[3]);
+		loadCjParses(remainingArgs.get(3));
 		
 		//read in relations from mapping file
 		validRelations = new HashSet<String>();
-		loadRelations(args[0]);
+		loadRelations(remainingArgs.get(0));
 		
 		
 		//load in annotations
 		List<Label> annotations;
-		String annotationFilePath = args[1];
+		String annotationFilePath = remainingArgs.get(1);
 		annotations = loadAnnotations(annotationFilePath);
 		
 		//get extractions
-		de = new DocumentExtractor(args[2],
-				new DefaultFeatureGenerator(), NELArgumentIdentification.getInstance(), NERSententialInstanceGeneration.getInstance());
+		de = new DocumentExtractor(remainingArgs.get(2),fg, ai, sig);
 		List<Extraction> extractions;
 		extractions = extract(annotations);
 		
@@ -77,13 +135,6 @@ public class SententialEvaluation {
 		
 		System.out.println("Number of annotations is " + annotations.size());
 		
-		
-//		List<Label> annotations;
-//		String annotationFilePath = args[1];
-//		annotations = loadAnnotations(annotationFilePath);
-//		
-//		
-//		writeCJParses(annotations,"sentential.cjparses.input.txt");
 		
 	}
 	
