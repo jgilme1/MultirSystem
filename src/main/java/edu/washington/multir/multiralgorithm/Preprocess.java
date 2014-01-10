@@ -123,19 +123,21 @@ public class Preprocess {
 	    	}
 	    	for(String feature: features){
 	    		Integer featId = m.getFeatureID(feature, false);
-	    		if(featId == -1){
+	    		if(featId.equals(-1)){
+	    			int oldFeatCount;
 		    		if(featureOccurrenceMap.containsKey(feature)){
-		    			Integer occurrence = featureOccurrenceMap.get(feature);
-		    			if(occurrence >= FEATURE_THRESHOLD){
-		    				featureOccurrenceMap.remove(feature);
-			    			featId = m.getFeatureID(feature, true);
-		    			}
-		    			else{
-		    				featureOccurrenceMap.put(feature, occurrence +1);
-		    			}
+		    			oldFeatCount = featureOccurrenceMap.get(feature);
 		    		}
 		    		else{
-		    			featureOccurrenceMap.put(feature, new Integer(1));
+		    			oldFeatCount = 0;
+		    		}
+		    		int featCount = oldFeatCount + 1;
+		    		if(featCount >= FEATURE_THRESHOLD){
+		    			featId = m.getFeatureID(feature,true);
+		    			featureOccurrenceMap.remove(feature);
+		    		}
+		    		else{
+		    			featureOccurrenceMap.put(feature,featCount);
 		    		}
 	    		}
 	    	}
