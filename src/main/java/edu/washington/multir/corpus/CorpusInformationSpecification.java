@@ -178,6 +178,7 @@ public abstract class CorpusInformationSpecification {
 			List<CoreLabel> tokens = new ArrayList<CoreLabel>();
 			for(String token : tokenStrings){
 				CoreLabel l = (CoreLabel) coreLabelFactory.newLabel(token);
+				l.set(CoreAnnotations.TextAnnotation.class, token);
 				tokens.add(l);
 			}
 			c.set(CoreAnnotations.TokensAnnotation.class, tokens);

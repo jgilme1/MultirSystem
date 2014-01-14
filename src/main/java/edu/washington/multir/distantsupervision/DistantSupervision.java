@@ -155,11 +155,13 @@ public class DistantSupervision {
 							Collections.shuffle(arg2Ids);
 							String arg1Id = arg1Ids.get(0);
 							String arg2Id = arg2Ids.get(0);
-							KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
-							KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
-							Triple<KBArgument,KBArgument,String> t = new Triple<>(kbarg1,kbarg2,"NA");
-							Pair<Triple<KBArgument,KBArgument,String>,Integer> negativeAnnotationPair = new Pair<>(t,sentGlobalID);
-							if(!containsNegativeAnnotation(negativeExampleAnnotations,t)) negativeExampleAnnotations.add(negativeAnnotationPair);
+							if((!arg1Id.equals("null")) && (!arg2Id.equals("null"))){
+								KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
+								KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
+								Triple<KBArgument,KBArgument,String> t = new Triple<>(kbarg1,kbarg2,"NA");
+								Pair<Triple<KBArgument,KBArgument,String>,Integer> negativeAnnotationPair = new Pair<>(t,sentGlobalID);
+								if(!containsNegativeAnnotation(negativeExampleAnnotations,t)) negativeExampleAnnotations.add(negativeAnnotationPair);
+							}
 						}
 					}
 				}

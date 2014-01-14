@@ -58,7 +58,7 @@ public class LoadCorpus {
 			cis = (CorpusInformationSpecification) corpusInformationClass.newInstance();
 		}
 		else{
-			throw new IllegalArgumentException("Option -corpusInformationSpecification must be set with the name of a concrete CorpusInformationSpecification class");
+			throw new IllegalArgumentException("Option -cis must be set with the name of a concrete CorpusInformationSpecification class");
 		}
 		
 		

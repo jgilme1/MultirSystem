@@ -68,7 +68,7 @@ public class Corpus {
 		//add Document Information types
 		for(DocumentInformationI docInformation: cis.documentInformation){
 			String columnName = docInformation.name();
-			sqlTableSpecificationBuilder.append(columnName + " VARCHAR(40000)");
+			sqlTableSpecificationBuilder.append(columnName + " CLOB,\n");
 		}
 		sqlTableSpecificationBuilder.append("PRIMARY KEY (DOCNAME))");
 		return sqlTableSpecificationBuilder.toString();
@@ -78,6 +78,7 @@ public class Corpus {
 	// from the corpus
 	private List<Annotation> getDocuments(List<String> docNames) throws SQLException{
 		ResultSet sentenceResults = cd.getSentenceRows(documentColumnName, docNames);
+		ResultSet documentResults = cd.getDocumentRows(documentColumnName, docNames);
 		
 		List<Annotation> documents = new ArrayList<Annotation>();
 		List<CoreMap> sentences = new ArrayList<CoreMap>();
@@ -92,6 +93,8 @@ public class Corpus {
 			String document = sentenceResults.getString(documentColumnName);
 			if(!lastDocument.equals(document)){
 				Annotation a = new Annotation(sentences);
+				documentResults.next();
+				parseDocument(documentResults,a);
 				documents.add(a);
 				sentences = new ArrayList<CoreMap>();
 				lastDocument = document;
@@ -107,12 +110,20 @@ public class Corpus {
 	
 	public Annotation getDocument(String docName) throws SQLException{
 		List<CoreMap> sentences = getSentences(docName);
-		if(sentences.size() > 0)
-		  return new Annotation(sentences);
+		if(sentences.size() > 0){
+		  Annotation doc = new Annotation(sentences);
+		  //set doc values
+		  List<String> docNames = new ArrayList<>();
+		  docNames.add(docName);
+		  ResultSet documentResults = cd.getDocumentRows(documentColumnName, docNames);
+		  parseDocument(documentResults,doc);
+		  return doc;
+		}
 		else
 		  return null;
 	}
 	
+
 	private List<CoreMap> getSentences(String docName) throws SQLException{
 		List<CoreMap> sentences = new ArrayList<CoreMap>();
 		List<String> docNames = new ArrayList<String>();
@@ -124,6 +135,22 @@ public class Corpus {
 		}
 			
 		return sentences;
+	}
+	
+	/**
+	 * Parses some documentInformationI froma  certain document in the corpus
+	 * @param documentResults SQL Row
+	 * @param doc Annotation doc to be modified 
+	 * @throws SQLException 
+	 */
+	private void parseDocument(ResultSet documentResults, Annotation doc) throws SQLException {
+		int index =2;
+		for(DocumentInformationI di : cis.documentInformation){
+			String x = documentResults.getString(index);
+			di.read(x, doc);
+			index++;
+		}
+		return;
 	}
 	
 	/** 
@@ -153,49 +180,6 @@ public class Corpus {
     	}
     	return a;
 	}
-
-
-	private class DocumentIterator implements Iterator<Annotation>{
-    	private ResultSet documents;
-    	private boolean didNext = false;
-    	private boolean hasNext = false;
-    	
-    	public DocumentIterator() throws SQLException{
-    		documents = cd.getDocumentRows();
-    	}
-		@Override
-		public boolean hasNext() {
-			try{
-				if(!didNext){
-					hasNext = documents.next();
-					didNext = true;
-				}
-				return hasNext;
-			}
-			catch(SQLException e){
-				e.printStackTrace();
-				return false;
-			}
-		}
-		@Override
-		public Annotation next() {
-			try{
-			if(!didNext){
-				documents.next();
-			}
-			didNext = false;
-			return getDocument(documents.getString(documentColumnName));
-			}
-			catch(SQLException e){
-				e.printStackTrace();
-				return null;
-			}
-		}
-
-		@Override
-		public void remove() {
-		}    	
-    }
 	
 	//CachingDocumentIterator reduces the number of SQL queries that 
 	//are executed when iterating over documents in the corpus.
@@ -280,7 +264,7 @@ public class Corpus {
     private static String formatValue(String s){
     	StringBuilder sb = new StringBuilder();
     	
-    	sb.append(s.replaceAll("%", "%%"));
+    	sb.append(s.replaceAll("%", "%%").replaceAll("_", "__"));
     	sb.insert(0,"%");
     	sb.append("%");
     	return sb.toString();
@@ -309,9 +293,8 @@ public class Corpus {
 					List<BufferedReader> sentenceDataLineReaders = new ArrayList<BufferedReader>();
 					List<BufferedReader> tokenDataLineReaders = new ArrayList<BufferedReader>();
 					List<BufferedReader> documentDataLineReaders = new ArrayList<BufferedReader>();
-					BufferedReader metaLineReader = new BufferedReader(
-							new FileReader(new File(path.getPath()
-									+ "/sentences.meta")));
+					BufferedReader sentenceMetaLineReader = new BufferedReader(new FileReader(new File(path.getPath()+ "/sentences.meta")));
+					BufferedReader documentMetaLineReader = new BufferedReader(new FileReader(new File(path.getPath()+"/documents.meta")));
 
 					List<SentInformationI> sentenceInformationSpecifications = new ArrayList<SentInformationI>();
 					List<TokenInformationI> tokenInformationSpecifications = new ArrayList<TokenInformationI>();
@@ -347,7 +330,6 @@ public class Corpus {
 					int linesProcessed = 0;
 
 					// iterate over corpus
-					String previousDocumentName = "";
 					BufferedWriter sentenceWriter = new BufferedWriter(
 							new PrintWriter(new File(sentenceDBFileName)));
 					BufferedWriter documentWriter = new BufferedWriter(
@@ -355,17 +337,16 @@ public class Corpus {
 					List<String> cachedSentenceLines = new ArrayList<String>();
 					List<String> cachedDocumentLines = new ArrayList<String>();
 
-					String nextMetaLine = metaLineReader.readLine();
+					String nextMetaLine = sentenceMetaLineReader.readLine();
 					while (nextMetaLine != null) {
 						String[] metaLineValues = nextMetaLine.split("\t");
-						String docName = metaLineValues[1];
 
 						StringBuilder newLine = new StringBuilder();
 
 						// add first columns from meta.sentences file
 						for (String metaLineValue : metaLineValues) {
 							newLine.append(formatValue(metaLineValue));
-							newLine.append("\t");
+							newLine.append("_");
 						}
 
 						int sentLineIteratorIndex = 0;
@@ -380,7 +361,7 @@ public class Corpus {
 								values = splitValues[1];
 							}
 							newLine.append(formatValue(values));
-							newLine.append("\t");
+							newLine.append("_");
 							sentLineIteratorIndex++;
 						}
 
@@ -396,56 +377,90 @@ public class Corpus {
 								values = splitValues[1];
 							}
 							newLine.append(formatValue(values));
-							newLine.append("\t");
+							newLine.append("_");
 							tokenLineIteratorIndex++;
 						}
 						newLine.deleteCharAt(newLine.length() - 1);
 						newLine.append("\n");
 						cachedSentenceLines.add(newLine.toString());
 
-						// get DocumentInformation values if applicable
-						if (!docName.equals(previousDocumentName)) {
-							StringBuilder documentLine = new StringBuilder();
-							documentLine.append(formatValue(docName));
-							documentLine.append("\t");
-							
-							int documentLineIteratorIndex = 0;
-							while(documentLineIteratorIndex < documentDataLineReaders.size()){
-								String nextLine = documentDataLineReaders.get(documentLineIteratorIndex).readLine();
-								String[] splitValues = nextLine.split("\t");
-								String values = " ";
-								if (splitValues.length >1){
-									values = splitValues[1];
-								}
-								documentLine.append(formatValue(values));
-								documentLine.append("\t");
-							}
-							documentLine.deleteCharAt(documentLine.length() -1);
-							documentLine.append("\n");
-							cachedDocumentLines.add(documentLine.toString());
-							previousDocumentName = docName;
-						}
-
 						if (linesProcessed % 500000 == 0) {
 							System.out.println("Processed " + linesProcessed
-									+ " lines");
+									+ " sentence lines");
 							StringBuilder sentenceBuilder = new StringBuilder();
-							StringBuilder documentBuilder = new StringBuilder();
 							for (String sentenceLine : cachedSentenceLines) {
 								sentenceBuilder.append(sentenceLine);
 							}
-							for (String documentLine : cachedDocumentLines) {
-								documentBuilder.append(documentLine);
-							}
 							sentenceWriter.write(sentenceBuilder.toString());
-							documentWriter.write(documentBuilder.toString());
 							cachedSentenceLines.clear();
 							cachedDocumentLines.clear();
 
 						}
 						linesProcessed++;
-						nextMetaLine = metaLineReader.readLine();
+						nextMetaLine = sentenceMetaLineReader.readLine();
 					}
+					
+					
+					//load in document information
+					linesProcessed =0;
+					nextMetaLine = documentMetaLineReader.readLine();
+					while(nextMetaLine != null){
+						String[] metaLineValues = nextMetaLine.split("\t");
+						String docName = metaLineValues[1];
+						Integer currentDocId = Integer.parseInt(metaLineValues[0]);
+						StringBuilder documentLine = new StringBuilder();
+						documentLine.append(formatValue(docName));
+						documentLine.append("_");
+						
+						int documentLineIteratorIndex = 0;
+						while(documentLineIteratorIndex < documentDataLineReaders.size()){
+							BufferedReader diReader = documentDataLineReaders.get(documentLineIteratorIndex);
+							diReader.mark(2000);
+							StringBuilder values = new StringBuilder();
+							String nextLine = diReader.readLine();
+							String[] splitValues = nextLine.split("\t");
+							Integer docID = Integer.parseInt(splitValues[0]);
+							while(docID.equals(currentDocId)){
+								values.append(nextLine);
+								values.append("\n");
+								diReader.mark(2000);
+								nextLine = diReader.readLine();
+								if(nextLine != null){
+									docID = Integer.parseInt(nextLine.split("\t")[0]);
+								}
+								else{
+									docID = -1;
+								}
+							}
+							diReader.reset();
+							if(values.length()>0){
+								documentLine.append(formatValue(values.substring(0, values.length()-1).toString()));
+								documentLine.append("_");
+							}
+							else{
+								documentLine.append(formatValue("NULL"));
+								documentLine.append("_");
+							}
+							documentLineIteratorIndex++;
+						}
+						documentLine.deleteCharAt(documentLine.length() -1);
+						documentLine.append("\n");
+						cachedDocumentLines.add(documentLine.toString());	
+						nextMetaLine = documentMetaLineReader.readLine();
+						
+						linesProcessed++;
+						if (linesProcessed % 10000 == 0) {
+							System.out.println("Processed " + linesProcessed
+									+ " document lines");
+							StringBuilder documentBuilder = new StringBuilder();
+							for (String docLine : cachedDocumentLines) {
+								documentBuilder.append(docLine);
+							}
+							documentWriter.write(documentBuilder.toString());
+							cachedDocumentLines.clear();
+						}
+					}
+					
 					// do final remaining writes
 					StringBuilder sentenceBuilder = new StringBuilder();
 					StringBuilder documentBuilder = new StringBuilder();
@@ -463,7 +478,8 @@ public class Corpus {
 					cachedDocumentLines.clear();
 					sentenceWriter.close();
 					documentWriter.close();
-					metaLineReader.close();
+					sentenceMetaLineReader.close();
+					documentMetaLineReader.close();
 					for (BufferedReader br : sentenceDataLineReaders) {
 						br.close();
 					}
@@ -491,6 +507,7 @@ public class Corpus {
     		fileNames.add(f.getName());
     	}
     	requiredFileNames.add("sentences.meta");
+    	requiredFileNames.add("documents.meta");
     	//sentences.meta will be sentID docname tokens 
     	for(SentInformationI si :cis.sentenceInformation){
     		if(!(si.name().equals("DOCNAME") || si.name().equals("SENTID") ||  si.name().equals("SENTTOKENSINFORMATION"))){
@@ -556,7 +573,6 @@ public class Corpus {
 				Annotation doc = docAnnotations.get(i);
 				docNameToAnnoMap.put(docName,doc);
 			}
-			
 			for(Integer key : mapFromSentToAnnotationAndDocName.keySet()){
 				Pair<CoreMap,String> s = mapFromSentToAnnotationAndDocName.get(key);
 				CoreMap sent = s.first;

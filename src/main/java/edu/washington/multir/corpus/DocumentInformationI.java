@@ -7,12 +7,12 @@ public interface DocumentInformationI {
 	/**
 	 * Read sets Document-level information onto
 	 * the Annotation object doc
-	 * @param line - The serialization of the document-
+	 * @param s - The serialization of the document-
 	 * level information
 	 * @param doc - The mutable view of the document
 	 * and its sentences.
 	 */
-	void read (String line, Annotation doc);
+	void read (String s, Annotation doc);
 	
 	/**
 	 * Returns a string representation of 
