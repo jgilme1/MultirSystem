@@ -103,25 +103,29 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 		
 		//dependency conversions..
 		List<Triple<Integer,String,Integer>> dependencyData = sentence.get(DependencyAnnotation.class);
-		
-		for(Triple<Integer,String,Integer> dep : dependencyData){
-			int parent = dep.first -1;
-			String type = dep.second;
-			int child = dep.third -1;
-
-			//child and parent should not be equivalent
-			if(parent == child){
-				parent = -1;
+		if(dependencyData != null){
+			for(Triple<Integer,String,Integer> dep : dependencyData){
+				int parent = dep.first -1;
+				String type = dep.second;
+				int child = dep.third -1;
+	
+				//child and parent should not be equivalent
+				if(parent == child){
+					parent = -1;
+				}
+				
+				if(child < tokens.size()){
+					depParents[child] = parent;
+					depTypes[child] = type;
+				}
+				else{
+					System.err.println("ERROR BETWEEN DEPENDENCY PARSE AND TOKEN SIZE");
+					return new ArrayList<String>();
+				}
 			}
-			
-			if(child < tokens.size()){
-				depParents[child] = parent;
-				depTypes[child] = type;
-			}
-			else{
-				System.err.println("ERROR BETWEEN DEPENDENCY PARSE AND TOKEN SIZE");
-				return new ArrayList<String>();
-			}
+		}
+		else{
+			return new ArrayList<String>();
 		}
 		
 		//add 1 to end Pos values

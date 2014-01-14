@@ -6,7 +6,7 @@ scalaVersion := "2.10.1"
 
 fork := true
 
-javaOptions in run += "-Xmx8G"
+javaOptions in run += "-Xmx12G"
 
 libraryDependencies ++= Seq(
   "org.apache.commons" % "commons-io" % "1.3.2",

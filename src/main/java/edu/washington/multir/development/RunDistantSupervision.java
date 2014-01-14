@@ -119,15 +119,15 @@ public class RunDistantSupervision {
 		}
 				
 		Corpus c = new Corpus(remainingArgs.get(0),cis,true);
-		String dsFileName = remainingArgs.get(0)+"DS";
-		KnowledgeBase kb = new KnowledgeBase(remainingArgs.get(1),remainingArgs.get(2),remainingArgs.get(3));
+		String dsFileName = remainingArgs.get(1);
+		KnowledgeBase kb = new KnowledgeBase(remainingArgs.get(2),remainingArgs.get(3),remainingArgs.get(4));
 		
-		boolean neFlag = (remainingArgs.get(4).equals("true"))? true : false;
+		boolean neFlag = (remainingArgs.get(5).equals("true"))? true : false;
 		
 		double ratio = 0.0;
 		if(neFlag){
-			if(remainingArgs.size() == 6){
-				ratio = Double.parseDouble(remainingArgs.get(5));
+			if(remainingArgs.size() == 7){
+				ratio = Double.parseDouble(remainingArgs.get(6));
 			}
 		}
 		

@@ -62,6 +62,17 @@ public final class CorpusDatabase {
 		return issueQuery("SELECT * FROM " + documentInformationTableName);
 	}
 	
+	public ResultSet getDocumentRows(String columnName, List<String> docNames) throws SQLException{
+		StringBuilder query = new StringBuilder();
+		query.append("SELECT * FROM " + documentInformationTableName + " WHERE ");
+		for(String docName: docNames){
+			query.append(columnName + "='");
+			query.append(docName);
+			query.append("' OR ");
+		}
+		return issueQuery(query.substring(0,query.length()-4).toString());
+	}
+	
 	public ResultSet getSentenceRows(String columnName, List<String> values) throws SQLException{
 		if(values.size() == 0){
 			return null;
@@ -131,7 +142,6 @@ public final class CorpusDatabase {
 		}
 	}
 	
-	
 	private void bulkInsert(String tableName, List<String> columnNames, List<Object> values) throws SQLException{
 		List<List<Object>> columnValues = tableName.equals(sentenceInformationTableName) ? cachedSentenceValues : cachedDocumentValues;
 		if(columnValues.size() < 2000){
@@ -187,7 +197,7 @@ public final class CorpusDatabase {
 		loadTable.setString(1, null);
 		loadTable.setString(2,tableName);
 		loadTable.setString(3,dbFile.getPath());
-		loadTable.setString(4,"\t");
+		loadTable.setString(4,"_");
 		loadTable.setString(5,"%");
 		loadTable.setString(6,null);
 		loadTable.setInt(7, 0);
