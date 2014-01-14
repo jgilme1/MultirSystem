@@ -95,14 +95,16 @@ public class DocumentExtractor {
 			for(Pair<Argument,Argument> p : sigs){
 				Argument arg1 = p.first;
 				Argument arg2 = p.second;
-				System.out.println("Argument 1 = " + arg1.getArgName());
-				System.out.println("Argument 2 = " + arg2.getArgName());
-				System.out.println("Sentence = " + senText);
 				List<String> features = 
 						fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), s, doc);
+				System.out.println(p.first.getArgName() + "\t" + p.second.getArgName());
+				System.out.println("FEATURES: ");
+				for(String f: features){
+					System.out.println(f);
+				}
 				Triple<String,Double,Double> relationConfidenceTriple = getPrediction(features,arg1,arg2,senText);
 				if(relationConfidenceTriple !=null){
-					String extractionString = arg1.getArgName() + " " + relationConfidenceTriple.first + " " + arg2.getArgName() + "\n" + senText;
+					String extractionString = arg1.getArgName() + " " + relationConfidenceTriple.first + " " + arg2.getArgName();
 					extractions.add(new Pair<String,Double>(extractionString,relationConfidenceTriple.second));
 				}
 			}
@@ -225,7 +227,7 @@ public class DocumentExtractor {
 		DocumentExtractor de = new DocumentExtractor(args[0],
 				new DefaultFeatureGenerator(), NERArgumentIdentification.getInstance(), NERSententialInstanceGeneration.getInstance());
 		
-		de.extractFromDocument("/homes/gws/jgilme1/NYT_ENG_20000503.0255.LDC2007T07.sgm");
+		de.extractFromDocument("/homes/gws/jgilme1/Desktop/AFP_ENG_19940801.0064.LDC2007T07.sgm");
 		
 	}
 

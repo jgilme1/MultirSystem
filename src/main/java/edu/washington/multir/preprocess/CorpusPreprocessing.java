@@ -305,14 +305,19 @@ public class CorpusPreprocessing {
 	public static Annotation getTestDocumentFromRawString(String documentString,String docName) throws IOException, InterruptedException{
 		
 		if(pipeline == null){
-			props.put("annotators", "pos,lemma,ner");
+			props.put("annotators", "tokenize,ssplit,pos,lemma,ner");
 			props.put("sutime.binders","0");
 			pipeline = new StanfordCoreNLP(props,false);
 		}
 
 
 		List<String> paragraphs = cleanDocument(documentString);
-		List<CoreMap> sentences = new ArrayList<CoreMap>();
+		StringBuilder docTextBuilder = new StringBuilder();
+		for(String par: paragraphs){
+			docTextBuilder.append(par);
+			docTextBuilder.append("\n");
+		}
+		String docText = docTextBuilder.toString().trim();
 		
 		
 		File cjInputFile = File.createTempFile(docName, "cjinput");
@@ -321,51 +326,22 @@ public class CorpusPreprocessing {
 		cjInputFile.deleteOnExit();
 		
 		BufferedWriter bw = new BufferedWriter(new FileWriter(cjInputFile));
-		
-		for(String par: paragraphs){
-			par = cleanParagraph(par);
-			
-			//tokenize
-			PTBTokenizer<CoreLabel> tok = new PTBTokenizer<CoreLabel>(
-					new StringReader(par), ltf, options);
-			List<CoreLabel> l = tok.tokenize();
-			List<List<CoreLabel>> snts = sen.process(l);
-			
-			//process each sentence 
-			int offset =0;
-			for(List<CoreLabel> snt: snts){
-				//get snt original text
-				String sentenceText = getSentenceTextAnnotation(snt,par);
-				Annotation sentence = new Annotation(sentenceText);
-				
-				//set tokens on Annotation sentence
-				sentence.set(CoreAnnotations.TokensAnnotation.class, snt);
-				sentence.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class,offset);
-				sentence.set(CoreAnnotations.CharacterOffsetEndAnnotation.class,offset+sentenceText.length());
-				
-				
-				
-				//get String for tokens separated by white space
-				StringBuilder tokensBuilder = new StringBuilder();
-				for(CoreLabel token: snt){
-					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, offset + token.beginPosition());
-					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, offset + token.endPosition());
-					tokensBuilder.append(token.value());
-					tokensBuilder.append(" ");
-				}
-				String tokenString = tokensBuilder.toString().trim();
-				
-				//preprocess sentence text for charniak-johnson parser
-				String cjPreprocessedString = cjPreprocessSentence(tokenString);
-				bw.write(cjPreprocessedString +"\n");
-				
-				sentences.add(sentence);
-				offset = offset + sentenceText.length();
-			}
-		}
-		Annotation doc = new Annotation(sentences);
+
+		Annotation doc = new Annotation(docText);
 		//get pos and ner information from stanford processing
-		pipeline.annotate(doc);		
+		pipeline.annotate(doc);
+		
+		
+		for(CoreMap sentence : doc.get(CoreAnnotations.SentencesAnnotation.class)){
+			StringBuilder tokenStringBuilder = new StringBuilder();
+			for(CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)){
+				tokenStringBuilder.append(token.value());
+				tokenStringBuilder.append(" ");
+			}
+			String cjPreprocessedString = cjPreprocessSentence(tokenStringBuilder.toString().trim());
+			bw.write(cjPreprocessedString +"\n");
+		}
+		
 		bw.close();
 		
 		//run charniak johnson parser
@@ -385,7 +361,7 @@ public class CorpusPreprocessing {
 		p.waitFor();
 		
 		
-		
+		List<CoreMap> sentences = doc.get(CoreAnnotations.SentencesAnnotation.class);
 		//read cj parser output and run stanford dependency parse
 		BufferedReader in = new BufferedReader(new FileReader(cjOutputFile));
 		String nextLine;
