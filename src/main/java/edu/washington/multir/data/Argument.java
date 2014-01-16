@@ -2,6 +2,8 @@ package edu.washington.multir.data;
 
 import java.util.List;
 
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
 import edu.stanford.nlp.util.Interval;
 
 /**
@@ -72,5 +74,45 @@ public class Argument {
 		else{
 			return false;
 		}
+	}
+	
+	@Override
+	public boolean equals(Object other){
+		Argument o = (Argument)other;
+		if((this.startOffset == o.startOffset) &&
+		    (this.endOffset == o.endOffset) &&
+		    (this.argName.equals(o.argName))){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+	
+	@Override
+	public int hashCode(){
+		return new HashCodeBuilder(17,19).append(this.startOffset).append(this.endOffset).append(this.argName).toHashCode();
+	}
+	
+	public static Argument deserialize(String s){
+		String [] values = s.split("\t");
+		if(values.length != 3){
+			throw new IllegalArgumentException("There should be 3 columns of data");
+		}
+		String name = values[0];
+		Integer start = Integer.parseInt(values[1]);
+		Integer end = Integer.parseInt(values[2]);
+		return new Argument(name,start,end);
+	}
+	
+	@Override
+	public String toString(){
+		StringBuilder sb = new StringBuilder();
+		sb.append(argName);
+		sb.append("\t");
+		sb.append(String.valueOf(startOffset));
+		sb.append("\t");
+		sb.append(String.valueOf(endOffset));
+		return sb.toString();
 	}
 }
