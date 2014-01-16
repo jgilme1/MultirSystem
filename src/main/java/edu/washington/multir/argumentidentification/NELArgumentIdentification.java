@@ -43,28 +43,30 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 
 		//then grab all the NERL arguments
 		List<Triple<Pair<Integer,Integer>,String,Float>> nelAnnotation = s.get(NamedEntityLinkingAnnotation.class);
-		for(Triple<Pair<Integer,Integer>,String,Float> trip : nelAnnotation){
-			String id = trip.second;
-			Float conf = trip.third;
-			//if token span has a link create a new argument
-			if(!id.equals("null")){
-				if(conf > CONFIDENCE_THRESHOLD){
-					//get character offsets
-					Integer startTokenOffset = trip.first.first;
-					Integer endTokenOffset = trip.first.second;
-					if(startTokenOffset >= 0 && startTokenOffset < tokens.size() && endTokenOffset >= 0 && endTokenOffset < tokens.size()){
-						Integer startCharacterOffset = tokens.get(startTokenOffset).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-						Integer endCharacterOffset = tokens.get(endTokenOffset-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
-		
-						
-						//get argument string
-						String sentText = s.get(CoreAnnotations.TextAnnotation.class);
-						if(sentText != null && startCharacterOffset !=null && endCharacterOffset!=null){
-							String argumentString = sentText.substring(startCharacterOffset, endCharacterOffset);
+		if(nelAnnotation != null){
+			for(Triple<Pair<Integer,Integer>,String,Float> trip : nelAnnotation){
+				String id = trip.second;
+				Float conf = trip.third;
+				//if token span has a link create a new argument
+				if(!id.equals("null")){
+					if(conf > CONFIDENCE_THRESHOLD){
+						//get character offsets
+						Integer startTokenOffset = trip.first.first;
+						Integer endTokenOffset = trip.first.second;
+						if(startTokenOffset >= 0 && startTokenOffset < tokens.size() && endTokenOffset >= 0 && endTokenOffset < tokens.size()){
+							Integer startCharacterOffset = tokens.get(startTokenOffset).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+							Integer endCharacterOffset = tokens.get(endTokenOffset-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+			
 							
-							//add argument to list
-							KBArgument nelArgument = new KBArgument(new Argument(argumentString,startCharacterOffset,endCharacterOffset),id);
-							nelArguments.add(nelArgument);
+							//get argument string
+							String sentText = s.get(CoreAnnotations.TextAnnotation.class);
+							if(sentText != null && startCharacterOffset !=null && endCharacterOffset!=null){
+								String argumentString = sentText.substring(startCharacterOffset, endCharacterOffset);
+								
+								//add argument to list
+								KBArgument nelArgument = new KBArgument(new Argument(argumentString,startCharacterOffset,endCharacterOffset),id);
+								nelArguments.add(nelArgument);
+							}
 						}
 					}
 				}
@@ -77,19 +79,19 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 		 arguments.addAll(nelArguments);
 		}
 		//add NER arguments if they don't intersect with NEL arguments
-		for(Argument nerArg : nerArguments){
-			boolean intersects = false;
-			for(Argument nelArg: nelArguments){
-				Interval<Integer> nerArgInterval = Interval.toInterval(nerArg.getStartOffset(), nerArg.getEndOffset());
-				Interval<Integer> nelArgInterval = Interval.toInterval(nelArg.getStartOffset(), nelArg.getEndOffset());
-				if(nerArgInterval.intersect(nelArgInterval) !=null){
-					intersects = true;
-				}
-			}
-			if(!intersects){
-				arguments.add(nerArg);
-			}
-		}
+//		for(Argument nerArg : nerArguments){
+//			boolean intersects = false;
+//			for(Argument nelArg: nelArguments){
+//				Interval<Integer> nerArgInterval = Interval.toInterval(nerArg.getStartOffset(), nerArg.getEndOffset());
+//				Interval<Integer> nelArgInterval = Interval.toInterval(nelArg.getStartOffset(), nelArg.getEndOffset());
+//				if(nerArgInterval.intersect(nelArgInterval) !=null){
+//					intersects = true;
+//				}
+//			}
+//			if(!intersects){
+//				arguments.add(nerArg);
+//			}
+//		}
 		
 		return arguments;
 	}

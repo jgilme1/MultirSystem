@@ -1,5 +1,6 @@
 package edu.washington.multir.sententialextraction;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +26,7 @@ import edu.washington.multir.multiralgorithm.Scorer;
 import edu.washington.multir.preprocess.CorpusPreprocessing;
 
 import edu.washington.multir.argumentidentification.ArgumentIdentification;
+import edu.washington.multir.argumentidentification.NELArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERSententialInstanceGeneration;
 import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
@@ -97,24 +99,19 @@ public class DocumentExtractor {
 				Argument arg2 = p.second;
 				List<String> features = 
 						fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), s, doc);
-				System.out.println(p.first.getArgName() + "\t" + p.second.getArgName());
-				System.out.println("FEATURES: ");
-				for(String f: features){
-					System.out.println(f);
-				}
-				Triple<String,Double,Double> relationConfidenceTriple = getPrediction(features,arg1,arg2,senText);
-				if(relationConfidenceTriple !=null){
-					String extractionString = arg1.getArgName() + " " + relationConfidenceTriple.first + " " + arg2.getArgName();
-					extractions.add(new Pair<String,Double>(extractionString,relationConfidenceTriple.second));
+				Triple<String,Double,Double> relationScoreTriple = getPrediction(features,arg1,arg2,senText);
+				if(relationScoreTriple !=null){
+					String extractionString = arg1.getArgName() + " " + relationScoreTriple.first + " " + arg2.getArgName();
+					extractions.add(new Pair<String,Double>(extractionString,relationScoreTriple.third));
 				}
 			}
 		}
 		
 		for(Pair<String,Double> extr: extractions){
 			String extrString = extr.first;
-			Double confidence = extr.second;
+			Double score = extr.second;
 			
-			System.out.println(extrString + "\t" + confidence);
+			System.out.println(extrString + "\t" + score);
 		}
 	}
 	
@@ -227,8 +224,14 @@ public class DocumentExtractor {
 		DocumentExtractor de = new DocumentExtractor(args[0],
 				new DefaultFeatureGenerator(), NERArgumentIdentification.getInstance(), NERSententialInstanceGeneration.getInstance());
 		
-		de.extractFromDocument("/homes/gws/jgilme1/Desktop/AFP_ENG_19940801.0064.LDC2007T07.sgm");
-		
+		String testDir = args[1];
+		File f = new File(args[1]);
+		int count = 0;
+		for(File doc : f.listFiles()){
+			de.extractFromDocument(doc.getAbsolutePath());
+			System.out.println("Processed file " + count);
+			count ++;
+		}		
 	}
 
 }
