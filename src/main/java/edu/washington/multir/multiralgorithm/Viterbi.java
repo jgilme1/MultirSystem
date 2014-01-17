@@ -1,5 +1,7 @@
 package edu.washington.multir.multiralgorithm;
 
+import java.util.Map;
+
 public class Viterbi {
 
 	private Scorer parseScorer;
@@ -10,7 +12,7 @@ public class Viterbi {
 		this.parseScorer = parseScorer;
 	}
 	
-	public Parse parse(MILDocument doc, int mention) {
+	public Parse parse(MILDocument doc, int mention, Map<Integer,Double> featureScoreMap) {
 		int numRelations = model.numRelations;
 
 		// relation X argsReversed
@@ -18,13 +20,15 @@ public class Viterbi {
 				
 		// lookup signature
 		for (int s = 0; s < numRelations; s++)
-			scores[s] = parseScorer.scoreMentionRelation(doc, mention, s);
+			scores[s] = parseScorer.scoreMentionRelation(doc, mention, s, featureScoreMap);
 
 		int bestRel = 0;
 		for (int r = 0; r < model.numRelations; r++) {
 			if (scores[r] > scores[bestRel]) {
 				bestRel = r; }
 		}
+		//run again to set the featureScoreMap to the one for the highest relation
+		parseScorer.scoreMentionRelation(doc, mention, bestRel, featureScoreMap);
 
 		Parse p = new Parse(bestRel, scores[bestRel]);
 		p.scores = scores;

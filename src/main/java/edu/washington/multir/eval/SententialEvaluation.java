@@ -12,8 +12,10 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,6 +40,7 @@ import edu.washington.multir.argumentidentification.SententialInstanceGeneration
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
 import edu.washington.multir.featuregeneration.FeatureGenerator;
+import edu.washington.multir.multiralgorithm.Mappings;
 import edu.washington.multir.preprocess.CorpusPreprocessing;
 import edu.washington.multir.sententialextraction.DocumentExtractor;
 
@@ -57,6 +60,8 @@ public class SententialEvaluation {
 	private static DocumentExtractor de;
 	
 	private static List<String> cjParses;
+	
+	private static Map<Integer,String> ftID2ft;
 	
 	
 	public static void main(String[] args) throws IOException, InterruptedException, ParseException, ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, InstantiationException{
@@ -128,6 +133,7 @@ public class SententialEvaluation {
 		List<Extraction> extractions;
 		extractions = extract(annotations);
 		
+
 		
 		
 		
@@ -235,7 +241,8 @@ public class SententialEvaluation {
 		List<CoreMap> sentences = doc.get(CoreAnnotations.SentencesAnnotation.class);
 		Argument arg1 = new Argument(a.r.arg1.getArgName(),a.r.arg1.getStartOffset(),a.r.arg1.getEndOffset());
 		Argument arg2 = new Argument(a.r.arg2.getArgName(),a.r.arg2.getStartOffset(),a.r.arg2.getEndOffset());
-		Triple<String,Double,Double> result = de.extractFromSententialInstance(arg1, arg2, sentences.get(0), doc);
+		Pair<Triple<String,Double,Double>,Map<Integer,Double>> result = de.extractFromSententialInstanceWithFeatureScores(arg1, arg2, sentences.get(0), doc);
+		
 		
 		if(result == null){
 			return null;
@@ -244,17 +251,20 @@ public class SententialEvaluation {
 		//convert to extraction
 		else{
 			Extraction e = new Extraction();
+			Triple<String,Double,Double> trip = result.first;
+			Map<Integer,Double> featureScoreMap = result.second;
 			e.sentence = a.sentence;
 			e.ID = a.ID;
-			e.conf = result.second;
-			e.score = result.third;
+			e.conf = trip.second;
+			e.score = trip.third;
 			
 			Relation r = new Relation();
-			r.rel = result.first;
+			r.rel = trip.first;
 			r.arg1 = arg1;
 			r.arg2 = arg2;
 			
 			e.r = r;
+			e.featureScores = featureScoreMap;
 			
 			if(!a.r.rel.equals(r.rel)) System.out.println(e.ID +"\t" + r.rel + "\t" + r.arg1.getArgName() + "\t" + r.arg2.getArgName());
 			return e;
@@ -319,13 +329,19 @@ public class SententialEvaluation {
 				if(e.r.rel.equals(matchingLabel.r.rel)){
 					numberOfTotalCorrectExtractions++;
 					totalExtractions++;
-					if(print) System.out.print(r.arg1.getArgName()+ "\t" + r.arg2.getArgName() + "\t" + r.rel  +"\t" + e.score + "\t" + "CORRECT\n");
+					if(print) {
+						System.out.print(r.arg1.getArgName()+ "\t" + r.arg2.getArgName() + "\t" + r.rel  +"\t" + e.score + "\t" + "CORRECT\n");
+						System.out.println(e.printFeatureScores());
+					}
 				}
 			}
 			else{
 				if(e.r.rel.equals(matchingLabel.r.rel)){
 					totalExtractions++;
-					if(print) System.out.print(r.arg1.getArgName()+ "\t" + r.arg2.getArgName() + "\t" + r.rel  +"\t" + e.score +"\t" + "INCORRECT\n");
+					if(print) {
+						System.out.print(r.arg1.getArgName()+ "\t" + r.arg2.getArgName() + "\t" + r.rel  +"\t" + e.score +"\t" + "INCORRECT\n");
+						System.out.println(e.printFeatureScores());
+					}
 				}
 			}
 			
@@ -381,6 +397,39 @@ public class SententialEvaluation {
 		Integer ID;
 		double conf;
 		double score;
+		Map<Integer,Double> featureScores;
+		private List<Pair<String,Double>> featureScoreList = null;
+		
+		
+		public String printFeatureScores(){
+			if(featureScoreList == null){
+				featureScoreList = new ArrayList<>();
+				for(Integer i : featureScores.keySet()){
+					String f = ftID2ft.get(i);
+					Double score = featureScores.get(i);
+					Pair<String,Double> p = new Pair<>(f,score);
+					featureScoreList.add(p);
+				}
+				//sort by scores
+				Collections.sort(featureScoreList, new Comparator<Pair<String,Double>>(){
+
+					@Override
+					public int compare(Pair<String, Double> arg0,
+							Pair<String, Double> arg1) {
+						return arg0.second.compareTo(arg1.second);
+					}
+					
+				});
+				Collections.reverse(featureScoreList);
+			}
+			StringBuilder sb = new StringBuilder();
+			sb.append("Features in order of score:\n");
+			for(Pair<String,Double> p : featureScoreList){
+				sb.append(p.first + "\t" + p.second +"\n");
+			}
+			sb.setLength(sb.length()-1);
+			return sb.toString();
+		}
 	}
 
 	

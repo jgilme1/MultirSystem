@@ -5,6 +5,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Map;
 
 public class DenseVector {
 
@@ -14,18 +15,20 @@ public class DenseVector {
 		this.vals = new double[length];
 	}
 	
-	public double dotProduct(SparseBinaryVector v) {
-		return dotProduct(this, v);
+	public double dotProduct(SparseBinaryVector v, Map<Integer,Double> featureScoreMap) {
+		return dotProduct(this, v, featureScoreMap);
 	}
 
 	public void reset() {
 		for (int i=0; i < vals.length; i++) vals[i] = 0;
 	}
 	
-	public static double dotProduct(DenseVector v1, SparseBinaryVector v2) {
+	public static double dotProduct(DenseVector v1, SparseBinaryVector v2, Map<Integer,Double> featureScoreMap) {
 		double sum = 0;
 		for (int i=0; i < v2.num; i++) {
-			sum += v1.vals[v2.ids[i]];
+			double featureScore = v1.vals[v2.ids[i]];
+			featureScoreMap.put(new Integer(v2.ids[i]),new Double(featureScore));
+			sum += featureScore;
 		}
 		return sum;
 	}
