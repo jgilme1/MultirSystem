@@ -226,7 +226,7 @@ public class ManualEvaluation {
 			}
 		}
 		
-		double precision = (totalExtractions == 0) ? 0.0 : ((double)correctExtractions /(double)totalExtractions);
+		double precision = (totalExtractions == 0) ? 1.0 : ((double)correctExtractions /(double)totalExtractions);
 		Pair<Double,Integer> p = new Pair<Double,Integer>(precision,correctExtractions);
 		return p;
 	}
