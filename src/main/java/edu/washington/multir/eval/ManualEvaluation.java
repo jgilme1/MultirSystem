@@ -177,15 +177,12 @@ public class ManualEvaluation {
 		});
 		Collections.reverse(extractions);
 		
-		for(Extraction extr: extractions){
-			System.out.println(extr + "\t" + extr.getScore());
-		}
-		
 		List<Pair<Double,Integer>> precisionYieldValues = new ArrayList<>();
 		for(int i =1; i < extractions.size(); i++){
-			Pair<Double,Integer> pr = getPrecisionYield(extractions.subList(0, i),annotations,targetRelations);
+			Pair<Double,Integer> pr = getPrecisionYield(extractions.subList(0, i),annotations,targetRelations,false);
 			precisionYieldValues.add(pr);
 		}
+		Pair<Double,Integer> pr = getPrecisionYield(extractions,annotations,targetRelations,true);
 		
 		System.out.println("Precision and Yield");
 		for(Pair<Double,Integer> p : precisionYieldValues){
@@ -194,7 +191,7 @@ public class ManualEvaluation {
 	}
 
 	private static Pair<Double, Integer> getPrecisionYield(List<Extraction> subList,
-			List<ExtractionAnnotation> annotations, Set<String> relationSet) {
+			List<ExtractionAnnotation> annotations, Set<String> relationSet, boolean print) {
 		
 		int totalExtractions = 0;
 		int correctExtractions = 0;
@@ -210,8 +207,19 @@ public class ManualEvaluation {
 				}
 				if(matchingAnnotations.size() == 1){
 					ExtractionAnnotation matchedAnnotation = matchingAnnotations.get(0);
+					if(print){
+						System.out.print(e + "\t" + e.getScore());
+					}
 					if(matchedAnnotation.getLabel()){
 						correctExtractions++;
+						if(print){
+							System.out.print("\tCORERCT\n");
+						}
+					}
+					else{
+						if(print){
+							System.out.print("\tINCORRECT\n");
+						}
 					}
 				}
 				else{
