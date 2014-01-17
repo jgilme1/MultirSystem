@@ -12,9 +12,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.cli.BasicParser;
@@ -55,6 +57,7 @@ import edu.washington.multir.sententialextraction.DocumentExtractor;
 public class ManualEvaluation {
 	
 	private static Set<String> targetRelations = null;
+	private static Map<Integer,String> ftID2ftMap = new HashMap<Integer,String>();
 	
 	public static void main (String[] args) throws ParseException, ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException, SQLException, IOException{
 		
@@ -133,6 +136,14 @@ public class ManualEvaluation {
 		//load test corpus
 		Corpus c = new Corpus(testCorpusDatabasePath,cis,true);
 		DocumentExtractor de = new DocumentExtractor(multirModelPath,fg,ai,sig);
+		
+		Map<String,Integer> ft2ftIdMap = de.getMapping().getFt2ftId();
+		for(String f : ft2ftIdMap.keySet()){
+			Integer k = ft2ftIdMap.get(f);
+			ftID2ftMap.put(k, f);
+		}
+		
+		
 		List<Extraction> extractions = getExtractions(c,ai,sig,de);
 		
 		List<ExtractionAnnotation> annotations = loadAnnotations(annotationsInputFilePath);
@@ -213,12 +224,21 @@ public class ManualEvaluation {
 					if(matchedAnnotation.getLabel()){
 						correctExtractions++;
 						if(print){
-							System.out.print("\tCORERCT\n");
+							System.out.print("\tCORRECT\n");
 						}
 					}
 					else{
 						if(print){
 							System.out.print("\tINCORRECT\n");
+						}
+					}
+					if(print){
+						System.out.println("Features:");
+						Map<Integer,Double> featureScores = e.getFeatureScores();
+						for(Integer i : featureScores.keySet()){
+							Double score = featureScores.get(i);
+							String featName = ftID2ftMap.get(i);
+							System.out.println(featName + "\t" + score);
 						}
 					}
 				}
@@ -313,14 +333,17 @@ public class ManualEvaluation {
 				//sentential instance generation
 				List<Pair<Argument,Argument>> sententialInstances = sig.generateSententialInstances(arguments, sentence);
 				for(Pair<Argument,Argument> p : sententialInstances){
-					Triple<String,Double,Double> extrTriple = 
-					de.extractFromSententialInstance(p.first, p.second, sentence, doc);
-					if(extrTriple != null){
-						String rel = extrTriple.first;
+					Pair<Triple<String,Double,Double>,Map<Integer,Double>> extrResult = 
+					de.extractFromSententialInstanceWithFeatureScores(p.first, p.second, sentence, doc);
+					if(extrResult != null){
+						Triple<String,Double,Double> extrScoreTripe = extrResult.first;
+						Map<Integer,Double> featureScores = extrResult.second;
+						String rel = extrScoreTripe.first;
 						if(targetRelations.contains(rel)){
 							String docName = sentence.get(SentDocName.class);
 							String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
-							Extraction e = new Extraction(p.first,p.second,docName,rel,sentenceCount,extrTriple.third,senText);
+							Extraction e = new Extraction(p.first,p.second,docName,rel,sentenceCount,extrScoreTripe.third,senText);
+							e.setFeatureScores(featureScores);
 							extrs.add(e);
 						}
 					}

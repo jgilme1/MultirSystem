@@ -28,7 +28,7 @@ import edu.stanford.nlp.util.Pair;
 public class Preprocess {
 	private static Map<String,Integer> keyToIntegerMap = new HashMap<String,Integer>();
     private static Map<Integer,String> intToKeyMap = new HashMap<Integer,String>();
-    private static final int FEATURE_THRESHOLD = 3;
+    private static final int FEATURE_THRESHOLD = 2;
 
     private static final double GIGABYTE_DIVISOR = 1073741824;
 	/**

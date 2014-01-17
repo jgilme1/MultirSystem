@@ -100,8 +100,8 @@ public class DocumentExtractor {
 				List<String> features = 
 						fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), s, doc);
 				Triple<String,Double,Double> relationScoreTriple = getPrediction(features,arg1,arg2,senText).first;
-				if(relationConfidenceTriple !=null){
-					String extractionString = arg1.getArgName() + " " + relationConfidenceTriple.first + " " + arg2.getArgName() + "\n" + senText;
+				if(relationScoreTriple !=null){
+					String extractionString = arg1.getArgName() + " " + relationScoreTriple.first + " " + arg2.getArgName() + "\n" + senText;
 					extractions.add(new Pair<String,Double>(extractionString,relationScoreTriple.third));
 				}
 			}
