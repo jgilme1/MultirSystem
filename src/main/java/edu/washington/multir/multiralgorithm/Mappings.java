@@ -33,6 +33,10 @@ public class Mappings {
 		return rel2relID;
 	}
 	
+	public Map<String,Integer> getFt2ftId(){
+		return ft2ftID;
+	}
+	
 	public int getFeatureID(String feature, boolean addNew) {
 		Integer i = ft2ftID.get(feature);
 		if (i == null) {

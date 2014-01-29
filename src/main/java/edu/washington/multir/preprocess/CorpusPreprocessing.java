@@ -233,7 +233,7 @@ public class CorpusPreprocessing {
 			return "<s> " +sentenceTokensText+ " </s>\n";
 		}
 		else{
-			return "\n";
+			return "<s> NULL </s>\n";
 		}
 	}
 

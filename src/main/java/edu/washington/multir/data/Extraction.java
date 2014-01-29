@@ -1,5 +1,7 @@
 package edu.washington.multir.data;
 
+import java.util.Map;
+
 import org.apache.commons.lang.builder.HashCodeBuilder;
 
 public class Extraction {
@@ -10,6 +12,7 @@ public class Extraction {
 	Integer sentNum;
 	Double score;
 	String senText;
+	Map<Integer,Double> featureScores;
 	
 	public Extraction(Argument arg1, Argument arg2, String docName, String relation, Integer sentNum, String senText){
 		this(arg1,arg2,docName,relation,sentNum,0.0,senText);
@@ -22,6 +25,7 @@ public class Extraction {
 		this.sentNum = sentNum;
 		this.score = score;
 		this.senText = senText;
+		featureScores = null;
 	}
 	
 	@Override
@@ -82,6 +86,14 @@ public class Extraction {
 	
 	public String getRelation(){
 		return relation;
+	}
+	
+	public void setFeatureScores(Map<Integer,Double> fScores){
+		featureScores = fScores;
+	}
+	
+	public Map<Integer,Double> getFeatureScores(){
+		return featureScores;
 	}
 
 }

@@ -19,7 +19,6 @@ import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.SentDe
  */
 public class DefaultFeatureGenerator implements FeatureGenerator {
 
-	
 	@Override
 	public List<String> generateFeatures(Integer arg1StartOffset,
 			Integer arg1EndOffset, Integer arg2StartOffset,
