@@ -138,7 +138,7 @@ public class FeatureGeneration {
 		return c.getAnnotationPairsForEachSentence(sentIds);
 	}
 	
-	private static class SententialArgumentPair{
+	public static class SententialArgumentPair{
 		
 		private Integer sentID;
 		private Pair<Integer,Integer> arg1Offsets;
@@ -210,6 +210,8 @@ public class FeatureGeneration {
 		public String getArg2Id(){return arg2ID;}
 		public List<String> getRelations(){return relations;}
 		public Integer getSentID(){return sentID;}
+		public Pair<Integer,Integer> getArg1Offsets(){return arg1Offsets;}
+		public Pair<Integer,Integer> getArg2Offsets(){return arg2Offsets;}
 	}
 
 }
