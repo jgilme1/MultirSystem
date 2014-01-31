@@ -114,7 +114,7 @@ public class GeneralizedFeatureGenerator implements FeatureGenerator {
 		features.add(makeSequenceFeature(generalLeftTokens,inverseFeature,LEFT_PREFIX,GENERAL_FEATURE));
 		features.add(makeSequenceFeature(generalRightTokens,inverseFeature,RIGHT_PREFIX,GENERAL_FEATURE));
 		
-		List<List<String>> generalMiddleBigrams = getMiddleBigrams(generalMiddleTokens,2);
+		List<List<String>> generalMiddleBigrams = getMiddleBigrams(generalMiddleTokens,3);
 		List<List<String>> generalLeftBigrams = getLeftBigrams(generalLeftTokens,2);
 		List<List<String>> generalRightBigrams = getRightBigrams(generalRightTokens,2);
 		
@@ -198,7 +198,7 @@ public class GeneralizedFeatureGenerator implements FeatureGenerator {
 
 	}
 	
-	private List<List<String>> getLeftBigrams(List<String> generalTokens, int numBigrams){
+	private List<List<String>> getRightBigrams(List<String> generalTokens, int numBigrams){
 		List<List<String>> bigrams = new ArrayList<List<String>>();
 		
 		int i =0;
@@ -216,7 +216,7 @@ public class GeneralizedFeatureGenerator implements FeatureGenerator {
 		return bigrams;
 	}
 	
-	private List<List<String>> getRightBigrams(List<String> tokens, int numBigrams){
+	private List<List<String>> getLeftBigrams(List<String> tokens, int numBigrams){
 		List<List<String>> bigrams = new ArrayList<List<String>>();
 		
 		int i = tokens.size()-1;
@@ -290,7 +290,7 @@ public class GeneralizedFeatureGenerator implements FeatureGenerator {
 		int count =0;
 		List<Integer> sentIds = new ArrayList<Integer>();
 		List<SententialArgumentPair> saps = new ArrayList<SententialArgumentPair>();
-		while(nextLine != null && count < 10){
+		while(nextLine != null && count < 20){
 			SententialArgumentPair sap = SententialArgumentPair.parseSAP(nextLine);
 			sentIds.add(sap.getSentID());
 			saps.add(sap);
