@@ -39,6 +39,7 @@ public class GeneralizedFeatureGenerator implements FeatureGenerator {
 	private static final String BIGRAM_FEATURE = "b:";
 	private static final String DISTANCE_FEATURE = "d:";
 	private static final String TYPE_FEATURE = "t:";
+	private static OpenNlpChunker chunker = new OpenNlpChunker();
 	
 	private static List<String> defaultBigram;
 	
@@ -56,7 +57,6 @@ public class GeneralizedFeatureGenerator implements FeatureGenerator {
 			Integer arg1EndOffset, Integer arg2StartOffset,
 			Integer arg2EndOffset, CoreMap sentence, Annotation document) {
 		
-		OpenNlpChunker chunker = new OpenNlpChunker();
 		List<String> features = new ArrayList<String>();
 		
 		
@@ -77,10 +77,8 @@ public class GeneralizedFeatureGenerator implements FeatureGenerator {
 		
 		for(int i =0; i < chunkedTokens.size(); i++){
 			ChunkedToken ct = chunkedTokens.get(i);
-			System.out.print(ct.toString() + " ");
 			tokens.get(i).set(CoreAnnotations.ChunkAnnotation.class, ct.chunk());
 		}
-		System.out.println();
 
 		
 		

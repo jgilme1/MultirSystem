@@ -248,7 +248,7 @@ public class FeatureGeneratorMethods {
 				catch(NullPointerException e){
 					
 				}
-				catch(ArrayIndexOutOfBoundsException e){
+				catch(IndexOutOfBoundsException e){
 					
 				}
 			}
