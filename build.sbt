@@ -20,4 +20,6 @@ libraryDependencies ++= Seq(
   "org.apache.derby" % "derby" % "10.10.1.1",
   "edu.washington.cs.knowitall" % "reverb-core" % "1.4.3",
   "edu.washington.cs.knowitall.nlptools" % "nlptools-core_2.10" % "2.4.4",
-  "edu.washington.cs.knowitall.nlptools" % "nlptools-chunk-opennlp_2.10" % "2.4.4")
+  "edu.washington.cs.knowitall.nlptools" % "nlptools-chunk-opennlp_2.10" % "2.4.4",
+  "edu.mit" % "jwi" % "2.2.3",
+  "edu.washington.cs.knowitall.nlptools" % "nlptools-wordnet-uw_2.10" % "2.4.4")
