@@ -233,13 +233,13 @@ public class ManualEvaluation {
 						}
 					}
 					if(print){
-						System.out.println("Features:");
-						Map<Integer,Double> featureScores = e.getFeatureScores();
-						for(Integer i : featureScores.keySet()){
-							Double score = featureScores.get(i);
-							String featName = ftID2ftMap.get(i);
-							System.out.println(featName + "\t" + score);
-						}
+//						System.out.println("Features:");
+//						Map<Integer,Double> featureScores = e.getFeatureScores();
+//						for(Integer i : featureScores.keySet()){
+//							Double score = featureScores.get(i);
+//							String featName = ftID2ftMap.get(i);
+//							System.out.println(featName + "\t" + score);
+//						}
 					}
 				}
 				else{
