@@ -24,7 +24,7 @@ public class FeatureGeneration {
 	
 	private FeatureGenerator fg;
 	private Corpus c;
-	private static final int TRAINING_INSTANCES_IN_MEMORY_CONSTANT = 10000;
+	private static final int TRAINING_INSTANCES_IN_MEMORY_CONSTANT = 3000;
 	public FeatureGeneration(FeatureGenerator fg){
 		this.fg = fg;
 	}	
@@ -63,7 +63,7 @@ public class FeatureGeneration {
 			}			
 			nextLine = in.readLine();
 			lines ++;
-			if(lines % 10000 == 0){
+			if(lines % 3000 == 0){
 				System.out.println("Lines read = " + lines);
 			}
 		}

@@ -73,7 +73,7 @@ public class GeneralizedFeatureGenerator020314 implements FeatureGenerator {
 		
 		//get exact middle token sequnece
 		List<CoreLabel> middleTokens = FeatureGeneratorMethods.getMiddleTokens(leftArgOffsets.second, rightArgOffsets.first, tokens);
-		List<Triple<CoreLabel,DependencyType,CoreLabel>> dependencyPathMiddleTokens = FeatureGeneratorMethods.getDependencyPath(leftArgOffsets.second,rightArgOffsets.second,sentence);
+		//List<Triple<CoreLabel,DependencyType,CoreLabel>> dependencyPathMiddleTokens = FeatureGeneratorMethods.getDependencyPath(leftArgOffsets.second,rightArgOffsets.second,sentence);
 		List<CoreLabel> leftWindowTokens = FeatureGeneratorMethods.getLeftWindowTokens(leftArgOffsets.first, tokens, WINDOW_SIZE);
 		List<CoreLabel> rightWindowTokens = FeatureGeneratorMethods.getRightWindowTokens(rightArgOffsets.second, tokens, WINDOW_SIZE);
 		List<CoreLabel> leftTokens = FeatureGeneratorMethods.getLeftWindowTokens(leftArgOffsets.first, tokens);
@@ -118,7 +118,7 @@ public class GeneralizedFeatureGenerator020314 implements FeatureGenerator {
 		}
 		
 		System.out.println("DEP PATH:");
-		System.out.println(getDependencyPathString(dependencyPathMiddleTokens));
+		//System.out.println(getDependencyPathString(dependencyPathMiddleTokens));
 		
 		
 //		String distanceFeatureSuffix = DISTANCE_FEATURE + " " + getDistanceFeature(middleTokens.size());
@@ -400,7 +400,7 @@ public class GeneralizedFeatureGenerator020314 implements FeatureGenerator {
 			default:
 				throw new IllegalArgumentException("Bad Direction");
 			}
-			sb.append("("+type+")");
+			sb.insert(0,("("+type+")"));
 			return sb.toString();
 		}
 	}
@@ -412,7 +412,7 @@ public class GeneralizedFeatureGenerator020314 implements FeatureGenerator {
 			sb.append(getDependencyTripleString(t));
 		}
 		
-		return sb.toString();
+		return sb.toString().trim();
 	}
 	
 	private static String getDependencyTripleString(Triple<CoreLabel,DependencyType,CoreLabel> triple){
@@ -421,6 +421,7 @@ public class GeneralizedFeatureGenerator020314 implements FeatureGenerator {
 		sb.append(triple.first.get(CoreAnnotations.TextAnnotation.class));
 		sb.append(triple.second.toString());
 		sb.append(triple.third.get(CoreAnnotations.TextAnnotation.class));
+		sb.append(" ");
 		
 		return sb.toString();
 	}
