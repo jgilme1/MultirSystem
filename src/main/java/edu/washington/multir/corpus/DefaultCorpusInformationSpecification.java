@@ -21,6 +21,7 @@ public class DefaultCorpusInformationSpecification extends
 		tokenInformation.add(tokenNERInformationInstance);
 		tokenInformation.add(tokenOffsetInformationinstance);
 		tokenInformation.add(tokenPOSInformationInstance);
+		tokenInformation.add(chunkInformationInstance);
 		
 	}
 	private TokenNERInformation tokenNERInformationInstance = new TokenNERInformation();
@@ -152,6 +153,45 @@ public class DefaultCorpusInformationSpecification extends
 			StringBuilder sb = new StringBuilder();
 			for(CoreLabel token : tokens){
 				String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+				if(pos != null){
+					sb.append(pos);
+					sb.append(" ");
+				}
+			}
+			return sb.toString().trim();
+		}
+
+		@Override
+		public String name() {
+			return this.getClass().getSimpleName().toUpperCase();
+		}
+	}
+	
+	private TokenChunkInformation chunkInformationInstance = new TokenChunkInformation();
+	public static final class TokenChunkInformation implements TokenInformationI{
+
+		@Override
+		public void read(String line, List<CoreLabel> tokens) {
+			String [] tokenValues = line.split("\\s+");
+			if(tokenValues.length != tokens.size()){
+				for(CoreLabel token : tokens){
+					token.set(CoreAnnotations.ChunkAnnotation.class,null);
+				}
+			}
+			else{
+				for(int i =0; i < tokens.size(); i++){
+					String posTag = tokenValues[i];
+					CoreLabel token = tokens.get(i);
+					token.set(CoreAnnotations.ChunkAnnotation.class, posTag);
+				}
+			}
+		}
+
+		@Override
+		public String write(List<CoreLabel> tokens) {
+			StringBuilder sb = new StringBuilder();
+			for(CoreLabel token : tokens){
+				String pos = token.get(CoreAnnotations.ChunkAnnotation.class);
 				if(pos != null){
 					sb.append(pos);
 					sb.append(" ");

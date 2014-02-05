@@ -11,7 +11,12 @@ import java.util.List;
 import java.util.Set;
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
+import edu.stanford.nlp.util.Triple;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.SentDependencyInformation.DependencyAnnotation;
+import edu.washington.multir.featuregeneration.FeatureGeneratorDraft3.DependencyType;
+import edu.washington.multir.featuregeneration.FeatureGeneratorDraft3.Direction;
 import edu.knowitall.tool.wordnet.JwiTools;
 import edu.mit.jwi.Dictionary;
 import edu.mit.jwi.item.IIndexWord;
@@ -156,6 +161,10 @@ public class FeatureGeneratorMethods {
 			List<CoreLabel> tokens) {
 		
 		List<Pair<String,Integer>> features = new ArrayList<Pair<String,Integer>>();
+		Integer lastEndOffset = null;
+		if(tokens.size()>0){
+		  lastEndOffset = tokens.get(tokens.size()-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+		}
 		
 		for(CoreLabel t : tokens){
 			String chunkString = t.get(CoreAnnotations.ChunkAnnotation.class);
@@ -172,6 +181,11 @@ public class FeatureGeneratorMethods {
 			//possessive
 			else if(posString.equals("POS")){
 				feature = posString;
+			}
+			
+			//final preposition
+			else if(posString.equals("IN") && (lastEndOffset.equals(endOffset))){
+				feature = word;
 			}
 			
 			//negative word
@@ -220,6 +234,37 @@ public class FeatureGeneratorMethods {
 		}
 		return null;
 	}
+	
+	public static String getWordnetVerbStem(String word){
+		ISynset s = getWordnetVerbSynset(word);
+		if(s!=null){
+			return s.getWord(1).getLemma();
+		}
+		else{
+			return null;
+		}
+	}
+	
+	private static ISynset getWordnetVerbSynset(String word){
+		ISynset s = null;
+		try{
+		    String strStem = stemmer.findStems(word, POS.VERB).get(0);
+		    IIndexWord idxWord = d.getIndexWord(strStem, POS.VERB);
+		    IWordID wordID = idxWord.getWordIDs().get(0);
+		    IWord wnWord = d.getWord(wordID);
+		    s = wnWord.getSynset();
+		}
+		catch(IllegalArgumentException e){
+			
+		}
+		catch(NullPointerException e){
+			
+		}
+		catch(IndexOutOfBoundsException e){
+			
+		}
+		return s;
+	}
 
 	private static String findHeadVerb(List<CoreLabel> sequence) {
 		StringBuilder sb = new StringBuilder();
@@ -235,22 +280,7 @@ public class FeatureGeneratorMethods {
 			newWord.append(" ");
 			newWord.append(sb);
 			if(pos.startsWith("V")){
-				try{
-				    String strStem = stemmer.findStems(newWord.toString(), POS.VERB).get(0);
-				    IIndexWord idxWord = d.getIndexWord(strStem, POS.VERB);
-				    IWordID wordID = idxWord.getWordIDs().get(0);
-				    IWord wnWord = d.getWord(wordID);
-				    s = wnWord.getSynset();
-				}
-				catch(IllegalArgumentException e){
-					
-				}
-				catch(NullPointerException e){
-					
-				}
-				catch(IndexOutOfBoundsException e){
-					
-				}
+				s = getWordnetVerbSynset(newWord.toString());
 			}
 			if(s != null){
 				lastS = s;
@@ -524,6 +554,31 @@ public class FeatureGeneratorMethods {
 		return sb.toString().trim();
 	}
 	
+	private static String getWordnetNounLemma(String word){
+		ISynset s = getWordnetNounSynset(word);
+		
+		if(s!=null){
+			return s.getWord(1).getLemma();
+		}
+		else{
+			return null;
+		}
+	}
+	
+	private static ISynset getWordnetNounSynset(String word){
+		ISynset s= null;
+		try{
+			  s = jt.stringToNthSynset(word,0);
+			}
+			catch(IllegalArgumentException e){
+				
+			}
+			catch(NullPointerException e){
+				
+			}
+		return s;
+	}
+	
 	private static String findHeadNounByWordnet(List<CoreLabel> sequence){
 		StringBuilder sb = new StringBuilder();
 		ISynset lastS = null;
@@ -538,15 +593,7 @@ public class FeatureGeneratorMethods {
 			newWord.append(" ");
 			newWord.append(sb);
 			if(pos.startsWith("N")){
-				try{
-				  s = jt.stringToNthSynset(newWord.toString().trim(),0);
-				}
-				catch(IllegalArgumentException e){
-					
-				}
-				catch(NullPointerException e){
-					
-				}
+				s = getWordnetNounSynset(newWord.toString().trim());
 			}
 			if(s != null){
 				lastS = s;
@@ -655,4 +702,198 @@ public class FeatureGeneratorMethods {
 		}
 	}
 
+//	public static String getDependencyHeightDifference(
+//			Pair<Integer, Integer> leftArgOffsets,
+//			Pair<Integer, Integer> rightArgOffsets, CoreMap sentence) {
+//		
+//		List<Triple<Integer,String,Integer>>  dependencyParse = sentence.get(DependencyAnnotation.class);
+//		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+//		
+//		Integer leftTokenOffset = null;
+//		Integer rightTokenOffset = null;
+//		for(int i =0; i < tokens.size(); i++){
+//			CoreLabel t = tokens.get(i);
+//			Integer endOffset = t.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+//			if(endOffset.equals(leftArgOffsets.second)){
+//				leftTokenOffset = i+1;
+//			}
+//			if(endOffset.equals(rightArgOffsets.second)){
+//				rightTokenOffset = i+1;
+//			}
+//		}
+//		
+//		Integer leftParseDepth = getParseDepth(leftTokenOffset,dependencyParse);
+//		Integer rightParseDepth = getParseDepth(rightTokenOffset,dependencyParse);
+//		
+//		
+//		return leftParseDepth - rightParseDepth;
+//	}
+//	
+//	private int getParseDepth(int tokenOffset, List<Triple<Integer,String,Integer>> depParse){
+//		
+//	}
+
+	//returns token offset indexed by 1
+	private static Integer getTokenOffset(Integer endCharOffset, List<CoreLabel> tokens){
+		
+		for(int i =0; i < tokens.size(); i++){
+			CoreLabel t= tokens.get(i);
+			Integer tEndCharOffset = t.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+			if(tEndCharOffset.equals(endCharOffset)){
+				return i+1;
+			}
+		}
+		return null;
+	}
+	
+	public static List<Triple<CoreLabel, DependencyType, CoreLabel>> getDependencyPath(Integer arg1EndCharOffset,
+			Integer arg2EndCharOffset, CoreMap sentence) {
+		
+		List<Triple<CoreLabel,DependencyType,CoreLabel>> depPath= new ArrayList<Triple<CoreLabel,DependencyType,CoreLabel>>();
+		List<Triple<Integer,String,Integer>> dependencyInfo = sentence.get(DependencyAnnotation.class);
+		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
+		Integer startTokenOffset = getTokenOffset(arg1EndCharOffset,tokens);
+		Integer endTokenOffset = getTokenOffset(arg2EndCharOffset,tokens);
+//		
+//		System.out.println("Start = " + startTokenOffset);
+//		System.out.println("End = " + endTokenOffset);
+	//	System.out.println("DEP INFO SIZE = " +dependencyInfo.size());
+		recursiveDependencySearch(depPath,depPath,dependencyInfo,tokens,startTokenOffset,endTokenOffset,-1,0,new BooleanFlag(false));
+	//	System.out.println("DEP PATH SIZE = " + depPath.size());
+		return depPath;
+
+	}
+	
+	private static class BooleanFlag {
+		private boolean value;
+		
+		public BooleanFlag(boolean b){
+			this.value = b;
+		}
+		
+		public void setValue(boolean b){
+			this.value = b;
+		}
+		
+		public boolean getValue(){return this.value;}
+	}
+
+	private static void recursiveDependencySearch(
+			List<Triple<CoreLabel, DependencyType, CoreLabel>> depPath,
+			List<Triple<CoreLabel, DependencyType, CoreLabel>> currPath,
+			List<Triple<Integer, String, Integer>> dependencyInfo,
+			List<CoreLabel> tokens, Integer startTokenOffset, Integer endTokenOffset,
+			Integer previousStart, int count, BooleanFlag stop) {
+		
+		if(stop.getValue()){
+			return;
+		}
+		
+//		System.out.println("Start :" + startTokenOffset);
+//		System.out.println("End: " +endTokenOffset); 
+		//stop case
+		if(startTokenOffset.equals(endTokenOffset)){
+			//set depPath
+			depPath.addAll(currPath);
+			stop.setValue(true);
+			return;
+		}
+				
+		else if(count < 15){
+			//find children and parents
+			List<Triple<Integer,String,Integer>> children = new ArrayList<Triple<Integer,String,Integer>>();
+			List<Triple<Integer,String,Integer>> parents = new ArrayList<Triple<Integer,String,Integer>>();
+			Set<Integer> childTokens = new HashSet<Integer>();
+			for(int i =0; i < dependencyInfo.size(); i++){
+				Triple<Integer,String,Integer> depTriple = dependencyInfo.get(i);
+				if(depTriple.first.equals(startTokenOffset) && (!childTokens.contains(depTriple.third))){
+					children.add(depTriple);
+					childTokens.add(depTriple.third);
+				}
+				else if(depTriple.third.equals(startTokenOffset)){
+					parents.add(depTriple);
+				}
+			}
+
+//			System.out.println("Children:");
+//			for(Triple<Integer,String,Integer> child: children){
+//				System.out.print(child.first+"\t" + child.second + "\t" + child.third+"\n");
+//			}
+//			System.out.println("Parents:");
+//			for(Triple<Integer,String,Integer> parent: parents){
+//				System.out.print(parent.first+"\t" + parent.second + "\t" + parent.third+"\n");
+//			}
+			
+			
+
+			
+			//search children
+			//for each child create a new depPath from the previous one and recursively call search
+			for(Triple<Integer,String,Integer> childTriple : children){
+				CoreLabel parent = null;
+				if(childTriple.first >0){
+					parent = tokens.get(childTriple.first-1);
+				}
+				CoreLabel child = tokens.get(childTriple.third-1);
+				DependencyType dt = new DependencyType(childTriple.second,Direction.DOWN);
+				Triple<CoreLabel,DependencyType,CoreLabel> childPath = new Triple<>(parent,dt,child);
+				List<Triple<CoreLabel,DependencyType,CoreLabel>> newCurrPath = new ArrayList<>();
+				newCurrPath.addAll(currPath);
+				newCurrPath.add(childPath);
+				if(!childTriple.third.equals(previousStart)){
+					recursiveDependencySearch(depPath,newCurrPath,dependencyInfo,tokens,childTriple.third,endTokenOffset,startTokenOffset,count+1,stop);
+				}
+			}
+			
+			//search parent
+			//should only be one parent
+			if(parents.size() == 1){
+				Triple<Integer,String,Integer> parentTriple = parents.get(0);
+				CoreLabel parent = null;
+				if(parentTriple.first > 0 ){
+				  parent = tokens.get(parentTriple.first-1);
+				}
+				CoreLabel child = tokens.get(parentTriple.third-1);
+				DependencyType dt = new DependencyType(parentTriple.second,Direction.UP);
+				Triple<CoreLabel,DependencyType,CoreLabel> parentPath = new Triple<>(child,dt,parent);
+				List<Triple<CoreLabel,DependencyType,CoreLabel>> newCurrPath = new ArrayList<>();
+				newCurrPath.addAll(currPath);
+				newCurrPath.add(parentPath);
+				if(!parentTriple.first.equals(previousStart)){
+				 recursiveDependencySearch(depPath,newCurrPath,dependencyInfo,tokens,parentTriple.first,endTokenOffset,startTokenOffset,count+1,stop);
+				}
+			}
+			else{
+				return;
+			}
+		}
+		return;
+	}
+
+	public static String getWordnetStemFeature(CoreLabel token) {
+		String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+		String word = token.get(CoreAnnotations.TextAnnotation.class);
+		
+		if(pos.startsWith("N")){
+			String lemma = getWordnetNounLemma(word);
+			if(lemma != null){
+			  return "N" + "(" + lemma + ")";
+			}
+			else{
+				return null;
+			}
+		}
+		else if(pos.startsWith("V")){
+			String lemma = getWordnetVerbStem(word);
+			if(lemma != null){
+			  return "V" + "(" + lemma + ")";
+			}
+			else{
+				return null;
+			}
+		}
+		else{
+			return null;
+		}
+	}
 }

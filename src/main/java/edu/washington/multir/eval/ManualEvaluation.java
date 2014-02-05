@@ -35,6 +35,7 @@ import edu.washington.multir.argumentidentification.SententialInstanceGeneration
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
 import edu.washington.multir.corpus.CorpusInformationSpecification.SentDocNameInformation.SentDocName;
+import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID;
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.Extraction;
 import edu.washington.multir.data.ExtractionAnnotation;
@@ -233,13 +234,13 @@ public class ManualEvaluation {
 						}
 					}
 					if(print){
-						System.out.println("Features:");
-						Map<Integer,Double> featureScores = e.getFeatureScores();
-						for(Integer i : featureScores.keySet()){
-							Double score = featureScores.get(i);
-							String featName = ftID2ftMap.get(i);
-							System.out.println(featName + "\t" + score);
-						}
+//						System.out.println("Features:");
+//						Map<Integer,Double> featureScores = e.getFeatureScores();
+//						for(Integer i : featureScores.keySet()){
+//							Double score = featureScores.get(i);
+//							String featName = ftID2ftMap.get(i);
+//							System.out.println(featName + "\t" + score);
+//						}
 					}
 				}
 				else{
@@ -342,7 +343,8 @@ public class ManualEvaluation {
 						if(targetRelations.contains(rel)){
 							String docName = sentence.get(SentDocName.class);
 							String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
-							Extraction e = new Extraction(p.first,p.second,docName,rel,sentenceCount,extrScoreTripe.third,senText);
+							Integer sentNum = sentence.get(SentGlobalID.class);
+							Extraction e = new Extraction(p.first,p.second,docName,rel,sentNum,extrScoreTripe.third,senText);
 							e.setFeatureScores(featureScores);
 							extrs.add(e);
 						}
