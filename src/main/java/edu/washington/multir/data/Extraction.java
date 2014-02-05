@@ -35,7 +35,7 @@ public class Extraction {
 			(arg2.equals(e.arg2)) &&
 			(docName.equals(e.docName)) &&
 			(relation.equals(e.relation)) &&
-			(sentNum.equals(e.sentNum))){
+			(senText.equals(e.senText))){
 			return true;
 		}
 		else{
@@ -47,7 +47,7 @@ public class Extraction {
 	public int hashCode(){
 		return new HashCodeBuilder(37,41).append(arg1).
 				append(arg2).append(docName).append(relation)
-				.append(sentNum).toHashCode();
+				.append(senText).toHashCode();
 	}
 	
 	public static Extraction deserialize(String s){
