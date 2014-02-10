@@ -13,11 +13,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNELAndCoref;
 import edu.washington.multir.util.BufferedIOUtils;
 
 public class FeatureGeneration {
@@ -212,6 +214,38 @@ public class FeatureGeneration {
 		public Integer getSentID(){return sentID;}
 		public Pair<Integer,Integer> getArg1Offsets(){return arg1Offsets;}
 		public Pair<Integer,Integer> getArg2Offsets(){return arg2Offsets;}
+	}
+	
+	
+	
+	public static void main(String[] args) throws SQLException{
+		CorpusInformationSpecification cis = new DefaultCorpusInformationSpecificationWithNELAndCoref();
+		FeatureGenerator fg = new FeatureGeneratorDraft3();
+		Corpus c = new Corpus("NELAndCorefTrain-Chunked",cis,true);
+		List<Integer> sentIds = new ArrayList<Integer>();
+		sentIds.add(8082);
+		Map<Integer, Pair<CoreMap,Annotation>> annotationMap = c.getAnnotationPairsForEachSentence(new HashSet<Integer>(sentIds));
+		
+		Pair<CoreMap,Annotation> p = annotationMap.get(8082);
+		CoreMap sentence = p.first;
+		Annotation doc = p.second;
+		
+		Integer Arg1StartOffset = 0;
+		Integer Arg1EndOffset = 12;
+		Integer Arg2StartOffset = 63;
+		Integer Arg2EndOffset = 69;
+		
+		List<String> features = fg.generateFeatures(Arg1StartOffset,Arg1EndOffset
+					,Arg2StartOffset,Arg2EndOffset,sentence,doc);
+			
+		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
+		System.out.println(senText);
+		System.out.println("----------------------------------------------------\nFeatures:");
+		for(String f : features){
+			System.out.println(f);
+		}
+		System.out.println("------------------------------------------------------\n\n");
+		
 	}
 
 }
