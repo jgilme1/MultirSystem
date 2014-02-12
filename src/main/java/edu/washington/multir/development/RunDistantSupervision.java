@@ -25,6 +25,7 @@ import edu.washington.multir.corpus.CorpusInformationSpecification;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL;
 import edu.washington.multir.distantsupervision.DistantSupervision;
+import edu.washington.multir.distantsupervision.NegativeExampleCollection;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 
 /**
@@ -64,20 +65,24 @@ public class RunDistantSupervision {
 		options.addOption("ai",true,"argumentIdentification algorithm class");
 		options.addOption("sig",true,"sententialInstanceGeneration algorithm class");
 		options.addOption("rm",true,"relationMatching algorithm class");
+		options.addOption("nec",true,"negative example collection algorithm class");
 		CommandLineParser parser = new BasicParser();
 		CommandLine cmd = parser.parse(options, args);
 		List<String> remainingArgs = cmd.getArgList();
+		
 		
 		ClassLoader cl = ClassLoader.getSystemClassLoader();
 		CorpusInformationSpecification cis = null;
 		ArgumentIdentification ai = null;
 		SententialInstanceGeneration sig = null;
 		RelationMatching rm = null;
+		NegativeExampleCollection nec = null;
 		
 		String corpusInformationSpecificationName = cmd.getOptionValue("cis");
 		String argumentIdentificationName = cmd.getOptionValue("ai");
 		String sententialInstanceGenerationName = cmd.getOptionValue("sig");
 		String relationMatchingName = cmd.getOptionValue("rm");
+		String negativeExampleCollectionName = cmd.getOptionValue("nec");
 		
 		if(corpusInformationSpecificationName != null){
 			String corpusInformationSpecificationClassPrefix = "edu.washington.multir.corpus.";
@@ -117,7 +122,7 @@ public class RunDistantSupervision {
 		else{
 			throw new IllegalArgumentException("relationMatching Class Argument is invalid");
 		}
-				
+		
 		Corpus c = new Corpus(remainingArgs.get(0),cis,true);
 		String dsFileName = remainingArgs.get(1);
 		KnowledgeBase kb = new KnowledgeBase(remainingArgs.get(2),remainingArgs.get(3),remainingArgs.get(4));
@@ -131,8 +136,17 @@ public class RunDistantSupervision {
 			}
 		}
 		
-		DistantSupervision ds = new DistantSupervision(ai,sig,rm,neFlag,ratio);
-		ds.run(dsFileName, kb, c);
+		if(negativeExampleCollectionName != null){
+			String negativeExampleCollectionClassPrefix = "edu.washington.multir.distantsupervision.";
+			Class<?> necClass = cl.loadClass(negativeExampleCollectionClassPrefix+negativeExampleCollectionName);
+			Method m = necClass.getMethod("getInstance", double.class);
+			nec =  (NegativeExampleCollection) m.invoke(null,ratio);
+		}
+		else{
+			throw new IllegalArgumentException("negativeExampleCollection Class Argument is invalid");
+		}
 		
+		DistantSupervision ds = new DistantSupervision(ai,sig,rm,nec,neFlag);
+		ds.run(dsFileName,kb,c);
 	}
 }
