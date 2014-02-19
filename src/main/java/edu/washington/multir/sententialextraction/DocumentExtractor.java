@@ -131,6 +131,60 @@ public class DocumentExtractor {
 		Pair<Triple<String,Double,Double>,Map<Integer,Double>> p = getPrediction(features,arg1,arg2,senText);
 		return p;
 	}
+	
+	public Map<Integer,Double> getFeatureScores(Argument arg1, Argument arg2, CoreMap sentence, Annotation doc, int rel){
+		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
+		List<String> features = 
+				fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), sentence, doc);
+		MILDocument milDoc = new MILDocument();
+		
+		milDoc.arg1 = arg1.getArgName();
+		milDoc.arg2 = arg2.getArgName();
+		milDoc.Y = new int[1];
+		milDoc.numMentions = 1;// sentence level prediction
+		milDoc.setCapacity(1);
+		SparseBinaryVector sv = milDoc.features[0] = new SparseBinaryVector();
+		
+		
+		SortedSet<Integer> ftrset = new TreeSet<Integer>();
+		int totalfeatures = 0;
+		int featuresInMap = 0;
+		//System.out.println("Features:");
+		for (String f : features) {
+			//System.out.println(f);
+			totalfeatures ++;
+			int ftrid = mapping.getFeatureID(f, false);
+			if (ftrid >= 0) {
+				featuresInMap++;
+				ftrset.add(ftrid);
+			}
+		}
+		//if( arg1.getArgName().equals("China") && (arg2.getArgName().equals("Beijing"))){
+//			System.out.println("Total Features = " + totalfeatures);
+//			for(String f : features){
+//				System.out.println(f);
+//			}
+//			System.out.println("Num features in training = " + featuresInMap);
+		//}
+		
+		sv.num = ftrset.size();
+		sv.ids = new int[sv.num];
+		
+		//System.out.println("Features...");
+		int k = 0;
+		for (int f : ftrset) {
+			//System.out.print(f + " ");
+			sv.ids[k++] = f;
+		}
+		//System.out.println();
+		
+		String relation = "";
+		Double conf = 0.0;
+		Map<Integer,Map<Integer,Double>> mentionFeatureScoreMap = new HashMap<>();
+		Parse parse = FullInference.infer(milDoc, scorer, params,mentionFeatureScoreMap, rel);
+		return mentionFeatureScoreMap.get(0);
+		
+	}
 
 	/**
 	 * Conver features and args to MILDoc

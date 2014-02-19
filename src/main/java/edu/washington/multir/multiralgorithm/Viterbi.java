@@ -35,6 +35,29 @@ public class Viterbi {
 		return p;
 	}
 	
+	public Parse parse(MILDocument doc, int mention, Map<Integer,Double> featureScoreMap, int rel) {
+		int numRelations = model.numRelations;
+
+		// relation X argsReversed
+		double[] scores = new double[numRelations];
+				
+		// lookup signature
+		for (int s = 0; s < numRelations; s++)
+			scores[s] = parseScorer.scoreMentionRelation(doc, mention, s, featureScoreMap);
+
+		int bestRel = 0;
+		for (int r = 0; r < model.numRelations; r++) {
+			if (scores[r] > scores[bestRel]) {
+				bestRel = r; }
+		}
+		//run again to set the featureScoreMap to the one for the highest relation
+		parseScorer.scoreMentionRelation(doc, mention, rel, featureScoreMap);
+
+		Parse p = new Parse(bestRel, scores[bestRel]);
+		p.scores = scores;
+		return p;
+	}
+	
 	public static class Parse {
 		// MPE
 		public int state;
