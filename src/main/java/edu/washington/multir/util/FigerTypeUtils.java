@@ -11,21 +11,23 @@ import java.util.Set;
 
 public class FigerTypeUtils {
 	public static void main(String[] args) {
-		init();
-		Set<String> fbTypes = getFreebaseTypes("Barack Obama");
-		for (String fbType : fbTypes) {
-			System.out.println("FB:"+fbType);
-		}
-		Set<String> figerTypes = getFigerTypes("Barack Obama");
-		for (String type : figerTypes) {
-			System.out.println("FIGER:"+type);
-		}
-		close();
+		//init();
+//		Set<String> fbTypes = getFreebaseTypes("Barack Obama");
+//		for (String fbType : fbTypes) {
+//			System.out.println("FB:"+fbType);
+//		}
+//		Set<String> figerTypes = getFigerTypes("Barack Obama");
+//		for (String type : figerTypes) {
+//			System.out.println("FIGER:"+type);
+//		}
+//		close();
 	}
 
-	static Connection conn = null;
-	static PreparedStatement guidQuery = null;
-	static PreparedStatement typeQuery = null;
+	private static Connection conn = null;
+	private static String guidQueryPrefix = "select guid from freebase_names where name=?";
+	private static String typeQueryPrefix = "select type from freebase_types where guid=?";
+//	private PreparedStatement guidQuery = null;
+//	private PreparedStatement typeQuery = null;
 	public final static String typeFile = "types.map";
 	public static Hashtable<String, String> mapping = null;
 
@@ -35,10 +37,10 @@ public class FigerTypeUtils {
 			conn = DriverManager
 					.getConnection("jdbc:postgresql://pardosa05.cs.washington.edu:5432/wex?user=jgilme1"
 							+ "&charSet=UTF8");
-			guidQuery = conn
-					.prepareStatement("select guid from freebase_names where name=?");
-			typeQuery = conn
-					.prepareStatement("select type from freebase_types where guid=?");
+//			guidQuery = conn
+//					.prepareStatement("select guid from freebase_names where name=?");
+//			typeQuery = conn
+//					.prepareStatement("select type from freebase_types where guid=?");
 
 			// initialize the freebase-figer type mapping
 			if (mapping == null) {
@@ -60,25 +62,47 @@ public class FigerTypeUtils {
 		}
 	}
 
-	public static void close() {
+	public static  void close() {
 		try {
-			guidQuery.close();
-			typeQuery.close();
+//			guidQuery.close();
+//			typeQuery.close();
 			conn.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
+//	/**
+//	 * return a list of FIGER types for the entityName or null if the
+//	 * entityName string is missing in the database.
+//	 * 
+//	 * @param entityName: space separated
+//	 * @return
+//	 */
+//	public  Set<String> getFigerTypes(String entityName) {
+//		Set<String> fbTypes = getFreebaseTypes(entityName);
+//		if (fbTypes == null) {
+//			return null;
+//		}
+//		Set<String> types = new HashSet<String>();
+//		for (String fbType : fbTypes) {
+//			String figerType = mapToFigerType(fbType);
+//			if (figerType != null) {
+//				types.add(figerType);
+//			}
+//		}
+//		return types;
+//	}
+	
 	/**
-	 * return a list of FIGER types for the entityName or null if the
-	 * entityName string is missing in the database.
+	 * return a list of FIGER types for the entityID or null if the
+	 * entityID string is missing in the database.
 	 * 
 	 * @param entityName: space separated
 	 * @return
 	 */
-	public static Set<String> getFigerTypes(String entityName) {
-		Set<String> fbTypes = getFreebaseTypes(entityName);
+	public static Set<String> getFigerTypesFromID(String entityID) {
+		Set<String> fbTypes = getFreebaseTypesFromID(entityID);
 		if (fbTypes == null) {
 			return null;
 		}
@@ -92,29 +116,51 @@ public class FigerTypeUtils {
 		return types;
 	}
 
+//	/**
+//	 * return a list of Freebase types for the entityName or null if the
+//	 * entityName string is missing in the database.
+//	 * 
+//	 * @param entityName: space separated
+//	 * @return
+//	 */
+//	public  Set<String> getFreebaseTypes(String entityName) {
+//		Set<String> types = new HashSet<String>();
+//		try {
+//			guidQuery.setString(1, entityName);
+//			ResultSet rs = guidQuery.executeQuery();
+//			String guid = null;
+//			if (rs.next()) {
+//				guid = rs.getString(1);
+//				rs.close();
+//			} else {
+//				// entityName not found!
+//				rs.close();
+//				return null;
+//			}
+//			typeQuery.setString(1, guid);
+//			rs = typeQuery.executeQuery();
+//			while (rs.next()) {
+//				types.add(rs.getString(1));
+//			}
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//		return types;
+//	}
+	
 	/**
-	 * return a list of Freebase types for the entityName or null if the
-	 * entityName string is missing in the database.
+	 * return a list of Freebase types for the entityID or null if the
+	 * entityID string is missing in the database.
 	 * 
 	 * @param entityName: space separated
 	 * @return
 	 */
-	public static Set<String> getFreebaseTypes(String entityName) {
+	public  static Set<String> getFreebaseTypesFromID(String entityID) {
 		Set<String> types = new HashSet<String>();
 		try {
-			guidQuery.setString(1, entityName);
-			ResultSet rs = guidQuery.executeQuery();
-			String guid = null;
-			if (rs.next()) {
-				guid = rs.getString(1);
-				rs.close();
-			} else {
-				// entityName not found!
-				rs.close();
-				return null;
-			}
-			typeQuery.setString(1, guid);
-			rs = typeQuery.executeQuery();
+			PreparedStatement typeQuery = conn.prepareStatement(typeQueryPrefix);
+			typeQuery.setString(1, entityID);
+			ResultSet rs = typeQuery.executeQuery();
 			while (rs.next()) {
 				types.add(rs.getString(1));
 			}
