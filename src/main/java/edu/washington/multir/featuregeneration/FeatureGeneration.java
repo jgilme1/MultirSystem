@@ -12,6 +12,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.pipeline.Annotation;
@@ -29,8 +34,11 @@ public class FeatureGeneration {
 	private static final int TRAINING_INSTANCES_IN_MEMORY_CONSTANT = 3000;
 	public FeatureGeneration(FeatureGenerator fg){
 		this.fg = fg;
-	}	
-	public void run(String dsFileName, String featureFileName, Corpus c, CorpusInformationSpecification cis) throws FileNotFoundException, IOException, SQLException{
+	}
+	
+	private static ExecutorService service = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+	
+	public void run(String dsFileName, String featureFileName, Corpus c, CorpusInformationSpecification cis) throws FileNotFoundException, IOException, SQLException, InterruptedException, ExecutionException{
     	long start = System.currentTimeMillis();
     	this.c = c;
     	int lines =0;
@@ -58,7 +66,35 @@ public class FeatureGeneration {
 				//check if sap size is large enough
 				if((saps.size() != 0) && (saps.size() % TRAINING_INSTANCES_IN_MEMORY_CONSTANT == 0)){
 					//process saps
+//					List<Future<List<String>>> futures = new ArrayList<>();
+//					List<List<SententialArgumentPair>> sapSplits = new ArrayList<>();
+//					int sapCurr = 0;
+//					for(int i =1; i < Runtime.getRuntime().availableProcessors(); i++){
+//						List<SententialArgumentPair> sapSplit = new ArrayList<>();
+//						int sapMax = sapCurr+(saps.size()/Runtime.getRuntime().availableProcessors());
+//						if(i == (Runtime.getRuntime().availableProcessors()-1)){
+//							sapMax = saps.size();
+//						}
+//						sapSplit = saps.subList(sapCurr, sapMax);
+//						sapSplits.add(sapSplit);
+//						sapCurr = sapMax;
+//					}
+//					for(int i =1 ; i < Runtime.getRuntime().availableProcessors(); i++){
+//						futures.add(service.submit(new ProcessSapRunnable(sapSplits.get(i-1),new Corpus("NELAndCorefTrain-Chunked",cis,true))));
+//					}
+//					
+//					
+//					for(Future<List<String>> f : futures){
+//						List<String> feats = f.get();
+//						for(String feat : feats){
+//							bw.write(feat);
+//						}
+//					}
+					
+					
 					processSaps(saps,bw);
+					
+					
 					saps = new ArrayList<>();
 				}
 				saps.add(sap);
@@ -74,7 +110,10 @@ public class FeatureGeneration {
 		in.close();
 		
     	long end = System.currentTimeMillis();
-    	System.out.println("Feature Generation took " + (end-start) + " millisseconds");	
+    	System.out.println("Feature Generation took " + (end-start) + " millisseconds");
+    	
+    	
+    	service.shutdown();
 	}
 
 	private void processSaps(List<SententialArgumentPair> saps,
@@ -105,8 +144,37 @@ public class FeatureGeneration {
 		}
 		
 	}
+	
+	private  List<String> processSapsToStrings(List<SententialArgumentPair> saps, Corpus corp) throws SQLException, IOException {
+		
+		List<String> featureStrings = new ArrayList<String>();
+		Map<Integer,Pair<CoreMap,Annotation>> sentAnnotationMap = new HashMap<>();
+		Set<Integer> sentIds = new HashSet<Integer>();
+		for(SententialArgumentPair sap: saps){
+			sentIds.add(sap.sentID);
+		}
+		List<Integer> sentIdList = new ArrayList<Integer>(sentIds);
+		int count = sentIds.size() / 1000;
+		for(int i =0; i <= count; i++){
+			int startIndex = 1000*i;
+			int endIndex = Math.min(startIndex + 1000,sentIdList.size());
+			Map<Integer,Pair<CoreMap,Annotation>> smallSentAnnotationMap = corp.getAnnotationPairsForEachSentence(
+					new HashSet<Integer>(sentIdList.subList(startIndex, endIndex)));
+			sentAnnotationMap.putAll(smallSentAnnotationMap);
+			System.out.println(endIndex + " sentences collected");
+		}
+		
+		for(SententialArgumentPair sap : saps){
+			
+			Pair<CoreMap,Annotation> senAnnoPair = sentAnnotationMap.get(sap.sentID);
+			List<String> features = fg.generateFeatures(sap.arg1Offsets.first,sap.arg1Offsets.second
+					,sap.arg2Offsets.first,sap.arg2Offsets.second,senAnnoPair.first,senAnnoPair.second);
+			featureStrings.add(makeFeatureString(sap,features)+"\n");
+		}
+		return featureStrings;
+	}
 
-	private  String makeFeatureString(SententialArgumentPair sap,
+	private   String makeFeatureString(SententialArgumentPair sap,
 			List<String> features) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.valueOf(sap.getSentID()));
@@ -246,6 +314,23 @@ public class FeatureGeneration {
 		}
 		System.out.println("------------------------------------------------------\n\n");
 		
+	}
+	
+	private  class ProcessSapRunnable implements Callable<List<String>>{
+		private List<SententialArgumentPair> saps;
+		private Corpus corp;
+		
+		public ProcessSapRunnable(List<SententialArgumentPair> saps, Corpus corp){
+			this.saps = saps;
+			this.corp = corp;
+		}
+
+		@Override
+		public List<String> call() throws Exception {
+			return processSapsToStrings(saps,corp);
+		}
+
+
 	}
 
 }

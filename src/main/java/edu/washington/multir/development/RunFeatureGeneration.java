@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
@@ -22,6 +23,7 @@ import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
 import edu.washington.multir.featuregeneration.FeatureGeneration;
 import edu.washington.multir.featuregeneration.FeatureGenerator;
+import edu.washington.multir.util.FigerTypeUtils;
 
 /**
  * App for doing feature generation. Before this is run
@@ -43,8 +45,10 @@ public class RunFeatureGeneration {
 	 * @throws ParseException 
 	 * @throws IllegalAccessException 
 	 * @throws InstantiationException 
+	 * @throws ExecutionException 
+	 * @throws InterruptedException 
 	 */
-	public static void main(String[] args) throws SQLException, IOException, ClassNotFoundException, ParseException, InstantiationException, IllegalAccessException{
+	public static void main(String[] args) throws SQLException, IOException, ClassNotFoundException, ParseException, InstantiationException, IllegalAccessException, InterruptedException, ExecutionException{
 		Options options = new Options();
 		options.addOption("cis",true,"corpusInformationSpecification algorithm class");
 		options.addOption("fg",true,"featureGeneration algorithm class");
@@ -80,6 +84,8 @@ public class RunFeatureGeneration {
 		Corpus c = new Corpus(remainingArgs.get(0),cis,true);
 		
 		FeatureGeneration featureGeneration = new FeatureGeneration(fg);
+		FigerTypeUtils.init();
 		featureGeneration.run(remainingArgs.get(1),remainingArgs.get(2),c,cis);
+		FigerTypeUtils.close();
 	}
 }
