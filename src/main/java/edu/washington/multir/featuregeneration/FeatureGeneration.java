@@ -117,9 +117,9 @@ public class FeatureGeneration {
 		sb.append("\t");
 		for(String rel : sap.getRelations()){
 			sb.append(rel);
-			sb.append("|");
+			sb.append("&&");
 		}
-		sb.setLength(sb.length()-1);
+		sb.setLength(sb.length()-2);
 		sb.append("\t");
 		for(String f: features){
 			sb.append(f);
