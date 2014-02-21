@@ -3,7 +3,9 @@ package edu.washington.multir.multiralgorithm;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -90,5 +92,34 @@ public class Mappings {
 			String[] t = r.readLine().split("\t");
 			m.put(t[1], Integer.parseInt(t[0]));
 		}
+	}
+	
+	public static Mappings loadMappingsFromFeatureCountFile(String featureCountFile, int featureThreshold) throws IOException{
+		BufferedReader br = new BufferedReader(new FileReader(featureCountFile));
+		Mappings m = new Mappings();
+		String line;
+		int lineCount =0;
+		int featCount =0;
+		while((line = br.readLine())!=null){
+			String[] values = line.split("\t");
+			String feature = values[0];
+			Integer count = Integer.parseInt(values[1]);
+			if(count >= featureThreshold){
+				m.getFeatureID(feature, true);
+				featCount++;
+			}
+			lineCount++;
+			if(lineCount % 100000 == 0){
+				System.out.println("Read " + lineCount + " lines");
+				System.out.println("Loaded " + featCount + " features");
+			}
+		}
+		br.close();
+		return m;
+	}
+	
+	//used for testing loadMappingsFromFeatureCountFile
+	public static void main(String[] args) throws IOException{
+		loadMappingsFromFeatureCountFile("NELAndCorefTrain-NELDS-DefaultFeaturesWithFIGER-Count",2);
 	}
 }
