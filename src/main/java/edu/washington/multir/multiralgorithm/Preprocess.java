@@ -110,7 +110,7 @@ public class Preprocess {
 		while((line = br.readLine()) != null){
 	    	String[] values = line.split("\t");
 	    	String rel = values[3];
-	    	String []rels = rel.split("\\|");
+	    	String []rels = rel.split("&&");
 	    	List<String> features = new ArrayList<>();
 	    	//add all features
 	    	for(int i = 4; i < values.length; i++){
@@ -185,7 +185,7 @@ public class Preprocess {
 	    	String arg1Id = values[1];
 	    	String arg2Id = values[2];
 	    	String relString = values[3];
-	    	String[] rels = relString.split("\\|");
+	    	String[] rels = relString.split("&&");
 	    	// entity pair key separated by a delimiter
 	    	String key = arg1Id+"%"+arg2Id;
 	    	Integer intKey = getIntKey(key);
