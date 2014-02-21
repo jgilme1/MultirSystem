@@ -21,7 +21,6 @@ import edu.washington.multir.util.FigerTypeUtils;
 import edu.washington.multir.util.GuidMidConversion;
 
 public class DefaultFeatureGeneratorWithFIGER implements FeatureGenerator {
-	
 
 	@Override
 	public List<String> generateFeatures(Integer arg1StartOffset,

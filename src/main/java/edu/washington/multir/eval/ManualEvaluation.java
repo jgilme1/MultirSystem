@@ -39,8 +39,10 @@ import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDI
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.Extraction;
 import edu.washington.multir.data.ExtractionAnnotation;
+import edu.washington.multir.featuregeneration.DefaultFeatureGeneratorWithFIGER;
 import edu.washington.multir.featuregeneration.FeatureGenerator;
 import edu.washington.multir.sententialextraction.DocumentExtractor;
+import edu.washington.multir.util.FigerTypeUtils;
 
 
 /**
@@ -145,6 +147,10 @@ public class ManualEvaluation {
 		}
 		
 		
+		if(fg instanceof DefaultFeatureGeneratorWithFIGER){
+			FigerTypeUtils.init();
+		}
+		
 		List<Extraction> extractions = getExtractions(c,ai,sig,de);
 		
 		List<ExtractionAnnotation> annotations = loadAnnotations(annotationsInputFilePath);
@@ -161,6 +167,10 @@ public class ManualEvaluation {
 		}
 		else{
 			eval(extractions,annotations);
+		}
+		
+		if(fg instanceof DefaultFeatureGeneratorWithFIGER){
+			FigerTypeUtils.close();
 		}
 	}
 
@@ -234,13 +244,13 @@ public class ManualEvaluation {
 						}
 					}
 					if(print){
-//						System.out.println("Features:");
-//						Map<Integer,Double> featureScores = e.getFeatureScores();
-//						for(Integer i : featureScores.keySet()){
-//							Double score = featureScores.get(i);
-//							String featName = ftID2ftMap.get(i);
-//							System.out.println(featName + "\t" + score);
-//						}
+						System.out.println("Features:");
+						Map<Integer,Double> featureScores = e.getFeatureScores();
+						for(Integer i : featureScores.keySet()){
+							Double score = featureScores.get(i);
+							String featName = ftID2ftMap.get(i);
+							System.out.println(featName + "\t" + score);
+						}
 					}
 				}
 				else{

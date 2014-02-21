@@ -184,4 +184,13 @@ public class FigerTypeUtils {
 			return null;
 		}
 	}
+	
+	public static boolean isConnected(){
+		if(conn == null){
+			return false;
+		}
+		else{
+			return true;
+		}
+	}
 }
