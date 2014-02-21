@@ -241,7 +241,7 @@ public class SententialEvaluation {
 		List<CoreMap> sentences = doc.get(CoreAnnotations.SentencesAnnotation.class);
 		Argument arg1 = new Argument(a.r.arg1.getArgName(),a.r.arg1.getStartOffset(),a.r.arg1.getEndOffset());
 		Argument arg2 = new Argument(a.r.arg2.getArgName(),a.r.arg2.getStartOffset(),a.r.arg2.getEndOffset());
-		Pair<Triple<String,Double,Double>,Map<Integer,Double>> result = de.extractFromSententialInstanceWithFeatureScores(arg1, arg2, sentences.get(0), doc);
+		Pair<Triple<String,Double,Double>,Map<Integer,Double>> result = de.extractFromSententialInstanceWithTopExtractionFeatureScores(arg1, arg2, sentences.get(0), doc);
 		
 		
 		if(result == null){

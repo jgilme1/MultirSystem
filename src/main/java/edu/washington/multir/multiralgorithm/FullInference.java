@@ -7,7 +7,7 @@ import java.util.Map;
 public class FullInference {
 
 	public static Parse infer(MILDocument doc,
-			Scorer parseScorer, Parameters params, Map<Integer,Map<Integer,Double>> mentionFeatureScoreMap) {
+			Scorer parseScorer, Parameters params, Map<Integer,Map<Integer,Map<Integer,Double>>> mentionFeatureScoreMap) {
 		Parse parse = new Parse();
 		parse.doc = doc;
 		parse.Z = new int[doc.numMentions];
@@ -25,7 +25,11 @@ public class FullInference {
 		// loop over all mentions of the instance, finding the highest probability
 		// relation for each and storing it in scores..
 		for (int m = 0; m < doc.numMentions; m++) {
-			Map<Integer,Double> featureScoreMap = new HashMap<Integer,Double>();
+			Map<Integer,Map<Integer,Double>> featureScoreMap = new HashMap<Integer,Map<Integer,Double>>();
+			for(int i =0; i <params.model.numRelations; i++){
+				Map<Integer,Double> featureMap = new HashMap<Integer,Double>();
+				featureScoreMap.put(i, featureMap);
+			}
 			Viterbi.Parse p = viterbi.parse(doc, m,featureScoreMap);
 			mentionFeatureScoreMap.put(m, featureScoreMap);
 			

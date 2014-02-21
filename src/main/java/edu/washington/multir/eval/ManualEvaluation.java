@@ -335,7 +335,7 @@ public class ManualEvaluation {
 				List<Pair<Argument,Argument>> sententialInstances = sig.generateSententialInstances(arguments, sentence);
 				for(Pair<Argument,Argument> p : sententialInstances){
 					Pair<Triple<String,Double,Double>,Map<Integer,Double>> extrResult = 
-					de.extractFromSententialInstanceWithFeatureScores(p.first, p.second, sentence, doc);
+					de.extractFromSententialInstanceWithTopExtractionFeatureScores(p.first, p.second, sentence, doc);
 					if(extrResult != null){
 						Triple<String,Double,Double> extrScoreTripe = extrResult.first;
 						Map<Integer,Double> featureScores = extrResult.second;

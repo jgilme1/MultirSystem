@@ -131,10 +131,21 @@ public class GetSententialArgumentPairFeatureScores {
 		Pair<CoreMap,Annotation> p = sentDocPairs.get(27352779);
 		int rel = 1;
 
-		Map<Integer,Double> featureScores = de.getFeatureScores(arg1, arg2, p.first, p.second,rel);
-		for(Integer i : featureScores.keySet()){
-			String feature = ftID2ftMap.get(i);
-			System.out.println(feature + "\t" + featureScores.get(i));
+//		Map<Integer,Double> featureScores = de.getFeatureScores(arg1, arg2, p.first, p.second,rel);
+//		for(Integer i : featureScores.keySet()){
+//			String feature = ftID2ftMap.get(i);
+//			System.out.println(feature + "\t" + featureScores.get(i));
+//		}
+		
+		
+		Pair<List<Triple<String,Double,Double>>,Map<String,Map<Integer,Double>>> extrInfo =
+		de.extractFromSententialInstanceWithAllExtractionsFeatureScores(arg1, arg2, p.first, p.second);
+		
+		
+		List<Triple<String,Double,Double>> extrs = extrInfo.first;
+		
+		for(Triple<String,Double,Double> t : extrs){
+			System.out.println(t.first + "\t" + t.third);
 		}
 		
 	}
