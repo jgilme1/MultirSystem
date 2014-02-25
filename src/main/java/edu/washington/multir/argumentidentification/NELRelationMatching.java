@@ -43,6 +43,7 @@ public class NELRelationMatching implements RelationMatching {
 				String key = kbArg1.getKbId()+kbArg2.getKbId();
 				//if the two KB entities participate in a relatoin
 				if(entityRelationMap.containsKey(key)){
+					//System.out.println("Adding annotation");
 					List<String> relations = entityRelationMap.get(key);
 					for(String rel: relations){
 						Triple<KBArgument,KBArgument,String> dsRelation = new Triple<>(kbArg1,kbArg2,rel);

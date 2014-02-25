@@ -146,7 +146,7 @@ public class Corpus {
 	private void parseDocument(ResultSet documentResults, Annotation doc) throws SQLException {
 		int index =2;
 		for(DocumentInformationI di : cis.documentInformation){
-			String x = documentResults.getString(index);
+			String x = documentResults.getString(di.name());
 			di.read(x, doc);
 			index++;
 		}
@@ -165,7 +165,7 @@ public class Corpus {
     	
     	//read in all specified sentenceInformation
     	for(SentInformationI si : cis.sentenceInformation){
-    		String x = sentenceResults.getString(index);
+    		String x = sentenceResults.getString(si.name());
     		si.read(x,a);
     		index++;
     	}
@@ -174,7 +174,7 @@ public class Corpus {
 
     	//read in all specified tokenInformation
     	for(TokenInformationI ti: cis.tokenInformation){
-    		String tokenInformation =sentenceResults.getString(index);
+    		String tokenInformation =sentenceResults.getString(ti.name());
     		ti.read(tokenInformation, tokens);
     		index++;
     	}
