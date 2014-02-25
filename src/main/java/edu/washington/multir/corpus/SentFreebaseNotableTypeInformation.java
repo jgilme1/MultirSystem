@@ -24,6 +24,7 @@ public class SentFreebaseNotableTypeInformation implements SentInformationI{
 			Integer tokenStart = Integer.parseInt(data[i-2]);
 			Integer tokenEnd = Integer.parseInt(data[i-1]);
 			String type = data[i];
+			type = type.replaceAll("__", "_");
 			Triple<Integer,Integer,String> t = new Triple<>(tokenStart,tokenEnd,type);
 			notableTypeData.add(t);
 		}
