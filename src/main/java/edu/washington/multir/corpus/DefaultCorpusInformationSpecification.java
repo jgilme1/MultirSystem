@@ -71,13 +71,27 @@ public class DefaultCorpusInformationSpecification extends
 	private TokenOffsetInformation tokenOffsetInformationinstance = new TokenOffsetInformation();
 	public static final class TokenOffsetInformation implements TokenInformationI{
 		
+		public static final class SentenceRelativeCharacterOffsetBeginAnnotation implements CoreAnnotation<Integer>{
+			@Override
+			public Class<Integer> getType() {
+				return Integer.class;
+			}
+		}
+		
+		public static final class SentenceRelativeCharacterOffsetEndAnnotation implements CoreAnnotation<Integer>{
+			@Override
+			public Class<Integer> getType() {
+				return Integer.class;
+			}
+		}
+		
 		@Override
 		public void read(String line, List<CoreLabel> tokens) {
 			String[] tokenValues = line.split("\\s+");
 			if(tokenValues.length != tokens.size()){
 				for(CoreLabel token : tokens){
-					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, null);
-					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class,null);
+					token.set(SentenceRelativeCharacterOffsetBeginAnnotation.class, null);
+					token.set(SentenceRelativeCharacterOffsetEndAnnotation.class,null);
 				}
 			}
 			else{
@@ -88,12 +102,12 @@ public class DefaultCorpusInformationSpecification extends
 				  if(offsetValues.length == 2){
 					Integer start = Integer.parseInt(offsetValues[0]);
 					Integer end = Integer.parseInt(offsetValues[1]);
-					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class,start);
-					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class,end);
+					token.set(SentenceRelativeCharacterOffsetBeginAnnotation.class,start);
+					token.set(SentenceRelativeCharacterOffsetEndAnnotation.class,end);
 				  }
 				  else{
-					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, null);
-					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class,null); 
+					token.set(SentenceRelativeCharacterOffsetBeginAnnotation.class, null);
+					token.set(SentenceRelativeCharacterOffsetEndAnnotation.class,null); 
 				  }
 			  }
 			}
@@ -104,8 +118,8 @@ public class DefaultCorpusInformationSpecification extends
 			StringBuilder sb = new StringBuilder();
 			
 			for(CoreLabel token : tokens){
-				Integer start = token.get(CoreAnnotations.TokenBeginAnnotation.class);
-				Integer end = token.get(CoreAnnotations.TokenEndAnnotation.class);
+				Integer start = token.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
+				Integer end = token.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 				if(start != null && end != null){
 					sb.append(String.valueOf(start));
 					sb.append(String.valueOf(";"));

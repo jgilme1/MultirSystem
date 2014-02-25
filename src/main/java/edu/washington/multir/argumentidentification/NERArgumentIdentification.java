@@ -7,6 +7,8 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.data.Argument;
 
 /**
@@ -64,8 +66,8 @@ public class NERArgumentIdentification implements ArgumentIdentification {
 				argumentSB.append(" ");
 			}
 			String argumentString = argumentSB.toString().trim();
-			int tokenStartOffset = argumentTokenSpan.get(0).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-			int tokenEndOffset = argumentTokenSpan.get(argumentTokenSpan.size()-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+			int tokenStartOffset = argumentTokenSpan.get(0).get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
+			int tokenEndOffset = argumentTokenSpan.get(argumentTokenSpan.size()-1).get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 
 			Argument arg = new Argument(argumentString, tokenStartOffset, tokenEndOffset);
 			arguments.add(arg);

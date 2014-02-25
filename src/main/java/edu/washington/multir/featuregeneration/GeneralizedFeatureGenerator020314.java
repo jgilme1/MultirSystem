@@ -21,7 +21,9 @@ import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNELAndCoref;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.featuregeneration.FeatureGeneration.SententialArgumentPair;
 import edu.washington.multir.util.BufferedIOUtils;
 
@@ -209,7 +211,7 @@ public class GeneralizedFeatureGenerator020314 implements FeatureGenerator {
 		String rightType = "O";
 		
 		for(CoreLabel t: tokens){
-			Integer startOffset = t.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+			Integer startOffset = t.get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
 			if(startOffset.equals(leftArgOffsets.first)){
 				leftType = t.get(CoreAnnotations.NamedEntityTagAnnotation.class);
 			}
