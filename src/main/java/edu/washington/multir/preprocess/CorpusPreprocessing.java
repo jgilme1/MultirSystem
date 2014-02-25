@@ -38,6 +38,8 @@ import edu.washington.multir.argumentidentification.NERArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERSententialInstanceGeneration;
 import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
 import edu.washington.multir.featuregeneration.FeatureGenerator;
@@ -493,6 +495,8 @@ public class CorpusPreprocessing {
 				for(CoreLabel token: snt){
 					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, offset + token.beginPosition());
 					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, offset + token.endPosition());
+					token.set(SentenceRelativeCharacterOffsetBeginAnnotation.class,token.beginPosition());
+					token.set(SentenceRelativeCharacterOffsetEndAnnotation.class,token.endPosition());
 				}
 				sentences.add(sentence);
 				offset = offset + sentenceText.length();

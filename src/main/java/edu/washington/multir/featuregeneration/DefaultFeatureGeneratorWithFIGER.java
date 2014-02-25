@@ -15,6 +15,8 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.SentDependencyInformation.DependencyAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL.SentNamedEntityLinkingInformation.NamedEntityLinkingAnnotation;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 import edu.washington.multir.util.FigerTypeUtils;
@@ -67,8 +69,8 @@ public class DefaultFeatureGeneratorWithFIGER implements FeatureGenerator {
 				posTags[i] = pos;
 			}
 			
-			int begOffset =token.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-			int endOffset = token.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+			int begOffset =token.get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
+			int endOffset = token.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 
 			// if the token matches the argument set the ner and argPos values
 			if(begOffset == arg1StartOffset){

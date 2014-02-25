@@ -9,6 +9,8 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Interval;
 import edu.stanford.nlp.util.Pair;
 import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.data.Argument;
 
 /**
@@ -62,7 +64,7 @@ public class CorefSententialInstanceGeneration implements
 		
 		
 		for(CoreLabel tok: tokens){
-			int tokBegOffset  = tok.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+			int tokBegOffset  = tok.get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
 			if(tokBegOffset >= arg1.getStartOffset() && tokBegOffset <= arg1.getEndOffset()){
 				arg1CorefClusters.add(tok.get(CorefCoreAnnotations.CorefClusterIdAnnotation.class));
 			}
