@@ -18,6 +18,7 @@ import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.SentDe
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL.SentNamedEntityLinkingInformation.NamedEntityLinkingAnnotation;
 import edu.washington.multir.corpus.SentFreebaseNotableTypeInformation.FreebaseNotableTypeAnnotation;
 import edu.washington.multir.data.Argument;
+import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 import edu.washington.multir.util.FigerTypeUtils;
 import edu.washington.multir.util.GuidMidConversion;
@@ -163,15 +164,15 @@ public class DefaultFeatureGeneratorWithFIGER implements FeatureGenerator {
 			}
 		}
 		
-		List<Triple<Integer,Integer,String>> notableTypeData = sentence.get(FreebaseNotableTypeAnnotation.class);
+		List<Triple<Pair<Integer,Integer>,String,String>> notableTypeData = sentence.get(FreebaseNotableTypeAnnotation.class);
 		
 		if(arg1ID != null){
 			//get figer typer
-			arg1FigerTypes = FigerTypeUtils.getFigerTypes(new Argument("",arg1StartOffset,arg1EndOffset), notableTypeData, tokens);
+			arg1FigerTypes = FigerTypeUtils.getFigerTypes(new KBArgument(new Argument("",arg1StartOffset,arg1EndOffset),arg1ID), notableTypeData, tokens);
 		}
 		if(arg2ID != null){
 			//get figer typer
-			arg2FigerTypes = FigerTypeUtils.getFigerTypes(new Argument("",arg2StartOffset,arg2EndOffset), notableTypeData, tokens);
+			arg2FigerTypes = FigerTypeUtils.getFigerTypes(new KBArgument(new Argument("",arg2StartOffset,arg2EndOffset),arg2ID), notableTypeData, tokens);
 		}
 		
 			

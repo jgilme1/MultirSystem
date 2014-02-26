@@ -10,6 +10,7 @@ import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID;
 import edu.washington.multir.corpus.SentFreebaseNotableTypeInformation.FreebaseNotableTypeAnnotation;
@@ -40,16 +41,16 @@ public class PersonCountryArgumentIdentification implements
 			System.out.println(tokCount + " " + tok.get(CoreAnnotations.TextAnnotation.class));
 			tokCount++;
 		}
-		List<Triple<Integer,Integer,String>> notableTypeData = s.get(FreebaseNotableTypeAnnotation.class);
+		List<Triple<Pair<Integer,Integer>,String,String>> notableTypeData = s.get(FreebaseNotableTypeAnnotation.class);
 		System.out.println("Notable type data");
-		for(Triple<Integer,Integer,String> trip : notableTypeData){
+		for(Triple<Pair<Integer,Integer>,String,String> trip : notableTypeData){
 			System.out.println(trip.first + " " + trip.second + " " + trip.third);
 		}
 		for(Argument a : nelArguments){
 			if(a instanceof KBArgument){
 				KBArgument kbarg = (KBArgument)a;
 				System.out.println("Candidate argument = " + kbarg.getArgName() + " " + kbarg.getKbId());
-				Set<String> figerTypes = FigerTypeUtils.getFigerTypes(a,notableTypeData,tokens);
+				Set<String> figerTypes = FigerTypeUtils.getFigerTypes(kbarg,notableTypeData,tokens);
 				boolean add = false;
 				if(figerTypes != null){
 					for(String typ : figerTypes){

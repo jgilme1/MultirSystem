@@ -25,12 +25,13 @@ import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL.SentNamedEntityLinkingInformation.NamedEntityLinkingAnnotation;
 import edu.washington.multir.data.Argument;
+import edu.washington.multir.data.KBArgument;
 
 public class FigerTypeUtils {
 	public static void main(String[] args) {
 		init();
 		//String fbType = "/government/us_president";
-		Set<String> fbTypes = getFigerTypesFromID(GuidMidConversion.convertBackward("/m/06bnz"));
+		Set<String> fbTypes = getFreebaseTypesFromID(GuidMidConversion.convertBackward("/m/0269xm9"));
 		System.out.println("FB Types:");
 		for(String fType: fbTypes){
 			System.out.println(fType);
@@ -351,14 +352,16 @@ public class FigerTypeUtils {
 		scanner.close();
 	}
 	
-	public static Set<String> getFigerTypes(Argument a,
-			List<Triple<Integer,Integer,String>> notableTypeData, List<CoreLabel> tokens) {
+	public static Set<String> getFigerTypes(KBArgument a,
+			List<Triple<Pair<Integer,Integer>,String,String>> notableTypeData, List<CoreLabel> tokens) {
 
-		for(Triple<Integer,Integer,String> notableTypeTrip : notableTypeData){
-			if(tokens.get(notableTypeTrip.first).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class).equals(a.getStartOffset()) 
+		for(Triple<Pair<Integer,Integer>,String,String> notableTypeTrip : notableTypeData){
+			if(tokens.get(notableTypeTrip.first.first).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class).equals(a.getStartOffset()) 
 					&& 
-			   tokens.get(notableTypeTrip.second-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class).equals(a.getEndOffset())){
-				return getFigerTypesFromFBType(notableTypeTrip.third);
+			   tokens.get(notableTypeTrip.first.second-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class).equals(a.getEndOffset())
+			   		&&
+			   	a.getKbId().equals(notableTypeTrip.third)){
+				return getFigerTypesFromFBType(notableTypeTrip.second);
 			}
 		}
 		return null;

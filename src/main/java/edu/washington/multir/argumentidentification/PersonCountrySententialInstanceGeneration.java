@@ -34,7 +34,7 @@ public class PersonCountrySententialInstanceGeneration implements
 	@Override
 	public List<Pair<Argument, Argument>> generateSententialInstances(
 			List<Argument> arguments, CoreMap sentence) {
-		List<Triple<Integer,Integer,String>> notableTypeData = sentence.get(FreebaseNotableTypeAnnotation.class);
+		List<Triple<Pair<Integer,Integer>,String,String>> notableTypeData = sentence.get(FreebaseNotableTypeAnnotation.class);
 		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
 		List<Pair<Argument,Argument>> sententialInstances = new ArrayList<>();
 		for(int i =0; i < arguments.size(); i++){
@@ -44,9 +44,10 @@ public class PersonCountrySententialInstanceGeneration implements
 					Argument arg2 = arguments.get(j);
 					
 					if((arg1 instanceof KBArgument) && (arg2 instanceof KBArgument)){
-						
-						Set<String> arg1FigerTypes = FigerTypeUtils.getFigerTypes(arg1,notableTypeData,tokens);
-						Set<String> arg2FigerTypes = FigerTypeUtils.getFigerTypes(arg2,notableTypeData,tokens);
+						KBArgument kbArg1 = (KBArgument)arg1;
+						KBArgument kbArg2 = (KBArgument)arg2;
+						Set<String> arg1FigerTypes = FigerTypeUtils.getFigerTypes(kbArg1,notableTypeData,tokens);
+						Set<String> arg2FigerTypes = FigerTypeUtils.getFigerTypes(kbArg2,notableTypeData,tokens);
 						
 						boolean add = false;
 						
