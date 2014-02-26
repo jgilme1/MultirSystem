@@ -337,6 +337,11 @@ public class CorpusPreprocessing {
 		for(CoreMap sentence : doc.get(CoreAnnotations.SentencesAnnotation.class)){
 			StringBuilder tokenStringBuilder = new StringBuilder();
 			for(CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)){
+				Integer sentStart = sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+				Integer tokenStart = token.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+				Integer tokenEnd = token.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+				token.set(SentenceRelativeCharacterOffsetBeginAnnotation.class,tokenStart-sentStart);
+				token.set(SentenceRelativeCharacterOffsetEndAnnotation.class,tokenEnd-sentStart);
 				tokenStringBuilder.append(token.value());
 				tokenStringBuilder.append(" ");
 			}
