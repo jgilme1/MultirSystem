@@ -21,13 +21,15 @@ import edu.washington.multir.corpus.DocumentInformationI;
 import edu.washington.multir.corpus.SentInformationI;
 import edu.washington.multir.corpus.TokenInformationI;
 import edu.washington.multir.distantsupervision.NegativeExampleCollection;
+import edu.washington.multir.featuregeneration.FeatureGenerator;
 
 public class CLIUtils {
 	
 	/**
 	 * Returns A CorpusInformationSpecification object using the proper 
 	 * command line options -si, -di, or -ti. These options can have 
-	 * a list of arguments so any non-option arguments should occur first
+	 * a list of arguments so any non-option arguments should be placed
+	 * before all of these options in the command line argument string
 	 * @return
 	 * @throws ParseException 
 	 * @throws ClassNotFoundException 
@@ -147,6 +149,20 @@ public class CLIUtils {
 	}
 
 
+	/**
+	 * Loads the argumentIdenficiation object from the -ai command line
+	 * option. The value of this option should be the name of the ArgumentIdentification
+	 * alrogrithm in the package edu.washington.multir.argumentidentification
+	 * @param arguments
+	 * @return
+	 * @throws ParseException
+	 * @throws ClassNotFoundException
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
+	 * @throws InvocationTargetException
+	 * @throws NoSuchMethodException
+	 * @throws SecurityException
+	 */
 	public static ArgumentIdentification loadArgumentIdentification(
 			List<String> arguments) throws ParseException, ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
 		Options options = new Options();
@@ -186,6 +202,12 @@ public class CLIUtils {
 	
 	
 
+	/**
+	 * Clears first argument, and sets the values of the second argument
+	 * to the first argument.
+	 * @param remainingArgs
+	 * @param arguments
+	 */
 	private static void removeUsedArguments(List<String> remainingArgs,
 			List<String> arguments) {
 		//update parameter args
@@ -193,6 +215,20 @@ public class CLIUtils {
 		arguments.addAll(remainingArgs);
 	}
 
+	/**
+	 * Loads the SententialInstanceGeneration object from the -sig option.
+	 * The value of this option should be the name of the SententialInstanceGeneration
+	 * class in the package edu.washington.multir.algorithmidentification
+	 * @param arguments
+	 * @return
+	 * @throws ClassNotFoundException
+	 * @throws NoSuchMethodException
+	 * @throws SecurityException
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
+	 * @throws InvocationTargetException
+	 * @throws ParseException
+	 */
 	public static SententialInstanceGeneration loadSententialInformationGeneration(
 			List<String> arguments) throws ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ParseException {
 		Options options = new Options();
@@ -233,6 +269,20 @@ public class CLIUtils {
 		return sig;
 	}
 
+	/**
+	 * Loads the relationMatching object from the -rm option.
+	 * The value of this option should be the name of RelationMatching
+	 * class in the package edu.washington.multir.algorithmidentification
+	 * @param arguments
+	 * @return
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
+	 * @throws InvocationTargetException
+	 * @throws ClassNotFoundException
+	 * @throws ParseException
+	 * @throws NoSuchMethodException
+	 * @throws SecurityException
+	 */
 	public static RelationMatching loadRelationMatching(List<String> arguments) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, ParseException, NoSuchMethodException, SecurityException {
 		Options options = new Options();
 		options.addOption("rm",true,"relationMatching algorithm class");
@@ -271,7 +321,75 @@ public class CLIUtils {
 		removeUsedArguments(remainingArguments,arguments);
 		return rm;
 	}
+	
+	/**
+	 * Loads a featureGenerator object from the -fg option.
+	 * The value of this option should be the name of FeatureGenerator
+	 * class in the package edu.washingotn.multir.featuregeneration
+	 * @param arguments
+	 * @return
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
+	 * @throws InvocationTargetException
+	 * @throws ClassNotFoundException
+	 * @throws ParseException
+	 * @throws NoSuchMethodException
+	 * @throws SecurityException
+	 * @throws InstantiationException
+	 */
+	public static FeatureGenerator loadFeatureGenerator(List<String> arguments) throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, ParseException, NoSuchMethodException, SecurityException, InstantiationException {
+		Options options = new Options();
+		options.addOption("fg",true,"featureGenerator algorithm class");
+		
+		List<Integer> relevantArgIndices = getContiguousArgumentsForOptions(arguments,"fg");
+		List<String> relevantArguments = new ArrayList<String>();
+		List<String> remainingArguments = new ArrayList<String>();
+		for(Integer i: relevantArgIndices){
+			relevantArguments.add(arguments.get(i));
+		}
+		for(Integer i =0; i < arguments.size(); i++){
+			if(!relevantArgIndices.contains(i)){
+				remainingArguments.add(arguments.get(i));
+			}
+		}
+		
+		CommandLineParser parser = new BasicParser();
+		CommandLine cmd = parser.parse(options, relevantArguments.toArray(new String[relevantArguments.size()]));
+		
+		ClassLoader cl = ClassLoader.getSystemClassLoader();
+		FeatureGenerator fg = null;
+		
+		String featureGeneratorName = cmd.getOptionValue("fg");
 
+		
+		if(featureGeneratorName != null){
+			String featureGeneratorClassPrefix = "edu.washington.multir.featuregeneration.";
+			Class<?> c = cl.loadClass(featureGeneratorClassPrefix+featureGeneratorName);
+			fg = (FeatureGenerator) c.newInstance();
+		}
+		else{
+			throw new IllegalArgumentException("featureGenerator Class Argument is invalid");
+		}
+		
+		removeUsedArguments(remainingArguments,arguments);
+		return fg;
+	}
+
+	
+	/**
+	 * Loads the NegativeExampleCollection object from the -nec option.
+	 * The value of this option should be th name of the NegativeExampleCollection
+	 * class in the package edu.washington.multir.distantsupervision
+	 * @param arguments
+	 * @return
+	 * @throws ClassNotFoundException
+	 * @throws NoSuchMethodException
+	 * @throws SecurityException
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
+	 * @throws InvocationTargetException
+	 * @throws ParseException
+	 */
 	public static NegativeExampleCollection loadNegativeExampleCollection(
 			List<String> arguments) throws ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ParseException {
 		Options options = new Options();

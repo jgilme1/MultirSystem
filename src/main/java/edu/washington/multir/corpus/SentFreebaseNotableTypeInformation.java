@@ -23,7 +23,7 @@ public class SentFreebaseNotableTypeInformation implements SentInformationI{
 		String[] data = s.split("\\s+");
 		for(int i = 3; i < data.length; i+=4){
 			Integer tokenStart = Integer.parseInt(data[i-3]);
-			Integer tokenEnd = Integer.parseInt(data[i-21]);
+			Integer tokenEnd = Integer.parseInt(data[i-2]);
 			String type = data[i-1];
 			String mid = data[i];
 			type = type.replaceAll("__", "_");

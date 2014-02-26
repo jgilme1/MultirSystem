@@ -57,13 +57,11 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 							Integer startCharacterOffset = tokens.get(startTokenOffset).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
 							Integer endCharacterOffset = tokens.get(endTokenOffset-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
 
-							System.out.println("Candidate NEL");
-							System.out.println(startCharacterOffset + " " + endCharacterOffset);
+							
 							//get argument string
 							String sentText = s.get(CoreAnnotations.TextAnnotation.class);
 							if(sentText != null && startCharacterOffset !=null && endCharacterOffset!=null){
 								String argumentString = sentText.substring(startCharacterOffset, endCharacterOffset);
-								System.out.println(argumentString);
 								
 								//add argument to list
 								KBArgument nelArgument = new KBArgument(new Argument(argumentString,startCharacterOffset,endCharacterOffset),id);

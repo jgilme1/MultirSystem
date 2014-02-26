@@ -330,8 +330,10 @@ public class FigerTypeUtils {
 			figerTypes.add(figerType);
 			String[] typePath = figerType.split("/");
 			if(typePath.length == 3){
-				String generalFigerType = "/"+typePath[1];
-				figerTypes.add(generalFigerType);
+				if(!typePath[1].equals(typePath[2])){
+					String generalFigerType = "/"+typePath[1];
+					figerTypes.add(generalFigerType);
+				}
 			}
 		}
 		return figerTypes;
@@ -355,6 +357,7 @@ public class FigerTypeUtils {
 	public static Set<String> getFigerTypes(KBArgument a,
 			List<Triple<Pair<Integer,Integer>,String,String>> notableTypeData, List<CoreLabel> tokens) {
 
+		Set<String> emptySet = new HashSet<String>();
 		for(Triple<Pair<Integer,Integer>,String,String> notableTypeTrip : notableTypeData){
 			if(tokens.get(notableTypeTrip.first.first).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class).equals(a.getStartOffset()) 
 					&& 
@@ -364,7 +367,7 @@ public class FigerTypeUtils {
 				return getFigerTypesFromFBType(notableTypeTrip.second);
 			}
 		}
-		return null;
+		return emptySet;
 	}
 	
 }
