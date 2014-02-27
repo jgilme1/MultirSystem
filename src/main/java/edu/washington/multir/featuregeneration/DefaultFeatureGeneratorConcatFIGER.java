@@ -11,6 +11,8 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL.SentNamedEntityLinkingInformation.NamedEntityLinkingAnnotation;
 import edu.washington.multir.corpus.SentFreebaseNotableTypeInformation.FreebaseNotableTypeAnnotation;
 import edu.washington.multir.data.Argument;
@@ -89,9 +91,9 @@ public class DefaultFeatureGeneratorConcatFIGER implements FeatureGenerator {
 		String link = null;
 		double linkScore = 0.0;
 		for(Triple<Pair<Integer,Integer>,String,Float> nelDataTrip : nelData){
-			if(tokens.get(nelDataTrip.first.first).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class).equals(startOffset) 
+			if(tokens.get(nelDataTrip.first.first).get(SentenceRelativeCharacterOffsetBeginAnnotation.class).equals(startOffset) 
 					&& 
-			   tokens.get(nelDataTrip.first.second-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class).equals(endOffset)
+			   tokens.get(nelDataTrip.first.second-1).get(SentenceRelativeCharacterOffsetEndAnnotation.class).equals(endOffset)
 			   		&&
 			   	(nelDataTrip.third > .5)){
 				

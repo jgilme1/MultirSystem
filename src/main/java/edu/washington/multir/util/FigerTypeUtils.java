@@ -23,6 +23,8 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.ErasureUtils;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL.SentNamedEntityLinkingInformation.NamedEntityLinkingAnnotation;
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.KBArgument;
@@ -360,9 +362,9 @@ public class FigerTypeUtils {
 		Set<String> emptySet = new HashSet<String>();
 		try{
 		for(Triple<Pair<Integer,Integer>,String,String> notableTypeTrip : notableTypeData){
-			if(tokens.get(notableTypeTrip.first.first).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class).equals(a.getStartOffset()) 
+			if(tokens.get(notableTypeTrip.first.first).get(SentenceRelativeCharacterOffsetBeginAnnotation.class).equals(a.getStartOffset()) 
 					&& 
-			   tokens.get(notableTypeTrip.first.second-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class).equals(a.getEndOffset())
+			   tokens.get(notableTypeTrip.first.second-1).get(SentenceRelativeCharacterOffsetEndAnnotation.class).equals(a.getEndOffset())
 			   		&&
 			   	a.getKbId().equals(notableTypeTrip.third)){
 				return getFigerTypesFromFBType(notableTypeTrip.second);
