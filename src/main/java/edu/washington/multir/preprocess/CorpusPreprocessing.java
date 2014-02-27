@@ -39,6 +39,7 @@ import edu.washington.multir.argumentidentification.NERSententialInstanceGenerat
 import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
 import edu.washington.multir.data.Argument;
+import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
 import edu.washington.multir.featuregeneration.FeatureGenerator;
 import edu.stanford.nlp.trees.Tree;
@@ -210,10 +211,19 @@ public class CorpusPreprocessing {
 			for(Pair<Argument,Argument> argPair : sententialInstances){
 				Argument arg1 = argPair.first;
 				Argument arg2 = argPair.second;
+				String arg1ID = null;
+				String arg2ID = null;
+				if(arg1 instanceof KBArgument){
+					arg1ID = ((KBArgument)arg1).getKbId();
+				}
+				if(arg2 instanceof KBArgument){
+					arg2ID = ((KBArgument)arg2).getKbId();
+				}
 				List<String> features =fg.generateFeatures(arg1.getStartOffset(),
 										arg1.getEndOffset(),
 										arg2.getStartOffset(),
 										arg2.getEndOffset(), 
+										arg1ID,arg2ID,
 										sent, doc);
 				System.out.print(arg1.getArgName() + "\t" + arg2.getArgName());
 				for(String feature: features){

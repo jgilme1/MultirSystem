@@ -163,11 +163,22 @@ public class ManualEvaluation {
 			FigerTypeUtils.init();
 		}
 		
+		long start = System.currentTimeMillis();
 		List<Extraction> extractions = getExtractions(c,ai,sig,de);
+		long end = System.currentTimeMillis();
+		System.out.println("Got Extractions in " + (end-start));
 		
+		start = end;
 		List<ExtractionAnnotation> annotations = loadAnnotations(annotationsInputFilePath);
-		
+		end = System.currentTimeMillis();
+		System.out.println("Got Annotations in " + (end-start));
+
+		start = end;
+
 		List<Extraction> diffExtractions = getDiff(extractions,annotations);
+		end = System.currentTimeMillis();
+		System.out.println("Got diff in " + (end-start));
+
 		
 		//if there is a diff then don't evaluate algorithm yet
 		if(diffExtractions.size() > 0){
@@ -295,6 +306,7 @@ public class ManualEvaluation {
 			List<ExtractionAnnotation> annotations) {
 		
 		List<Extraction> extrsNotInAnnotations = new ArrayList<Extraction>();
+		
 		
 		for(Extraction e : extractions){
 			boolean inAnnotation = false;

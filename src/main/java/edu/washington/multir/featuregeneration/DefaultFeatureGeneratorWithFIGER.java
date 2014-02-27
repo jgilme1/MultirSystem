@@ -28,7 +28,8 @@ public class DefaultFeatureGeneratorWithFIGER implements FeatureGenerator {
 	@Override
 	public List<String> generateFeatures(Integer arg1StartOffset,
 			Integer arg1EndOffset, Integer arg2StartOffset,
-			Integer arg2EndOffset, CoreMap sentence, Annotation document) {
+			Integer arg2EndOffset, String arg1ID, String arg2ID, 
+			CoreMap sentence, Annotation document) {
 		//System.out.println("Generating features...");
 		
 		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
@@ -145,24 +146,27 @@ public class DefaultFeatureGeneratorWithFIGER implements FeatureGenerator {
 		//return multirFeatures(tokenStrings, posTags, depParents,
 		//			depTypes, arg1Pos, arg2Pos, arg1ner, arg2ner);
 		
-		List<Triple<Pair<Integer,Integer>,String,Float>> nelData = sentence.get(NamedEntityLinkingAnnotation.class);
-		String arg1ID = null;
-		String arg2ID = null;
+//		List<Triple<Pair<Integer,Integer>,String,Float>> nelData = sentence.get(NamedEntityLinkingAnnotation.class);
+//		String arg1ID = null;
+//		String arg2ID = null;
+//		Set<String> arg1FigerTypes  = new HashSet<String>();
+//		Set<String> arg2FigerTypes = new HashSet<String>();
+//		
+//		for(Triple<Pair<Integer,Integer>,String,Float> t : nelData){
+//			Pair<Integer,Integer> p = t.first;
+//			if(p.first == arg1Pos[0] && p.second == arg1Pos[1]){
+//				if(!t.second.equals("null"))
+//				  arg1ID = t.second;
+//			}
+//			
+//			if(p.first == arg2Pos[0] && p.second == arg2Pos[1]){
+//				if(!t.second.equals("null"))
+//				arg2ID = t.second;
+//			}
+//		}
+		
 		Set<String> arg1FigerTypes  = new HashSet<String>();
 		Set<String> arg2FigerTypes = new HashSet<String>();
-		
-		for(Triple<Pair<Integer,Integer>,String,Float> t : nelData){
-			Pair<Integer,Integer> p = t.first;
-			if(p.first == arg1Pos[0] && p.second == arg1Pos[1]){
-				if(!t.second.equals("null"))
-				  arg1ID = t.second;
-			}
-			
-			if(p.first == arg2Pos[0] && p.second == arg2Pos[1]){
-				if(!t.second.equals("null"))
-				arg2ID = t.second;
-			}
-		}
 		
 		List<Triple<Pair<Integer,Integer>,String,String>> notableTypeData = sentence.get(FreebaseNotableTypeAnnotation.class);
 		

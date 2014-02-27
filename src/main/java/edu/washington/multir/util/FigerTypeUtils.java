@@ -358,6 +358,7 @@ public class FigerTypeUtils {
 			List<Triple<Pair<Integer,Integer>,String,String>> notableTypeData, List<CoreLabel> tokens) {
 
 		Set<String> emptySet = new HashSet<String>();
+		try{
 		for(Triple<Pair<Integer,Integer>,String,String> notableTypeTrip : notableTypeData){
 			if(tokens.get(notableTypeTrip.first.first).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class).equals(a.getStartOffset()) 
 					&& 
@@ -367,6 +368,11 @@ public class FigerTypeUtils {
 				return getFigerTypesFromFBType(notableTypeTrip.second);
 			}
 		}
+		}
+		catch(IndexOutOfBoundsException e){
+			
+		}
+		
 		return emptySet;
 	}
 	

@@ -31,6 +31,7 @@ import edu.washington.multir.argumentidentification.NERArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERSententialInstanceGeneration;
 import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
 import edu.washington.multir.data.Argument;
+import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
 import edu.washington.multir.featuregeneration.FeatureGenerator;
 /**
@@ -97,8 +98,18 @@ public class DocumentExtractor {
 			for(Pair<Argument,Argument> p : sigs){
 				Argument arg1 = p.first;
 				Argument arg2 = p.second;
+				String arg1ID = null;
+				String arg2ID = null;
+				if(p.first instanceof KBArgument){
+					arg1ID = ((KBArgument)p.first).getKbId();
+				}
+				if(p.second instanceof KBArgument){
+					arg2ID = ((KBArgument)p.second).getKbId();
+				}
 				List<String> features = 
-						fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), s, doc);
+						fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), 
+								arg2.getStartOffset(), arg2.getEndOffset(),
+								arg1ID,arg2ID,s, doc);
 				Pair<Triple<String,Double,Double>,Map<Integer,Double>> result = getPrediction(features,arg1,arg2,senText);
 				if(result !=null){
 					Triple<String,Double,Double> relationScoreTriple = getPrediction(features,arg1,arg2,senText).first;
@@ -118,24 +129,54 @@ public class DocumentExtractor {
 	
 	public Triple<String,Double,Double> extractFromSententialInstance(Argument arg1, Argument arg2, CoreMap sentence, Annotation doc){
 		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
+		String arg1ID = null;
+		String arg2ID = null;
+		if(arg1 instanceof KBArgument){
+			arg1ID = ((KBArgument)arg1).getKbId();
+		}
+		if(arg2 instanceof KBArgument){
+			arg2ID = ((KBArgument)arg2).getKbId();
+		}
 		List<String> features = 
-				fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), sentence, doc);
+				fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), 
+						arg2.getStartOffset(), arg2.getEndOffset(), 
+						arg1ID,arg2ID,sentence, doc);
 		Pair<Triple<String,Double,Double>,Map<Integer,Double>> p = getPrediction(features,arg1,arg2,senText);
 		return p.first;
 	}
 	
 	public Pair<Triple<String,Double,Double>,Map<Integer,Double>> extractFromSententialInstanceWithFeatureScores(Argument arg1, Argument arg2, CoreMap sentence, Annotation doc){
 		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
+		String arg1ID = null;
+		String arg2ID = null;
+		if(arg1 instanceof KBArgument){
+			arg1ID = ((KBArgument)arg1).getKbId();
+		}
+		if(arg2 instanceof KBArgument){
+			arg2ID = ((KBArgument)arg2).getKbId();
+		}
 		List<String> features = 
-				fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), sentence, doc);
+				fg.generateFeatures(arg1.getStartOffset(), 
+						arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), 
+						arg1ID, arg2ID,sentence, doc);
 		Pair<Triple<String,Double,Double>,Map<Integer,Double>> p = getPrediction(features,arg1,arg2,senText);
 		return p;
 	}
 	
 	public Map<Integer,Double> getFeatureScores(Argument arg1, Argument arg2, CoreMap sentence, Annotation doc, int rel){
 		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
+		String arg1ID = null;
+		String arg2ID = null;
+		if(arg1 instanceof KBArgument){
+			arg1ID = ((KBArgument)arg1).getKbId();
+		}
+		if(arg2 instanceof KBArgument){
+			arg2ID = ((KBArgument)arg2).getKbId();
+		}
 		List<String> features = 
-				fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), sentence, doc);
+				fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), 
+						arg2.getStartOffset(), arg2.getEndOffset(), 
+						arg1ID,arg2ID, sentence, doc);
 		MILDocument milDoc = new MILDocument();
 		
 		milDoc.arg1 = arg1.getArgName();

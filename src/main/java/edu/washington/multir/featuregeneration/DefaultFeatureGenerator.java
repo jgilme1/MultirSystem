@@ -22,7 +22,7 @@ public class DefaultFeatureGenerator implements FeatureGenerator {
 	@Override
 	public List<String> generateFeatures(Integer arg1StartOffset,
 			Integer arg1EndOffset, Integer arg2StartOffset,
-			Integer arg2EndOffset, CoreMap sentence, Annotation document) {
+			Integer arg2EndOffset, String arg1ID, String arg2ID, CoreMap sentence, Annotation document) {
 		//System.out.println("Generating features...");
 		
 		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
