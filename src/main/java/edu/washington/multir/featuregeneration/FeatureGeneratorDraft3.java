@@ -53,7 +53,8 @@ public class FeatureGeneratorDraft3 implements FeatureGenerator{
 	@Override
 	public List<String> generateFeatures(Integer arg1StartOffset,
 			Integer arg1EndOffset, Integer arg2StartOffset,
-			Integer arg2EndOffset, CoreMap sentence, Annotation document) {
+			Integer arg2EndOffset, String arg1ID, String arg2ID,
+			CoreMap sentence, Annotation document) {
 		
 		List<String> features = new ArrayList<String>();		
 		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
@@ -430,7 +431,7 @@ public class FeatureGeneratorDraft3 implements FeatureGenerator{
 		for(SententialArgumentPair sap: saps){
 			Pair<CoreMap,Annotation> senAnnoPair = annotationMap.get(sap.getSentID());
 			List<String> features = fg.generateFeatures(sap.getArg1Offsets().first,sap.getArg1Offsets().second
-					,sap.getArg2Offsets().first,sap.getArg2Offsets().second,senAnnoPair.first,senAnnoPair.second);
+					,sap.getArg2Offsets().first,sap.getArg2Offsets().second,null,null,senAnnoPair.first,senAnnoPair.second);
 			
 			CoreMap sen = senAnnoPair.first;
 			String senText = sen.get(CoreAnnotations.TextAnnotation.class);

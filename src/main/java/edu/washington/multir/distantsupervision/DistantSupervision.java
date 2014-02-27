@@ -18,6 +18,8 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.argumentidentification.ArgumentIdentification;
+import edu.washington.multir.argumentidentification.PersonCountryArgumentIdentification;
+import edu.washington.multir.argumentidentification.PersonCountrySententialInstanceGeneration;
 import edu.washington.multir.argumentidentification.RelationMatching;
 import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
 import edu.washington.multir.corpus.Corpus;
@@ -26,6 +28,7 @@ import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 import edu.washington.multir.util.BufferedIOUtils;
+import edu.washington.multir.util.FigerTypeUtils;
 
 public class DistantSupervision {
 
@@ -33,14 +36,12 @@ public class DistantSupervision {
 	private SententialInstanceGeneration sig;
 	private RelationMatching rm;
 	private NegativeExampleCollection nec;
-	private boolean negativeExampleFlag;
 
-	public DistantSupervision(ArgumentIdentification ai, SententialInstanceGeneration sig, RelationMatching rm, NegativeExampleCollection nec, boolean b){
+	public DistantSupervision(ArgumentIdentification ai, SententialInstanceGeneration sig, RelationMatching rm, NegativeExampleCollection nec){
 		this.ai = ai;
 		this.sig = sig;
 		this.rm =rm;
 		this.nec = nec;
-		negativeExampleFlag = b;
 	}
 
 	public void run(String outputFileName,KnowledgeBase kb, Corpus c) throws SQLException, IOException{
@@ -49,6 +50,8 @@ public class DistantSupervision {
     	PrintWriter dsWriter = new PrintWriter(BufferedIOUtils.getBufferedWriter(new File(outputFileName)));
 		Iterator<Annotation> di = c.getDocumentIterator();
 		int count =0;
+		long startms = System.currentTimeMillis();
+		long timeSpentInQueries = 0;
 		while(di.hasNext()){
 			Annotation d = di.next();
 			List<CoreMap> sentences = d.get(CoreAnnotations.SentencesAnnotation.class);
@@ -83,7 +86,15 @@ public class DistantSupervision {
 			writeDistantSupervisionAnnotations(nec.filter(documentNegativeExamples,documentPositiveExamples,kb,sentences),dsWriter);
 			count++;
 			if( count % 1000 == 0){
+				long endms = System.currentTimeMillis();
 				System.out.println(count + " documents processed");
+				System.out.println("Time took = " + (endms-startms));
+				startms = endms;
+				System.out.println("Time spent in querying db = " + timeSpentInQueries);
+				timeSpentInQueries = 0;
+//				System.out.println("query counts = " + PersonCountrySententialInstanceGeneration.queryCount );
+//				PersonCountrySententialInstanceGeneration.queryCount = 0;
+				
 			}
 		}
 		dsWriter.close();
@@ -244,62 +255,60 @@ public class DistantSupervision {
 		Map<String,List<String>> entityMap = KB.getEntityMap();
 		Map<String,List<String>> relationMap = KB.getEntityPairRelationMap();
 		List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> negativeExampleAnnotations = new ArrayList<>();
-		if(negativeExampleFlag){			
-			for(Pair<Argument,Argument> p : sententialInstances){
-				//check that at least one argument is not in distantSupervisionAnnotations
-				Argument arg1 = p.first;
-				Argument arg2 = p.second;
-				boolean canBeNegativeExample = true;
-				for(Triple<KBArgument,KBArgument,String> t : distantSupervisionAnnotations){
-					Argument annotatedArg1 = t.first;
-					Argument annotatedArg2 = t.second;
-					
-					//if sententialInstance is a distance supervision annotation
-					//then it is not a negative example candidate
-					if( (arg1.getStartOffset() == annotatedArg1.getStartOffset()) &&
-						(arg1.getEndOffset() == annotatedArg1.getEndOffset()) &&
-						(arg2.getStartOffset() == annotatedArg2.getStartOffset()) &&
-						(arg2.getEndOffset() == annotatedArg2.getEndOffset())){
-						canBeNegativeExample = false;
-						break;
+		for(Pair<Argument,Argument> p : sententialInstances){
+			//check that at least one argument is not in distantSupervisionAnnotations
+			Argument arg1 = p.first;
+			Argument arg2 = p.second;
+			boolean canBeNegativeExample = true;
+			for(Triple<KBArgument,KBArgument,String> t : distantSupervisionAnnotations){
+				Argument annotatedArg1 = t.first;
+				Argument annotatedArg2 = t.second;
+				
+				//if sententialInstance is a distance supervision annotation
+				//then it is not a negative example candidate
+				if( (arg1.getStartOffset() == annotatedArg1.getStartOffset()) &&
+					(arg1.getEndOffset() == annotatedArg1.getEndOffset()) &&
+					(arg2.getStartOffset() == annotatedArg2.getStartOffset()) &&
+					(arg2.getEndOffset() == annotatedArg2.getEndOffset())){
+					canBeNegativeExample = false;
+					break;
+				}
+			}
+			if(canBeNegativeExample){
+				//look for KBIDs, select a random pair
+				List<String> arg1Ids = new ArrayList<>();
+				if(arg1 instanceof KBArgument){
+					   arg1Ids.add(((KBArgument) arg1).getKbId());
+				}
+				else{
+					if(entityMap.containsKey(arg1.getArgName())){
+						arg1Ids = entityMap.get(arg1.getArgName());
+					}						
+				}
+
+				List<String> arg2Ids = new ArrayList<>();
+				if(arg2 instanceof KBArgument){
+					arg2Ids.add(((KBArgument) arg2).getKbId());
+				}
+				else{
+					if(entityMap.containsKey(arg2.getArgName())){
+						arg2Ids = entityMap.get(arg2.getArgName());
 					}
 				}
-				if(canBeNegativeExample){
-					//look for KBIDs, select a random pair
-					List<String> arg1Ids = new ArrayList<>();
-					if(arg1 instanceof KBArgument){
-						   arg1Ids.add(((KBArgument) arg1).getKbId());
-					}
-					else{
-						if(entityMap.containsKey(arg1.getArgName())){
-							arg1Ids = entityMap.get(arg1.getArgName());
-						}						
-					}
-
-					List<String> arg2Ids = new ArrayList<>();
-					if(arg2 instanceof KBArgument){
-						arg2Ids.add(((KBArgument) arg2).getKbId());
-					}
-					else{
-						if(entityMap.containsKey(arg2.getArgName())){
-							arg2Ids = entityMap.get(arg2.getArgName());
-						}
-					}
-					if( (!arg1Ids.isEmpty()) && (!arg2Ids.isEmpty())){
-						//check that no pair of entities represented by these
-						//argument share a relation:
-						if(noRelationsHold(arg1Ids,arg2Ids,relationMap)){
-							Collections.shuffle(arg1Ids);
-							Collections.shuffle(arg2Ids);
-							String arg1Id = arg1Ids.get(0);
-							String arg2Id = arg2Ids.get(0);
-							if((!arg1Id.equals("null")) && (!arg2Id.equals("null"))){
-								KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
-								KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
-								Triple<KBArgument,KBArgument,String> t = new Triple<>(kbarg1,kbarg2,"NA");
-								Pair<Triple<KBArgument,KBArgument,String>,Integer> negativeAnnotationPair = new Pair<>(t,sentGlobalID);
-								if(!containsNegativeAnnotation(negativeExampleAnnotations,t)) negativeExampleAnnotations.add(negativeAnnotationPair);
-							}
+				if( (!arg1Ids.isEmpty()) && (!arg2Ids.isEmpty())){
+					//check that no pair of entities represented by these
+					//argument share a relation:
+					if(noRelationsHold(arg1Ids,arg2Ids,relationMap)){
+						Collections.shuffle(arg1Ids);
+						Collections.shuffle(arg2Ids);
+						String arg1Id = arg1Ids.get(0);
+						String arg2Id = arg2Ids.get(0);
+						if((!arg1Id.equals("null")) && (!arg2Id.equals("null"))){
+							KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
+							KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
+							Triple<KBArgument,KBArgument,String> t = new Triple<>(kbarg1,kbarg2,"NA");
+							Pair<Triple<KBArgument,KBArgument,String>,Integer> negativeAnnotationPair = new Pair<>(t,sentGlobalID);
+							if(!containsNegativeAnnotation(negativeExampleAnnotations,t)) negativeExampleAnnotations.add(negativeAnnotationPair);
 						}
 					}
 				}

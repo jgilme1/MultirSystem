@@ -39,8 +39,11 @@ import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDI
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.Extraction;
 import edu.washington.multir.data.ExtractionAnnotation;
+import edu.washington.multir.featuregeneration.DefaultFeatureGeneratorWithFIGER;
 import edu.washington.multir.featuregeneration.FeatureGenerator;
 import edu.washington.multir.sententialextraction.DocumentExtractor;
+import edu.washington.multir.util.CLIUtils;
+import edu.washington.multir.util.FigerTypeUtils;
 
 
 /**
@@ -62,64 +65,64 @@ public class ManualEvaluation {
 	
 	public static void main (String[] args) throws ParseException, ClassNotFoundException, InstantiationException, IllegalAccessException, NoSuchMethodException, SecurityException, IllegalArgumentException, InvocationTargetException, SQLException, IOException{
 		
-		Options options = new Options();
-		options.addOption("cis",true,"corpusInformationSpecification algorithm class");
-		options.addOption("ai",true,"argumentIdentification algorithm class");
-		options.addOption("sig",true,"sententialInstanceGeneration algorithm class");
-		options.addOption("fg",true,"featureGeneration algorithm class");
-		CommandLineParser parser = new BasicParser();
-		CommandLine cmd = parser.parse(options, args);
-		List<String> remainingArgs = cmd.getArgList();
-		
-		ClassLoader cl = ClassLoader.getSystemClassLoader();
-		CorpusInformationSpecification cis = null;
-		ArgumentIdentification ai = null;
-		SententialInstanceGeneration sig = null;
-		FeatureGenerator fg = null;
-		
-		
-		String corpusInformationSpecificationName = cmd.getOptionValue("cis");
-		String argumentIdentificationName = cmd.getOptionValue("ai");
-		String sententialInstanceGenerationName = cmd.getOptionValue("sig");
-		String featureGenerationName = cmd.getOptionValue("fg");
-		
-		if(corpusInformationSpecificationName != null){
-			String corpusInformationSpecificationClassPrefix = "edu.washington.multir.corpus.";
-			Class<?> c = cl.loadClass(corpusInformationSpecificationClassPrefix+corpusInformationSpecificationName);
-			cis = (CorpusInformationSpecification) c.newInstance();
-		}
-		else{
-			throw new IllegalArgumentException("corpusInformationSpecification Class Argument is invalid");
-		}
-		
-		if(argumentIdentificationName != null){
-			String argumentIdentificationClassPrefix = "edu.washington.multir.argumentidentification.";
-			Class<?> c = cl.loadClass(argumentIdentificationClassPrefix+argumentIdentificationName);
-			Method m = c.getMethod("getInstance");
-			ai = (ArgumentIdentification) m.invoke(null);
-		}
-		else{
-			throw new IllegalArgumentException("argumentIdentification Class Argument is invalid");
-		}
-		
-		if(sententialInstanceGenerationName != null){
-			String sententialInstanceClassPrefix = "edu.washington.multir.argumentidentification.";
-			Class<?> c = cl.loadClass(sententialInstanceClassPrefix+sententialInstanceGenerationName);
-			Method m = c.getMethod("getInstance");
-			sig = (SententialInstanceGeneration) m.invoke(null);
-		}
-		else{
-			throw new IllegalArgumentException("sententialInstanceGeneration Class Argument is invalid");
-		}
-		
-		if(featureGenerationName != null){
-			String featureGenerationClassPrefix = "edu.washington.multir.featuregeneration.";
-			Class<?> c = cl.loadClass(featureGenerationClassPrefix+featureGenerationName);
-			fg = (FeatureGenerator) c.newInstance();
-		}
-		else{
-			throw new IllegalArgumentException("argumentIdentification Class Argument is invalid");
-		}
+//		Options options = new Options();
+//		options.addOption("cis",true,"corpusInformationSpecification algorithm class");
+//		options.addOption("ai",true,"argumentIdentification algorithm class");
+//		options.addOption("sig",true,"sententialInstanceGeneration algorithm class");
+//		options.addOption("fg",true,"featureGeneration algorithm class");
+//		CommandLineParser parser = new BasicParser();
+//		CommandLine cmd = parser.parse(options, args);
+//		List<String> remainingArgs = cmd.getArgList();
+//		
+//		ClassLoader cl = ClassLoader.getSystemClassLoader();
+//		CorpusInformationSpecification cis = null;
+//		ArgumentIdentification ai = null;
+//		SententialInstanceGeneration sig = null;
+//		FeatureGenerator fg = null;
+//		
+//		
+//		String corpusInformationSpecificationName = cmd.getOptionValue("cis");
+//		String argumentIdentificationName = cmd.getOptionValue("ai");
+//		String sententialInstanceGenerationName = cmd.getOptionValue("sig");
+//		String featureGenerationName = cmd.getOptionValue("fg");
+//		
+//		if(corpusInformationSpecificationName != null){
+//			String corpusInformationSpecificationClassPrefix = "edu.washington.multir.corpus.";
+//			Class<?> c = cl.loadClass(corpusInformationSpecificationClassPrefix+corpusInformationSpecificationName);
+//			cis = (CorpusInformationSpecification) c.newInstance();
+//		}
+//		else{
+//			throw new IllegalArgumentException("corpusInformationSpecification Class Argument is invalid");
+//		}
+//		
+//		if(argumentIdentificationName != null){
+//			String argumentIdentificationClassPrefix = "edu.washington.multir.argumentidentification.";
+//			Class<?> c = cl.loadClass(argumentIdentificationClassPrefix+argumentIdentificationName);
+//			Method m = c.getMethod("getInstance");
+//			ai = (ArgumentIdentification) m.invoke(null);
+//		}
+//		else{
+//			throw new IllegalArgumentException("argumentIdentification Class Argument is invalid");
+//		}
+//		
+//		if(sententialInstanceGenerationName != null){
+//			String sententialInstanceClassPrefix = "edu.washington.multir.argumentidentification.";
+//			Class<?> c = cl.loadClass(sententialInstanceClassPrefix+sententialInstanceGenerationName);
+//			Method m = c.getMethod("getInstance");
+//			sig = (SententialInstanceGeneration) m.invoke(null);
+//		}
+//		else{
+//			throw new IllegalArgumentException("sententialInstanceGeneration Class Argument is invalid");
+//		}
+//		
+//		if(featureGenerationName != null){
+//			String featureGenerationClassPrefix = "edu.washington.multir.featuregeneration.";
+//			Class<?> c = cl.loadClass(featureGenerationClassPrefix+featureGenerationName);
+//			fg = (FeatureGenerator) c.newInstance();
+//		}
+//		else{
+//			throw new IllegalArgumentException("argumentIdentification Class Argument is invalid");
+//		}
 		
 		
 		//remaining args are
@@ -127,10 +130,21 @@ public class ManualEvaluation {
 		// 1 - annotations input file
 		// 2 - evaluation relations file
 		
-		String testCorpusDatabasePath = remainingArgs.get(0);
-		String multirModelPath = remainingArgs.get(1);
-		String annotationsInputFilePath = remainingArgs.get(2);
-		String evaluationRelationsFilePath = remainingArgs.get(3);
+		List<String> arguments  = new ArrayList<String>();
+		for(String arg: args){
+			arguments.add(arg);
+		}
+		
+		CorpusInformationSpecification cis = CLIUtils.loadCorpusInformationSpecification(arguments);
+		FeatureGenerator fg = CLIUtils.loadFeatureGenerator(arguments);
+		ArgumentIdentification ai = CLIUtils.loadArgumentIdentification(arguments);
+		SententialInstanceGeneration sig = CLIUtils.loadSententialInformationGeneration(arguments);
+		
+		
+		String testCorpusDatabasePath = arguments.get(0);
+		String multirModelPath = arguments.get(1);
+		String annotationsInputFilePath = arguments.get(2);
+		String evaluationRelationsFilePath = arguments.get(3);
 		
 		loadTargetRelations(evaluationRelationsFilePath);
 		
@@ -145,11 +159,26 @@ public class ManualEvaluation {
 		}
 		
 		
+		if(fg instanceof DefaultFeatureGeneratorWithFIGER){
+			FigerTypeUtils.init();
+		}
+		
+		long start = System.currentTimeMillis();
 		List<Extraction> extractions = getExtractions(c,ai,sig,de);
+		long end = System.currentTimeMillis();
+		System.out.println("Got Extractions in " + (end-start));
 		
+		start = end;
 		List<ExtractionAnnotation> annotations = loadAnnotations(annotationsInputFilePath);
-		
+		end = System.currentTimeMillis();
+		System.out.println("Got Annotations in " + (end-start));
+
+		start = end;
+
 		List<Extraction> diffExtractions = getDiff(extractions,annotations);
+		end = System.currentTimeMillis();
+		System.out.println("Got diff in " + (end-start));
+
 		
 		//if there is a diff then don't evaluate algorithm yet
 		if(diffExtractions.size() > 0){
@@ -161,6 +190,10 @@ public class ManualEvaluation {
 		}
 		else{
 			eval(extractions,annotations);
+		}
+		
+		if(fg instanceof DefaultFeatureGeneratorWithFIGER){
+			FigerTypeUtils.close();
 		}
 	}
 
@@ -234,13 +267,13 @@ public class ManualEvaluation {
 						}
 					}
 					if(print){
-//						System.out.println("Features:");
-//						Map<Integer,Double> featureScores = e.getFeatureScores();
-//						for(Integer i : featureScores.keySet()){
-//							Double score = featureScores.get(i);
-//							String featName = ftID2ftMap.get(i);
-//							System.out.println(featName + "\t" + score);
-//						}
+						System.out.println("Features:");
+						Map<Integer,Double> featureScores = e.getFeatureScores();
+						for(Integer i : featureScores.keySet()){
+							Double score = featureScores.get(i);
+							String featName = ftID2ftMap.get(i);
+							System.out.println(featName + "\t" + score);
+						}
 					}
 				}
 				else{
@@ -273,6 +306,7 @@ public class ManualEvaluation {
 			List<ExtractionAnnotation> annotations) {
 		
 		List<Extraction> extrsNotInAnnotations = new ArrayList<Extraction>();
+		
 		
 		for(Extraction e : extractions){
 			boolean inAnnotation = false;

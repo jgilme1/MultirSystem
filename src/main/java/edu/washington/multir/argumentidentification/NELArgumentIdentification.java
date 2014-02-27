@@ -58,7 +58,6 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 						if(startTokenOffset >= 0 && startTokenOffset < tokens.size() && endTokenOffset >= 0 && endTokenOffset < tokens.size()){
 							Integer startCharacterOffset = tokens.get(startTokenOffset).get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
 							Integer endCharacterOffset = tokens.get(endTokenOffset-1).get(SentenceRelativeCharacterOffsetEndAnnotation.class);
-			
 							
 							//get argument string
 							String sentText = s.get(CoreAnnotations.TextAnnotation.class);

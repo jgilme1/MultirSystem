@@ -24,5 +24,6 @@ public interface FeatureGenerator {
 	 * @return
 	 */
 	public List<String> generateFeatures(Integer arg1StartOffset, Integer arg1EndOffset, 
-			Integer arg2StartOffset, Integer arg2EndOffset, CoreMap sentence, Annotation document );
+			Integer arg2StartOffset, Integer arg2EndOffset, String arg1Id, String arg2Id,
+			CoreMap sentence, Annotation document );
 }

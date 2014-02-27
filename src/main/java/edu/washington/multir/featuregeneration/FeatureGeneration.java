@@ -136,10 +136,9 @@ public class FeatureGeneration {
 		}
 		
 		for(SententialArgumentPair sap : saps){
-			
 			Pair<CoreMap,Annotation> senAnnoPair = sentAnnotationMap.get(sap.sentID);
 			List<String> features = fg.generateFeatures(sap.arg1Offsets.first,sap.arg1Offsets.second
-					,sap.arg2Offsets.first,sap.arg2Offsets.second,senAnnoPair.first,senAnnoPair.second);
+					,sap.arg2Offsets.first,sap.arg2Offsets.second,sap.arg1ID,sap.arg2ID,senAnnoPair.first,senAnnoPair.second);
 			bw.write(makeFeatureString(sap,features)+"\n");
 		}
 		
@@ -168,7 +167,7 @@ public class FeatureGeneration {
 			
 			Pair<CoreMap,Annotation> senAnnoPair = sentAnnotationMap.get(sap.sentID);
 			List<String> features = fg.generateFeatures(sap.arg1Offsets.first,sap.arg1Offsets.second
-					,sap.arg2Offsets.first,sap.arg2Offsets.second,senAnnoPair.first,senAnnoPair.second);
+					,sap.arg2Offsets.first,sap.arg2Offsets.second,sap.arg1ID,sap.arg2ID,senAnnoPair.first,senAnnoPair.second);
 			featureStrings.add(makeFeatureString(sap,features)+"\n");
 		}
 		return featureStrings;
@@ -304,7 +303,7 @@ public class FeatureGeneration {
 		Integer Arg2EndOffset = 69;
 		
 		List<String> features = fg.generateFeatures(Arg1StartOffset,Arg1EndOffset
-					,Arg2StartOffset,Arg2EndOffset,sentence,doc);
+					,Arg2StartOffset,Arg2EndOffset,null,null,sentence,doc);
 			
 		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
 		System.out.println(senText);

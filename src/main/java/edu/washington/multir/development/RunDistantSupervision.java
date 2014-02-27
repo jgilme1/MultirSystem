@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.cli.BasicParser;
@@ -27,6 +28,8 @@ import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL
 import edu.washington.multir.distantsupervision.DistantSupervision;
 import edu.washington.multir.distantsupervision.NegativeExampleCollection;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
+import edu.washington.multir.util.CLIUtils;
+import edu.washington.multir.util.FigerTypeUtils;
 
 /**
  * An app for running distant supervision
@@ -60,93 +63,111 @@ public class RunDistantSupervision {
 	
 	public static void main(String[] args) throws SQLException, IOException, ClassNotFoundException, ParseException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, InstantiationException{		
 		
-		Options options = new Options();
-		options.addOption("cis",true,"corpusInformationSpecification algorithm class");
-		options.addOption("ai",true,"argumentIdentification algorithm class");
-		options.addOption("sig",true,"sententialInstanceGeneration algorithm class");
-		options.addOption("rm",true,"relationMatching algorithm class");
-		options.addOption("nec",true,"negative example collection algorithm class");
-		CommandLineParser parser = new BasicParser();
-		CommandLine cmd = parser.parse(options, args);
-		List<String> remainingArgs = cmd.getArgList();
+//		Options options = new Options();
+//		options.addOption("cis",true,"corpusInformationSpecification algorithm class");
+//		options.addOption("ai",true,"argumentIdentification algorithm class");
+//		options.addOption("sig",true,"sententialInstanceGeneration algorithm class");
+//		options.addOption("rm",true,"relationMatching algorithm class");
+//		options.addOption("nec",true,"negative example collection algorithm class");
+//		CommandLineParser parser = new BasicParser();
+//		CommandLine cmd = parser.parse(options, args);
+//		List<String> remainingArgs = cmd.getArgList();
+//		
+//		
+//		ClassLoader cl = ClassLoader.getSystemClassLoader();
+//		CorpusInformationSpecification cis = null;
+//		ArgumentIdentification ai = null;
+//		SententialInstanceGeneration sig = null;
+//		RelationMatching rm = null;
+//		NegativeExampleCollection nec = null;
+//		
+//		String corpusInformationSpecificationName = cmd.getOptionValue("cis");
+//		String argumentIdentificationName = cmd.getOptionValue("ai");
+//		String sententialInstanceGenerationName = cmd.getOptionValue("sig");
+//		String relationMatchingName = cmd.getOptionValue("rm");
+//		String negativeExampleCollectionName = cmd.getOptionValue("nec");
+//		
+//		if(corpusInformationSpecificationName != null){
+//			String corpusInformationSpecificationClassPrefix = "edu.washington.multir.corpus.";
+//			Class<?> c = cl.loadClass(corpusInformationSpecificationClassPrefix+corpusInformationSpecificationName);
+//			cis = (CorpusInformationSpecification) c.newInstance();
+//		}
+//		else{
+//			throw new IllegalArgumentException("corpusInformationSpecification Class Argument is invalid");
+//		}
+//		
+//		if(argumentIdentificationName != null){
+//			String argumentIdentificationClassPrefix = "edu.washington.multir.argumentidentification.";
+//			Class<?> c = cl.loadClass(argumentIdentificationClassPrefix+argumentIdentificationName);
+//			Method m = c.getMethod("getInstance");
+//			ai = (ArgumentIdentification) m.invoke(null);
+//		}
+//		else{
+//			throw new IllegalArgumentException("argumentIdentification Class Argument is invalid");
+//		}
+//		
+//		if(sententialInstanceGenerationName != null){
+//			String sententialInstanceClassPrefix = "edu.washington.multir.argumentidentification.";
+//			Class<?> c = cl.loadClass(sententialInstanceClassPrefix+sententialInstanceGenerationName);
+//			Method m = c.getMethod("getInstance");
+//			sig = (SententialInstanceGeneration) m.invoke(null);
+//		}
+//		else{
+//			throw new IllegalArgumentException("sententialInstanceGeneration Class Argument is invalid");
+//		}
+//		
+//		if(relationMatchingName != null){
+//			String relationMatchingClassPrefix = "edu.washington.multir.argumentidentification.";
+//			Class<?> c = cl.loadClass(relationMatchingClassPrefix+relationMatchingName);
+//			Method m = c.getMethod("getInstance");
+//			rm = (RelationMatching) m.invoke(null);
+//		}
+//		else{
+//			throw new IllegalArgumentException("relationMatching Class Argument is invalid");
+//		}
+//		
+//		Corpus c = new Corpus(remainingArgs.get(0),cis,true);
+//		String dsFileName = remainingArgs.get(1);
+//		KnowledgeBase kb = new KnowledgeBase(remainingArgs.get(2),remainingArgs.get(3),remainingArgs.get(4));
+//		boolean figerFlag = Boolean.parseBoolean(remainingArgs.get(5));
+//		
+//		boolean neFlag = (remainingArgs.get(6).equals("true"))? true : false;
+//		
+//		double ratio = 0.0;
+//		if(neFlag){
+//			if(remainingArgs.size() == 8){
+//				ratio = Double.parseDouble(remainingArgs.get(7));
+//			}
+//		}
+//		
+//		if(negativeExampleCollectionName != null){
+//			String negativeExampleCollectionClassPrefix = "edu.washington.multir.distantsupervision.";
+//			Class<?> necClass = cl.loadClass(negativeExampleCollectionClassPrefix+negativeExampleCollectionName);
+//			Method m = necClass.getMethod("getInstance", double.class);
+//			nec =  (NegativeExampleCollection) m.invoke(null,ratio);
+//		}
+//		else{
+//			throw new IllegalArgumentException("negativeExampleCollection Class Argument is invalid");
+//		}
 		
 		
-		ClassLoader cl = ClassLoader.getSystemClassLoader();
-		CorpusInformationSpecification cis = null;
-		ArgumentIdentification ai = null;
-		SententialInstanceGeneration sig = null;
-		RelationMatching rm = null;
-		NegativeExampleCollection nec = null;
-		
-		String corpusInformationSpecificationName = cmd.getOptionValue("cis");
-		String argumentIdentificationName = cmd.getOptionValue("ai");
-		String sententialInstanceGenerationName = cmd.getOptionValue("sig");
-		String relationMatchingName = cmd.getOptionValue("rm");
-		String negativeExampleCollectionName = cmd.getOptionValue("nec");
-		
-		if(corpusInformationSpecificationName != null){
-			String corpusInformationSpecificationClassPrefix = "edu.washington.multir.corpus.";
-			Class<?> c = cl.loadClass(corpusInformationSpecificationClassPrefix+corpusInformationSpecificationName);
-			cis = (CorpusInformationSpecification) c.newInstance();
+		List<String> arguments  = new ArrayList<String>();
+		for(String arg: args){
+			arguments.add(arg);
 		}
-		else{
-			throw new IllegalArgumentException("corpusInformationSpecification Class Argument is invalid");
-		}
+		CorpusInformationSpecification cis = CLIUtils.loadCorpusInformationSpecification(arguments);
+		ArgumentIdentification ai = CLIUtils.loadArgumentIdentification(arguments);
+		SententialInstanceGeneration sig = CLIUtils.loadSententialInformationGeneration(arguments);
+		RelationMatching rm = CLIUtils.loadRelationMatching(arguments);
+		NegativeExampleCollection nec = CLIUtils.loadNegativeExampleCollection(arguments);
+
+		Corpus c = new Corpus(arguments.get(0),cis,true);
+		String dsFileName = arguments.get(1);
+		KnowledgeBase kb = new KnowledgeBase(arguments.get(2),arguments.get(3),arguments.get(4));
 		
-		if(argumentIdentificationName != null){
-			String argumentIdentificationClassPrefix = "edu.washington.multir.argumentidentification.";
-			Class<?> c = cl.loadClass(argumentIdentificationClassPrefix+argumentIdentificationName);
-			Method m = c.getMethod("getInstance");
-			ai = (ArgumentIdentification) m.invoke(null);
-		}
-		else{
-			throw new IllegalArgumentException("argumentIdentification Class Argument is invalid");
-		}
-		
-		if(sententialInstanceGenerationName != null){
-			String sententialInstanceClassPrefix = "edu.washington.multir.argumentidentification.";
-			Class<?> c = cl.loadClass(sententialInstanceClassPrefix+sententialInstanceGenerationName);
-			Method m = c.getMethod("getInstance");
-			sig = (SententialInstanceGeneration) m.invoke(null);
-		}
-		else{
-			throw new IllegalArgumentException("sententialInstanceGeneration Class Argument is invalid");
-		}
-		
-		if(relationMatchingName != null){
-			String relationMatchingClassPrefix = "edu.washington.multir.argumentidentification.";
-			Class<?> c = cl.loadClass(relationMatchingClassPrefix+relationMatchingName);
-			Method m = c.getMethod("getInstance");
-			rm = (RelationMatching) m.invoke(null);
-		}
-		else{
-			throw new IllegalArgumentException("relationMatching Class Argument is invalid");
-		}
-		
-		Corpus c = new Corpus(remainingArgs.get(0),cis,true);
-		String dsFileName = remainingArgs.get(1);
-		KnowledgeBase kb = new KnowledgeBase(remainingArgs.get(2),remainingArgs.get(3),remainingArgs.get(4));
-		
-		boolean neFlag = (remainingArgs.get(5).equals("true"))? true : false;
-		
-		double ratio = 0.0;
-		if(neFlag){
-			if(remainingArgs.size() == 7){
-				ratio = Double.parseDouble(remainingArgs.get(6));
-			}
-		}
-		
-		if(negativeExampleCollectionName != null){
-			String negativeExampleCollectionClassPrefix = "edu.washington.multir.distantsupervision.";
-			Class<?> necClass = cl.loadClass(negativeExampleCollectionClassPrefix+negativeExampleCollectionName);
-			Method m = necClass.getMethod("getInstance", double.class);
-			nec =  (NegativeExampleCollection) m.invoke(null,ratio);
-		}
-		else{
-			throw new IllegalArgumentException("negativeExampleCollection Class Argument is invalid");
-		}
-		
-		DistantSupervision ds = new DistantSupervision(ai,sig,rm,nec,neFlag);
+		DistantSupervision ds = new DistantSupervision(ai,sig,rm,nec);
+		FigerTypeUtils.init();
 		ds.run(dsFileName,kb,c);
+		FigerTypeUtils.close();
 	}
 }

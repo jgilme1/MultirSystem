@@ -25,6 +25,7 @@ import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.data.Argument;
+import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
 import edu.washington.multir.featuregeneration.FeatureGenerator;
 import edu.washington.multir.preprocess.CorpusPreprocessing;
@@ -226,8 +227,18 @@ public class SingleDocumentTrainingFeatures {
 				for(Pair<Argument,Argument> inst : sigs){
 					Argument arg1 = inst.first;
 					Argument arg2 = inst.second;
+					String arg1ID = null;
+					String arg2ID = null;
+					if(arg1 instanceof KBArgument){
+						arg1ID = ((KBArgument)arg1).getKbId();
+					}
+					if(arg2 instanceof KBArgument){
+						arg2ID = ((KBArgument)arg2).getKbId();
+					}
 					List<String> features =
-					fg.generateFeatures(arg1.getStartOffset(), arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), doc2s, doc2);
+					fg.generateFeatures(arg1.getStartOffset(), 
+							arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(),
+							arg1ID, arg2ID,doc2s, doc2);
 					
 					System.out.println(arg1.getArgName() + "\t" + arg2.getArgName());
 					for(String feature: features){
