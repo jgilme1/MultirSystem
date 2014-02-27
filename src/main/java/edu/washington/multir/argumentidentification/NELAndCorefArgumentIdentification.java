@@ -16,6 +16,8 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL.SentNamedEntityLinkingInformation.NamedEntityLinkingAnnotation;
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.KBArgument;
@@ -54,8 +56,8 @@ public class NELAndCorefArgumentIdentification implements
 				String kbLink = getLink(corefChainMap.get(cm.corefClusterID),d);
 				// if we found a most popular link, then instantiate a KBArgument
 				if((tokens.size() > 0) && tokens.size() > (cm.endIndex-2)){
-					Integer startOffset = tokens.get(cm.startIndex-1).get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-					Integer endOffset = tokens.get(cm.endIndex-2).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+					Integer startOffset = tokens.get(cm.startIndex-1).get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
+					Integer endOffset = tokens.get(cm.endIndex-2).get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 					if(cm.mentionSpan.split("\\s+").length < 6){
 						Argument arg = new Argument(cm.mentionSpan,startOffset,endOffset);
 						if(kbLink != null){

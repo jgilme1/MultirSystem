@@ -38,6 +38,8 @@ import edu.washington.multir.argumentidentification.NERArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERSententialInstanceGeneration;
 import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
@@ -345,6 +347,11 @@ public class CorpusPreprocessing {
 		for(CoreMap sentence : doc.get(CoreAnnotations.SentencesAnnotation.class)){
 			StringBuilder tokenStringBuilder = new StringBuilder();
 			for(CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)){
+				Integer sentStart = sentence.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+				Integer tokenStart = token.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+				Integer tokenEnd = token.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+				token.set(SentenceRelativeCharacterOffsetBeginAnnotation.class,tokenStart-sentStart);
+				token.set(SentenceRelativeCharacterOffsetEndAnnotation.class,tokenEnd-sentStart);
 				tokenStringBuilder.append(token.value());
 				tokenStringBuilder.append(" ");
 			}
@@ -503,6 +510,8 @@ public class CorpusPreprocessing {
 				for(CoreLabel token: snt){
 					token.set(CoreAnnotations.CharacterOffsetBeginAnnotation.class, offset + token.beginPosition());
 					token.set(CoreAnnotations.CharacterOffsetEndAnnotation.class, offset + token.endPosition());
+					token.set(SentenceRelativeCharacterOffsetBeginAnnotation.class,token.beginPosition());
+					token.set(SentenceRelativeCharacterOffsetEndAnnotation.class,token.endPosition());
 				}
 				sentences.add(sentence);
 				offset = offset + sentenceText.length();

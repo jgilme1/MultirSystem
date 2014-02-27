@@ -22,6 +22,8 @@ import edu.washington.multir.argumentidentification.SententialInstanceGeneration
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.featuregeneration.DefaultFeatureGenerator;
@@ -82,8 +84,8 @@ public class SingleDocumentTrainingFeatures {
 			for(CoreLabel doc1Tok : doc1s.get(CoreAnnotations.TokensAnnotation.class)){
 				String token = doc1Tok.value();
 				String ner = doc1Tok.get(CoreAnnotations.NamedEntityTagAnnotation.class);
-				Integer begOffset = doc1Tok.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-				Integer endOffset = doc1Tok.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+				Integer begOffset = doc1Tok.get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
+				Integer endOffset = doc1Tok.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 				String pos = doc1Tok.get(CoreAnnotations.PartOfSpeechAnnotation.class);
 				doc1TokenString.append(token);
 				doc1TokenString.append(" ");
@@ -101,8 +103,8 @@ public class SingleDocumentTrainingFeatures {
 			for(CoreLabel doc2Tok : doc2s.get(CoreAnnotations.TokensAnnotation.class)){
 				String token = doc2Tok.value();
 				String ner = doc2Tok.get(CoreAnnotations.NamedEntityTagAnnotation.class);
-				Integer begOffset = doc2Tok.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-				Integer endOffset = doc2Tok.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+				Integer begOffset = doc2Tok.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
+				Integer endOffset = doc2Tok.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 				String pos = doc2Tok.get(CoreAnnotations.PartOfSpeechAnnotation.class);
 				doc2TokenString.append(token);
 				doc2TokenString.append(" ");

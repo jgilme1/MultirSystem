@@ -12,6 +12,7 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 
@@ -99,7 +100,7 @@ public class NegativeExampleCollectionByType extends NegativeExampleCollection{
 		String arg1Type = "";
 		String arg2Type = "";
 		for(CoreLabel tok : tokens){
-			Integer tokEndOffset = tok.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+			Integer tokEndOffset = tok.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 			if(tokEndOffset.equals(arg1EndOffset)){
 				arg1Type = tok.get(CoreAnnotations.NamedEntityTagAnnotation.class);
 			}

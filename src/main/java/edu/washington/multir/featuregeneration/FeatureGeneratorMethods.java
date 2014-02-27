@@ -15,6 +15,8 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.SentDependencyInformation.DependencyAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetBeginAnnotation;
+import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.featuregeneration.FeatureGeneratorDraft3.DependencyType;
 import edu.washington.multir.featuregeneration.FeatureGeneratorDraft3.Direction;
 import edu.knowitall.tool.wordnet.JwiTools;
@@ -67,8 +69,8 @@ public class FeatureGeneratorMethods {
 	public static List<CoreLabel> getMiddleTokens(Integer arg1EndOffset, Integer arg2StartOffset, List<CoreLabel> tokens){
 		List<CoreLabel> middleTokens = new ArrayList<CoreLabel>();
 		for(CoreLabel tok: tokens){
-			Integer tokBeginOffset = tok.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-			Integer tokEndOffset =  tok.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+			Integer tokBeginOffset = tok.get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
+			Integer tokEndOffset =  tok.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 			if(tokBeginOffset >= arg1EndOffset && tokEndOffset < arg2StartOffset){
 				middleTokens.add(tok);
 			}
@@ -80,7 +82,7 @@ public class FeatureGeneratorMethods {
 		List<CoreLabel> leftWindowTokens = new ArrayList<CoreLabel>();
 		
 		for(CoreLabel tok : tokens){
-			int startOffset = tok.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+			int startOffset = tok.get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
 			if(startOffset < arg1StartOffset){
 				leftWindowTokens.add(tok);
 			}
@@ -95,7 +97,7 @@ public class FeatureGeneratorMethods {
 		List<CoreLabel> rightWindowTokens = new ArrayList<CoreLabel>();
 		
 		for(CoreLabel tok : tokens){
-			int endOffset = tok.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+			int endOffset = tok.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 			if(endOffset > arg2EndOffset){
 				rightWindowTokens.add(tok);
 			}
@@ -163,12 +165,12 @@ public class FeatureGeneratorMethods {
 		List<Pair<String,Integer>> features = new ArrayList<Pair<String,Integer>>();
 		Integer lastEndOffset = null;
 		if(tokens.size()>0){
-		  lastEndOffset = tokens.get(tokens.size()-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+		  lastEndOffset = tokens.get(tokens.size()-1).get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 		}
 		
 		for(CoreLabel t : tokens){
 			String chunkString = t.get(CoreAnnotations.ChunkAnnotation.class);
-			Integer endOffset = t.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+			Integer endOffset = t.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 			String posString = t.get(CoreAnnotations.PartOfSpeechAnnotation.class);
 			String word = t.get(CoreAnnotations.TextAnnotation.class);
 			String feature = null;
@@ -211,7 +213,7 @@ public class FeatureGeneratorMethods {
 		for(List<CoreLabel> vpSequence : vpSequences){
 			String vpFeature = generateVPFeature(vpSequence);
 			if(vpFeature != null) {
-				Integer endOffset = vpSequence.get(vpSequence.size()-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+				Integer endOffset = vpSequence.get(vpSequence.size()-1).get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 				Pair<String,Integer> p = new Pair<String,Integer> (vpFeature,endOffset);
 				vpFeatures.add(p);
 			}
@@ -352,7 +354,7 @@ public class FeatureGeneratorMethods {
 		for(List<CoreLabel> npSequence : npSequences){
 			String npFeature = generateNPFeature(npSequence);
 			if(npFeature != null) {
-				Integer endOffset = npSequence.get(npSequence.size()-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+				Integer endOffset = npSequence.get(npSequence.size()-1).get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 				Pair<String,Integer> p = new Pair<String,Integer> (npFeature,endOffset);
 				npFeatures.add(p);
 			}
@@ -455,14 +457,14 @@ public class FeatureGeneratorMethods {
 			List<List<CoreLabel>> sequences, List<CoreLabel> tokens) {
 		
 		CoreLabel startToken = tokens.get(start);
-		Integer charStartOffset = startToken.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
-		Integer charEndOffset = startToken.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+		Integer charStartOffset = startToken.get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
+		Integer charEndOffset = startToken.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 		if(intersectsWithSequences(charStartOffset,charEndOffset,sequences)){
 			return null;
 		}
 		for(int j = tokens.size()-1; j >= start; j--){
 			CoreLabel endToken = tokens.get(j);
-			charEndOffset = endToken.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+			charEndOffset = endToken.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 			if(!intersectsWithSequences(charStartOffset,charEndOffset,sequences)){
 				return j+1;
 			}
@@ -475,7 +477,7 @@ public class FeatureGeneratorMethods {
 		
 		for(List<CoreLabel> sequence: sequences){
 			for(CoreLabel t: sequence){
-				Integer tStart = t.get(CoreAnnotations.CharacterOffsetBeginAnnotation.class);
+				Integer tStart = t.get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
 				if((tStart >= charStart) && (tStart < charEnd)){
 					return true;
 				}
@@ -492,7 +494,7 @@ public class FeatureGeneratorMethods {
 		for(List<CoreLabel> ppSequence : ppSequences){
 			String ppFeature = generatePPFeature(ppSequence);
 			if(ppFeature != null) {
-				Integer endOffset = ppSequence.get(ppSequence.size()-1).get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+				Integer endOffset = ppSequence.get(ppSequence.size()-1).get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 				Pair<String,Integer> p = new Pair<String,Integer> (ppFeature,endOffset);
 				ppFeatures.add(p);
 			}
@@ -738,7 +740,7 @@ public class FeatureGeneratorMethods {
 		
 		for(int i =0; i < tokens.size(); i++){
 			CoreLabel t= tokens.get(i);
-			Integer tEndCharOffset = t.get(CoreAnnotations.CharacterOffsetEndAnnotation.class);
+			Integer tEndCharOffset = t.get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 			if(tEndCharOffset.equals(endCharOffset)){
 				return i+1;
 			}
