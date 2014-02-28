@@ -40,7 +40,7 @@ public class DefaultFeatureGeneratorIndepFIGER implements FeatureGenerator {
 		List<Triple<Pair<Integer,Integer>,String,Float>> nelData =sentence.get(NamedEntityLinkingAnnotation.class);
 		
 		//ignore arg ids as some of them come from NER DS or are null because of NER Argument IDentification
-		arg1Id = getLinkId(nelData,arg1StartOffset,arg2EndOffset,tokens);
+		arg1Id = getLinkId(nelData,arg1StartOffset,arg1EndOffset,tokens);
 		arg2Id = getLinkId(nelData,arg2StartOffset,arg2EndOffset,tokens);
 		
 		if(arg1Id != null){
