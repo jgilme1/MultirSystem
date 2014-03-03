@@ -18,6 +18,7 @@ import edu.washington.multir.corpus.SentFreebaseNotableTypeInformation.FreebaseN
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.KBArgument;
 import edu.washington.multir.util.FigerTypeUtils;
+import edu.washington.multir.util.GuidMidConversion;
 
 public class DefaultFeatureGeneratorIndepFIGER implements FeatureGenerator {
 
@@ -26,6 +27,9 @@ public class DefaultFeatureGeneratorIndepFIGER implements FeatureGenerator {
 			Integer arg1EndOffset, Integer arg2StartOffset,
 			Integer arg2EndOffset, String arg1Id, String arg2Id,
 			CoreMap sentence, Annotation document) {
+		if (!FigerTypeUtils.isConnected()) {
+			FigerTypeUtils.init();	
+		}
 		DefaultFeatureGenerator dfg = new DefaultFeatureGenerator();
 		List<String> originalMultirFeatures = dfg.generateFeatures(arg1StartOffset, arg1EndOffset, arg2StartOffset, arg2EndOffset, arg1Id, arg2Id, sentence, document);
 		List<String> features = new ArrayList<String>();
@@ -33,29 +37,45 @@ public class DefaultFeatureGeneratorIndepFIGER implements FeatureGenerator {
 //		figerConcatenationString.append("(");
 		
 		
-		Set<String> arg1FigerTypes  = new HashSet<String>();
-		Set<String> arg2FigerTypes = new HashSet<String>();
+		Set<String> arg1FigerTypes = null;// new HashSet<String>();
+		Set<String> arg2FigerTypes = null;// new HashSet<String>();
 		List<CoreLabel> tokens = sentence.get(CoreAnnotations.TokensAnnotation.class);
-		List<Triple<Pair<Integer,Integer>,String,String>> notableTypeData = sentence.get(FreebaseNotableTypeAnnotation.class);
+//		List<Triple<Pair<Integer,Integer>,String,String>> notableTypeData = sentence.get(FreebaseNotableTypeAnnotation.class);
 		List<Triple<Pair<Integer,Integer>,String,Float>> nelData =sentence.get(NamedEntityLinkingAnnotation.class);
 		
 		//ignore arg ids as some of them come from NER DS or are null because of NER Argument IDentification
-		arg1Id = getLinkId(nelData,arg1StartOffset,arg2EndOffset,tokens);
-		arg2Id = getLinkId(nelData,arg2StartOffset,arg2EndOffset,tokens);
+		if (arg1Id==null) {
+		//System.out.println("origArg1 = "+arg1Id );
+			arg1Id = getLinkId(nelData,arg1StartOffset,arg1EndOffset,tokens);
+//		System.out.println(nelData.isEmpty());
+//		System.out.println("arg1 now = "+arg1Id);
+		}
+		if (arg2Id==null) {
+			arg2Id = getLinkId(nelData,arg2StartOffset,arg2EndOffset,tokens);
+		}
 		
-		if(arg1Id != null){
+		if(arg1Id != null && !arg1Id.equals("null")){
 			//get figer typer
-			arg1FigerTypes = FigerTypeUtils.getFigerTypes(new KBArgument(new Argument("",arg1StartOffset,arg1EndOffset),arg1Id), notableTypeData, tokens);
-			String longestString = "O";
+//			arg1FigerTypes = FigerTypeUtils.getFigerTypes(new KBArgument(new Argument("",arg1StartOffset,arg1EndOffset),arg1Id), notableTypeData, tokens);
+//			String longestString = "O";
+//			try {
+			arg1FigerTypes = FigerTypeUtils.getFigerTypesFromID(GuidMidConversion.convertBackward(arg1Id));
+//			}catch(Exception e){System.out.println("error a1id="+(arg1Id.equals("null")?"NULL":arg1Id));}
+//			if (arg1FigerTypes.isEmpty()) {
+				System.out.println("arg1 has no figer types " +arg1Id);
+//			}
+//			System.out.println(arg1Id+"\t"+arg1FigerTypes);
 			for(String ftype: arg1FigerTypes){
 				features.add("1:"+ftype);
 			}
 		}
 		else{
+//			System.out.println("no arg1Id " );
 		}
-		if(arg2Id != null){
+		if(arg2Id != null && !arg2Id.equals("null")){
 			//get figer typer
-			arg2FigerTypes = FigerTypeUtils.getFigerTypes(new KBArgument(new Argument("",arg2StartOffset,arg2EndOffset),arg2Id), notableTypeData, tokens);
+//			arg2FigerTypes = FigerTypeUtils.getFigerTypes(new KBArgument(new Argument("",arg2StartOffset,arg2EndOffset),arg2Id), notableTypeData, tokens);
+			arg2FigerTypes = FigerTypeUtils.getFigerTypesFromID(GuidMidConversion.convertBackward(arg2Id));
 			for(String ftype: arg2FigerTypes){
 				features.add("2:"+ftype);
 			}
@@ -63,12 +83,7 @@ public class DefaultFeatureGeneratorIndepFIGER implements FeatureGenerator {
 		else{
 		}
 		
-		
-		
-		
-			features.addAll(originalMultirFeatures);
-		
-		
+		features.addAll(originalMultirFeatures);
 		return features;
 	}
 
