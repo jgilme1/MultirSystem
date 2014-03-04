@@ -331,7 +331,7 @@ public class SententialEvaluation {
 					totalExtractions++;
 					if(print) {
 						System.out.print(r.arg1.getArgName()+ "\t" + r.arg2.getArgName() + "\t" + r.rel  +"\t" + e.score + "\t" + "CORRECT\n");
-						System.out.println(e.printFeatureScores());
+						//System.out.println(e.printFeatureScores());
 					}
 				}
 			}
@@ -340,7 +340,7 @@ public class SententialEvaluation {
 					totalExtractions++;
 					if(print) {
 						System.out.print(r.arg1.getArgName()+ "\t" + r.arg2.getArgName() + "\t" + r.rel  +"\t" + e.score +"\t" + "INCORRECT\n");
-						System.out.println(e.printFeatureScores());
+						//System.out.println(e.printFeatureScores());
 					}
 				}
 			}
