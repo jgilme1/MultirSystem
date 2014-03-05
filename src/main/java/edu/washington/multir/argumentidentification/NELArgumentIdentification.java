@@ -58,15 +58,24 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 						if(startTokenOffset >= 0 && startTokenOffset < tokens.size() && endTokenOffset >= 0 && endTokenOffset < tokens.size()){
 							Integer startCharacterOffset = tokens.get(startTokenOffset).get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
 							Integer endCharacterOffset = tokens.get(endTokenOffset-1).get(SentenceRelativeCharacterOffsetEndAnnotation.class);
-							
-							//get argument string
-							String sentText = s.get(CoreAnnotations.TextAnnotation.class);
-							if(sentText != null && startCharacterOffset !=null && endCharacterOffset!=null){
-								String argumentString = sentText.substring(startCharacterOffset, endCharacterOffset);
 								
-								//add argument to list
-								KBArgument nelArgument = new KBArgument(new Argument(argumentString,startCharacterOffset,endCharacterOffset),id);
-								nelArguments.add(nelArgument);
+							//only consider link if matches a NER type
+							boolean isNer =false;
+							for(Argument nerArgument: nerArguments){
+								if(nerArgument.getStartOffset()==(startCharacterOffset) && nerArgument.getEndOffset()==(endCharacterOffset)){
+									isNer=true;
+								}
+							}
+							if(isNer){
+								//get argument string
+								String sentText = s.get(CoreAnnotations.TextAnnotation.class);
+								if(sentText != null && startCharacterOffset !=null && endCharacterOffset!=null){
+									String argumentString = sentText.substring(startCharacterOffset, endCharacterOffset);
+									
+									//add argument to list
+									KBArgument nelArgument = new KBArgument(new Argument(argumentString,startCharacterOffset,endCharacterOffset),id);
+									nelArguments.add(nelArgument);
+								}
 							}
 						}
 					}
@@ -79,20 +88,6 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 		else{
 		 arguments.addAll(nelArguments);
 		}
-		//add NER arguments if they don't intersect with NEL arguments
-//		for(Argument nerArg : nerArguments){
-//			boolean intersects = false;
-//			for(Argument nelArg: nelArguments){
-//				Interval<Integer> nerArgInterval = Interval.toInterval(nerArg.getStartOffset(), nerArg.getEndOffset());
-//				Interval<Integer> nelArgInterval = Interval.toInterval(nelArg.getStartOffset(), nelArg.getEndOffset());
-//				if(nerArgInterval.intersect(nelArgInterval) !=null){
-//					intersects = true;
-//				}
-//			}
-//			if(!intersects){
-//				arguments.add(nerArg);
-//			}
-//		}
 		
 		return arguments;
 	}

@@ -7,6 +7,7 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Interval;
 import edu.stanford.nlp.util.Pair;
 import edu.washington.multir.data.Argument;
+import edu.washington.multir.data.KBArgument;
 
 public class NERSententialInstanceGeneration implements
 		SententialInstanceGeneration {
@@ -33,8 +34,19 @@ public class NERSententialInstanceGeneration implements
 					Interval<Integer> arg1Interval = Interval.toInterval(arg1.getStartOffset(), arg1.getEndOffset());
 					Interval<Integer> arg2Interval = Interval.toInterval(arg2.getStartOffset(), arg2.getEndOffset());
 					if(arg1Interval.intersect(arg2Interval) == null){
-						Pair<Argument,Argument> p = new Pair<>(arg1,arg2);
-						sententialInstances.add(p);
+						
+						boolean makePair = true;
+						if((arg1 instanceof KBArgument) && (arg2 instanceof KBArgument)){
+							KBArgument kbArg1 = (KBArgument)arg1;
+							KBArgument kbArg2 = (KBArgument)arg2;
+							if(kbArg1.getKbId().equals(kbArg2.getKbId())){
+								makePair=false;
+							}
+						}
+						if(makePair){
+							Pair<Argument,Argument> p = new Pair<>(arg1,arg2);
+							sententialInstances.add(p);
+						}
 					}
 				}
 			}
