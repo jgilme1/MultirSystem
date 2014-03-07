@@ -22,7 +22,7 @@ import edu.washington.multir.data.KBArgument;
  * @author jgilme1
  *
  */
-public class NELArgumentIdentification implements ArgumentIdentification{
+public class NEL-NERConstrained-ArgumentIdentification implements ArgumentIdentification{
 
 	
 	private static NELArgumentIdentification instance = null;
@@ -59,14 +59,23 @@ public class NELArgumentIdentification implements ArgumentIdentification{
 							Integer startCharacterOffset = tokens.get(startTokenOffset).get(SentenceRelativeCharacterOffsetBeginAnnotation.class);
 							Integer endCharacterOffset = tokens.get(endTokenOffset-1).get(SentenceRelativeCharacterOffsetEndAnnotation.class);
 								
-							//get argument string
-							String sentText = s.get(CoreAnnotations.TextAnnotation.class);
-							if(sentText != null && startCharacterOffset !=null && endCharacterOffset!=null){
-								String argumentString = sentText.substring(startCharacterOffset, endCharacterOffset);
+							//only consider link if matches a NER type
+							boolean isNer =false;
+							for(Argument nerArgument: nerArguments){
+								if(nerArgument.getStartOffset()==(startCharacterOffset) && nerArgument.getEndOffset()==(endCharacterOffset)){
+									isNer=true;
+								}
+							}
+							if(isNer){
+								//get argument string
+								String sentText = s.get(CoreAnnotations.TextAnnotation.class);
+								if(sentText != null && startCharacterOffset !=null && endCharacterOffset!=null){
+									String argumentString = sentText.substring(startCharacterOffset, endCharacterOffset);
 									
-								//add argument to list
-								KBArgument nelArgument = new KBArgument(new Argument(argumentString,startCharacterOffset,endCharacterOffset),id);
-								nelArguments.add(nelArgument);
+									//add argument to list
+									KBArgument nelArgument = new KBArgument(new Argument(argumentString,startCharacterOffset,endCharacterOffset),id);
+									nelArguments.add(nelArgument);
+								}
 							}
 						}
 					}
