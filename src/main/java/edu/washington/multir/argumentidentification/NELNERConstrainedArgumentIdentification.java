@@ -22,16 +22,16 @@ import edu.washington.multir.data.KBArgument;
  * @author jgilme1
  *
  */
-public class NEL-NERConstrained-ArgumentIdentification implements ArgumentIdentification{
+public class NELNERConstrainedArgumentIdentification implements ArgumentIdentification{
 
 	
-	private static NELArgumentIdentification instance = null;
+	private static NELNERConstrainedArgumentIdentification instance = null;
 	private static final double CONFIDENCE_THRESHOLD = 0.5;
 	private static final boolean removeRedundantArguments = true;
 	
-	private NELArgumentIdentification(){}
-	public static NELArgumentIdentification getInstance(){
-		if(instance == null) instance = new NELArgumentIdentification();
+	private NELNERConstrainedArgumentIdentification(){}
+	public static NELNERConstrainedArgumentIdentification getInstance(){
+		if(instance == null) instance = new NELNERConstrainedArgumentIdentification();
 		return instance;
 		}
 	
