@@ -513,7 +513,7 @@ public class DefaultFeatureGeneratorWithFIGER implements FeatureGenerator {
 	}
 
 
-	private static String getFIGERTypeOfNERType(String nerType){
+	public static String getFIGERTypeOfNERType(String nerType){
 		if(nerType.equals("PERSON")){
 			return "/person";
 		}
