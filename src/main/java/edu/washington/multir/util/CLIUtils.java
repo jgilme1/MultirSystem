@@ -48,7 +48,7 @@ public class CLIUtils {
 		OptionBuilder.withDescription("List of All TokenInformationI to be added to CorpusSpecification");
 		options.addOption(OptionBuilder.create("ti"));
 		
-		List<Integer> relevantArgIndices = getContiguousArgumentsForOptions(args,"si","di","ti");
+		List<Integer> relevantArgIndices = getContiguousArgumentsForMultiValueOptions(args,"si","di","ti");
 		List<String> relevantArguments = new ArrayList<String>();
 		List<String> remainingArguments = new ArrayList<String>();
 		for(Integer i: relevantArgIndices){
@@ -109,7 +109,7 @@ public class CLIUtils {
 		return cis;
 	}
 
-	private static List<Integer> getContiguousArgumentsForOptions(
+	private static List<Integer> getContiguousArgumentsForMultiValueOptions(
 			List<String> args, String ... options) {
 		List<String> optionList = new ArrayList<String>();
 		List<Integer> relevantTokens = new ArrayList<Integer>();
@@ -132,6 +132,37 @@ public class CLIUtils {
 			else{
 				if(foundTargetOption){
 					relevantTokens.add(i);
+				}
+			}
+		}
+		
+		return relevantTokens;
+	}
+	
+	private static List<Integer> getContiguousArgumentsForSingleValueOptions(
+			List<String> args, String ... options) {
+		List<String> optionList = new ArrayList<String>();
+		List<Integer> relevantTokens = new ArrayList<Integer>();
+		for(String opt: options){
+			optionList.add(opt);
+		}
+		
+		boolean foundTargetOption = false;
+		for(Integer i = 0; i < args.size(); i++){
+			String iString = args.get(i);
+			if(isOption(iString)){
+				if(optionList.contains(iString.substring(1))){
+					relevantTokens.add(i);
+					foundTargetOption = true;
+				}
+				else{
+					foundTargetOption = false;
+				}
+			}
+			else{
+				if(foundTargetOption){
+					relevantTokens.add(i);
+					foundTargetOption=false;
 				}
 			}
 		}
@@ -169,7 +200,7 @@ public class CLIUtils {
 		options.addOption("ai",true,"argumentIdentification algorithm class");
 		
 		
-		List<Integer> relevantArgIndices = getContiguousArgumentsForOptions(arguments,"ai");
+		List<Integer> relevantArgIndices = getContiguousArgumentsForSingleValueOptions(arguments,"ai");
 		List<String> relevantArguments = new ArrayList<String>();
 		List<String> remainingArguments = new ArrayList<String>();
 		for(Integer i: relevantArgIndices){
@@ -234,7 +265,7 @@ public class CLIUtils {
 		Options options = new Options();
 		options.addOption("sig",true,"sententialInstanceGeneration algorithm class");
 		
-		List<Integer> relevantArgIndices = getContiguousArgumentsForOptions(arguments,"sig");
+		List<Integer> relevantArgIndices = getContiguousArgumentsForSingleValueOptions(arguments,"sig");
 		List<String> relevantArguments = new ArrayList<String>();
 		List<String> remainingArguments = new ArrayList<String>();
 		for(Integer i: relevantArgIndices){
@@ -248,7 +279,7 @@ public class CLIUtils {
 		
 		CommandLineParser parser = new BasicParser();
 		CommandLine cmd = parser.parse(options, relevantArguments.toArray(new String[relevantArguments.size()]));
-		
+
 		ClassLoader cl = ClassLoader.getSystemClassLoader();
 		SententialInstanceGeneration sig = null;
 
@@ -287,7 +318,7 @@ public class CLIUtils {
 		Options options = new Options();
 		options.addOption("rm",true,"relationMatching algorithm class");
 		
-		List<Integer> relevantArgIndices = getContiguousArgumentsForOptions(arguments,"rm");
+		List<Integer> relevantArgIndices = getContiguousArgumentsForSingleValueOptions(arguments,"rm");
 		List<String> relevantArguments = new ArrayList<String>();
 		List<String> remainingArguments = new ArrayList<String>();
 		for(Integer i: relevantArgIndices){
@@ -341,7 +372,7 @@ public class CLIUtils {
 		Options options = new Options();
 		options.addOption("fg",true,"featureGenerator algorithm class");
 		
-		List<Integer> relevantArgIndices = getContiguousArgumentsForOptions(arguments,"fg");
+		List<Integer> relevantArgIndices = getContiguousArgumentsForSingleValueOptions(arguments,"fg");
 		List<String> relevantArguments = new ArrayList<String>();
 		List<String> remainingArguments = new ArrayList<String>();
 		for(Integer i: relevantArgIndices){
@@ -396,7 +427,7 @@ public class CLIUtils {
 		options.addOption("nec",true,"negativeExample collection algorithm class");
 		options.addOption("ratio",true,"negative Example to positive example ratio");
 		
-		List<Integer> relevantArgIndices = getContiguousArgumentsForOptions(arguments,"nec","ratio");
+		List<Integer> relevantArgIndices = getContiguousArgumentsForSingleValueOptions(arguments,"nec","ratio");
 		List<String> relevantArguments = new ArrayList<String>();
 		List<String> remainingArguments = new ArrayList<String>();
 		for(Integer i: relevantArgIndices){

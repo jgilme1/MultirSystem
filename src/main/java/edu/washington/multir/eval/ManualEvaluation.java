@@ -40,6 +40,8 @@ import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.Extraction;
 import edu.washington.multir.data.ExtractionAnnotation;
 import edu.washington.multir.featuregeneration.DefaultFeatureGeneratorWithFIGER;
+import edu.washington.multir.featuregeneration.DefaultFeatureGeneratorConcatFIGER;
+import edu.washington.multir.featuregeneration.DefaultFeatureGeneratorIndepFIGER;
 import edu.washington.multir.featuregeneration.FeatureGenerator;
 import edu.washington.multir.sententialextraction.DocumentExtractor;
 import edu.washington.multir.util.CLIUtils;
@@ -159,7 +161,7 @@ public class ManualEvaluation {
 		}
 		
 		
-		if(fg instanceof DefaultFeatureGeneratorWithFIGER){
+		if(fg instanceof DefaultFeatureGeneratorWithFIGER | fg instanceof DefaultFeatureGeneratorConcatFIGER | fg instanceof DefaultFeatureGeneratorIndepFIGER){
 			FigerTypeUtils.init();
 		}
 		
@@ -179,6 +181,17 @@ public class ManualEvaluation {
 		end = System.currentTimeMillis();
 		System.out.println("Got diff in " + (end-start));
 
+		boolean useFixedSet = false;
+		if (useFixedSet) {
+		for (int i = extractions.size()-1; i > -1; i--) {
+			if (diffExtractions.contains(extractions.get(i))) {
+				System.out.println("removing");
+				extractions.remove(i);
+			}
+		}
+		diffExtractions.clear();
+		}
+
 		
 		//if there is a diff then don't evaluate algorithm yet
 		if(diffExtractions.size() > 0){
@@ -192,7 +205,7 @@ public class ManualEvaluation {
 			eval(extractions,annotations);
 		}
 		
-		if(fg instanceof DefaultFeatureGeneratorWithFIGER){
+		if(fg instanceof DefaultFeatureGeneratorWithFIGER | fg instanceof DefaultFeatureGeneratorConcatFIGER | fg instanceof DefaultFeatureGeneratorIndepFIGER){
 			FigerTypeUtils.close();
 		}
 	}

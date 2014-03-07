@@ -43,6 +43,7 @@ import edu.washington.multir.featuregeneration.FeatureGenerator;
 import edu.washington.multir.multiralgorithm.Mappings;
 import edu.washington.multir.preprocess.CorpusPreprocessing;
 import edu.washington.multir.sententialextraction.DocumentExtractor;
+import edu.washington.multir.util.CLIUtils;
 
 public class SententialEvaluation {
 	
@@ -66,70 +67,31 @@ public class SententialEvaluation {
 	
 	public static void main(String[] args) throws IOException, InterruptedException, ParseException, ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, InstantiationException{
 		
-		ArgumentIdentification ai = null;
-		FeatureGenerator fg = null;
-		SententialInstanceGeneration sig = null;
-		ClassLoader cl = ClassLoader.getSystemClassLoader();
+		List<String> arguments = new ArrayList<String>();
+		for(String arg: args){
+			arguments.add(arg);
+		}
 
-		
-		Options options = new Options();
-		options.addOption("ai",true,"argumentIdentification algorithm class");
-		options.addOption("sig",true,"sententialInstanceGeneration algorithm class");
-		options.addOption("fg",true,"relationMatching algorithm class");
-		
-		CommandLineParser parser = new BasicParser();
-		CommandLine cmd = parser.parse(options, args);
-		List<String> remainingArgs = cmd.getArgList();
-		
-		String argumentIdentificationName = cmd.getOptionValue("ai");
-		String sententialInstanceGenerationName = cmd.getOptionValue("sig");
-		String featureGenerationName = cmd.getOptionValue("fg");
-		
-		if(argumentIdentificationName != null){
-			String argumentIdentificationClassPrefix = "edu.washington.multir.argumentidentification.";
-			Class<?> c = cl.loadClass(argumentIdentificationClassPrefix+argumentIdentificationName);
-			Method m = c.getMethod("getInstance");
-			ai = (ArgumentIdentification) m.invoke(null);
-		}
-		else{
-			throw new IllegalArgumentException("argumentIdentification Class Argument is invalid");
-		}
-		
-		if(sententialInstanceGenerationName != null){
-			String sententialInstanceClassPrefix = "edu.washington.multir.argumentidentification.";
-			Class<?> c = cl.loadClass(sententialInstanceClassPrefix+sententialInstanceGenerationName);
-			Method m = c.getMethod("getInstance");
-			sig = (SententialInstanceGeneration) m.invoke(null);
-		}
-		else{
-			throw new IllegalArgumentException("sententialInstanceGeneration Class Argument is invalid");
-		}
-		
-		if(featureGenerationName != null){
-			String featureGenerationClassPrefix = "edu.washington.multir.featuregeneration.";
-			Class<?> c = cl.loadClass(featureGenerationClassPrefix+featureGenerationName);
-			fg = (FeatureGenerator) c.newInstance();
-		}
-		else{
-			throw new IllegalArgumentException("argumentIdentification Class Argument is invalid");
-		}
+		ArgumentIdentification ai = CLIUtils.loadArgumentIdentification(arguments);
+		SententialInstanceGeneration sig = CLIUtils.loadSententialInformationGeneration(arguments);
+		FeatureGenerator fg = CLIUtils.loadFeatureGenerator(arguments);
 		
 		//initialize cjParses
 		cjParses = new ArrayList<>();
-		loadCjParses(remainingArgs.get(3));
+		loadCjParses(arguments.get(3));
 		
 		//read in relations from mapping file
 		validRelations = new HashSet<String>();
-		loadRelations(remainingArgs.get(0));
+		loadRelations(arguments.get(0));
 		
 		
 		//load in annotations
 		List<Label> annotations;
-		String annotationFilePath = remainingArgs.get(1);
+		String annotationFilePath = arguments.get(1);
 		annotations = loadAnnotations(annotationFilePath);
 		
 		//get extractions
-		de = new DocumentExtractor(remainingArgs.get(2),fg, ai, sig);
+		de = new DocumentExtractor(arguments.get(2),fg, ai, sig);
 		List<Extraction> extractions;
 		extractions = extract(annotations);
 		
@@ -331,7 +293,7 @@ public class SententialEvaluation {
 					totalExtractions++;
 					if(print) {
 						System.out.print(r.arg1.getArgName()+ "\t" + r.arg2.getArgName() + "\t" + r.rel  +"\t" + e.score + "\t" + "CORRECT\n");
-						System.out.println(e.printFeatureScores());
+						//System.out.println(e.printFeatureScores());
 					}
 				}
 			}
@@ -340,7 +302,7 @@ public class SententialEvaluation {
 					totalExtractions++;
 					if(print) {
 						System.out.print(r.arg1.getArgName()+ "\t" + r.arg2.getArgName() + "\t" + r.rel  +"\t" + e.score +"\t" + "INCORRECT\n");
-						System.out.println(e.printFeatureScores());
+						//System.out.println(e.printFeatureScores());
 					}
 				}
 			}
