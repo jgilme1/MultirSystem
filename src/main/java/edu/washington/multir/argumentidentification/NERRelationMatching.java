@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.data.Argument;
@@ -32,7 +34,7 @@ public class NERRelationMatching implements RelationMatching {
 	@Override
 	public List<Triple<KBArgument,KBArgument,String>> matchRelations(
 			List<Pair<Argument,Argument>> sententialInstances,
-			KnowledgeBase KB) {
+			KnowledgeBase KB, CoreMap sentence, Annotation doc) {
 		
 		Map<String,List<String>> entityMap =KB.getEntityMap();
 		Map<String,List<String>> relationMap = KB.getEntityPairRelationMap();

@@ -66,7 +66,7 @@ public class DistantSupervision {
 				List<Pair<Argument,Argument>> sententialInstances = sig.generateSententialInstances(arguments, sentence);
 				//relation matching
 				List<Triple<KBArgument,KBArgument,String>> distantSupervisionAnnotations = 
-						rm.matchRelations(sententialInstances,kb);
+						rm.matchRelations(sententialInstances,kb,sentence,d);
 				//adding sentence IDs
 				List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> dsAnnotationWithSentIDs = new ArrayList<>();
 				for(Triple<KBArgument,KBArgument,String> trip : distantSupervisionAnnotations){

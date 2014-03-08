@@ -2,41 +2,24 @@ package edu.washington.multir.development;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.cli.BasicParser;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import edu.washington.multir.argumentidentification.ArgumentIdentification;
-import edu.washington.multir.argumentidentification.NELArgumentIdentification;
-import edu.washington.multir.argumentidentification.NELRelationMatching;
-import edu.washington.multir.argumentidentification.NERArgumentIdentification;
-import edu.washington.multir.argumentidentification.NERRelationMatching;
-import edu.washington.multir.argumentidentification.NERSententialInstanceGeneration;
 import edu.washington.multir.argumentidentification.RelationMatching;
 import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
-import edu.washington.multir.corpus.DefaultCorpusInformationSpecification;
-import edu.washington.multir.corpus.DefaultCorpusInformationSpecificationWithNEL;
-import edu.washington.multir.distantsupervision.DistantSupervision;
+import edu.washington.multir.distantsupervision.MultiModelDistantSupervision;
 import edu.washington.multir.distantsupervision.NegativeExampleCollection;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 import edu.washington.multir.util.CLIUtils;
 import edu.washington.multir.util.FigerTypeUtils;
 
-/**
- * An app for running distant supervision
- * @author jgilme1
- *
- */
-public class RunDistantSupervision {
+public class RunMultiModelDistantSupervision {
 	
 	/**
 	 * 
@@ -71,18 +54,19 @@ public class RunDistantSupervision {
 			arguments.add(arg);
 		}
 		CorpusInformationSpecification cis = CLIUtils.loadCorpusInformationSpecification(arguments);
+		List<SententialInstanceGeneration> sigList = CLIUtils.loadSententialInstanceGenerationList(arguments);
+		List<String> paths = CLIUtils.loadFilePaths(arguments);
 		ArgumentIdentification ai = CLIUtils.loadArgumentIdentification(arguments);
-		SententialInstanceGeneration sig = CLIUtils.loadSententialInformationGeneration(arguments);
 		RelationMatching rm = CLIUtils.loadRelationMatching(arguments);
 		NegativeExampleCollection nec = CLIUtils.loadNegativeExampleCollection(arguments);
 
 		Corpus c = new Corpus(arguments.get(0),cis,true);
-		String dsFileName = arguments.get(1);
-		KnowledgeBase kb = new KnowledgeBase(arguments.get(2),arguments.get(3),arguments.get(4));
+		KnowledgeBase kb = new KnowledgeBase(arguments.get(1),arguments.get(2),arguments.get(3));
 		
-		DistantSupervision ds = new DistantSupervision(ai,sig,rm,nec);
+		MultiModelDistantSupervision ds = new MultiModelDistantSupervision(ai,paths,sigList,rm,nec);
 		FigerTypeUtils.init();
-		ds.run(dsFileName,kb,c);
+		ds.run(kb,c);
 		FigerTypeUtils.close();
 	}
+
 }

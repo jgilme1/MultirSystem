@@ -19,7 +19,7 @@ public class NegativeExampleCollectionByRatio extends NegativeExampleCollection{
 			KnowledgeBase kb, List<CoreMap> sentences) {
 		
 		Collections.shuffle(negativeExamples);
-		return negativeExamples.subList(0,Math.min(negativeExamples.size(),(int)Math.floor(positiveExamples.size()*negativeToPositiveRatio)));
+		return negativeExamples.subList(0,Math.min(negativeExamples.size(),(int)Math.floor(Math.max(1,positiveExamples.size())*negativeToPositiveRatio)));
 	}
 
 	public static NegativeExampleCollection getInstance(double ratio) {

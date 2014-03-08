@@ -1,9 +1,13 @@
 package edu.washington.multir.argumentidentification;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.data.Argument;
@@ -26,7 +30,8 @@ public class NELRelationMatching implements RelationMatching {
 	
 	@Override
 	public List<Triple<KBArgument, KBArgument, String>> matchRelations(
-			List<Pair<Argument, Argument>> sententialInstances, KnowledgeBase KB) {
+			List<Pair<Argument, Argument>> sententialInstances, KnowledgeBase KB,
+			CoreMap sentence, Annotation doc) {
 
 		List<Triple<KBArgument,KBArgument,String>> dsRelations = new ArrayList<>();
 		
