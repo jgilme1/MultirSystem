@@ -48,7 +48,7 @@ public class NELAndNERRelationMatching implements RelationMatching{
 		
 		
 		Map<String,List<String>> entityMap =KB.getEntityMap();
-		Map<String,List<String>> entityRelationMap =KB.getEntityPairRelationMap();
+		Map<String,List<Pair<String,String>>> entityRelationMap =KB.getEntityPairRelationMap();
 		
 		for(Pair<Argument,Argument> sententialInstance : sententialInstances){
 			Argument arg1 = sententialInstance.first;
@@ -60,15 +60,10 @@ public class NELAndNERRelationMatching implements RelationMatching{
 				//check if they have a relation
 				KBArgument kbArg1 = (KBArgument)arg1;
 				KBArgument kbArg2 = (KBArgument)arg2;
-				String key = kbArg1.getKbId()+kbArg2.getKbId();
-				//if the two KB entities participate in a relation
-				if(entityRelationMap.containsKey(key)){
-					//System.out.println("Adding annotation");
-					List<String> relations = entityRelationMap.get(key);
-					for(String rel: relations){
-						Triple<KBArgument,KBArgument,String> dsRelation = new Triple<>(kbArg1,kbArg2,rel);
-						dsRelations.add(dsRelation);
-					}
+				List<String> relations = KB.getRelationsBetweenArgumentIds(kbArg1.getKbId(),kbArg2.getKbId());
+				for(String relation : relations){
+					Triple<KBArgument,KBArgument,String> dsRelation = new Triple<>(kbArg1,kbArg2,relation);
+					dsRelations.add(dsRelation);
 				}
 			}
 			
@@ -81,19 +76,16 @@ public class NELAndNERRelationMatching implements RelationMatching{
 						for(String arg1Id : arg1Ids){
 							if(TypeConstraintUtils.meetsArgTypeConstraint(arg1Id,arg1Type)){
 								for(String arg2Id: arg2Ids){
-									if(TypeConstraintUtils.meetsArgTypeConstraint(arg2Id,arg2Type)){
-									String key = arg1Id+arg2Id;
-										if(entityRelationMap.containsKey(key)){
-											List<String> relations = entityRelationMap.get(key);
-											for(String rel : relations){
-												if(!relationsFound.contains(rel)){
-													KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
-													KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
-													Triple<KBArgument,KBArgument,String> t = 
-															new Triple<>(kbarg1,kbarg2,rel);
-													dsRelations.add(t);
-													relationsFound.add(rel);
-												}
+									if(TypeConstraintUtils.meetsArgTypeConstraint(arg2Id,arg2Type)){		
+										List<String> relations = KB.getRelationsBetweenArgumentIds(arg1Id,arg2Id);
+										for(String rel : relations){
+											if(!relationsFound.contains(rel)){
+												KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
+												KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
+												Triple<KBArgument,KBArgument,String> t = 
+														new Triple<>(kbarg1,kbarg2,rel);
+												dsRelations.add(t);
+												relationsFound.add(rel);
 											}
 										}
 									}
@@ -111,17 +103,14 @@ public class NELAndNERRelationMatching implements RelationMatching{
 					List<String> arg2Ids = entityMap.get(arg2.getArgName());
 					for(String arg2Id: arg2Ids){
 						if(TypeConstraintUtils.meetsArgTypeConstraint(arg2Id,arg2Type)){
-							String key = kbArg1.getKbId() + arg2Id;
-							if(entityRelationMap.containsKey(key)){
-								List<String> relations = entityRelationMap.get(key);
-								for(String rel : relations){
-									if(!relationsFound.contains(rel)){
-										KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
-										Triple<KBArgument,KBArgument,String> t = 
-												new Triple<>(kbArg1,kbarg2,rel);
-										dsRelations.add(t);
-										relationsFound.add(rel);
-									}
+							List<String> relations = KB.getRelationsBetweenArgumentIds(kbArg1.getKbId(),arg2Id);
+							for(String rel : relations){
+								if(!relationsFound.contains(rel)){
+									KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
+									Triple<KBArgument,KBArgument,String> t = 
+											new Triple<>(kbArg1,kbarg2,rel);
+									dsRelations.add(t);
+									relationsFound.add(rel);
 								}
 							}
 						}
@@ -136,17 +125,14 @@ public class NELAndNERRelationMatching implements RelationMatching{
 					List<String> arg1Ids = entityMap.get(arg1.getArgName());
 					for(String arg1Id: arg1Ids){
 						if(TypeConstraintUtils.meetsArgTypeConstraint(arg1Id,arg1Type)){
-							String key = arg1Id+kbArg2.getKbId();
-							if(entityRelationMap.containsKey(key)){
-								List<String> relations = entityRelationMap.get(key);
-								for(String rel : relations){
-									if(!relationsFound.contains(rel)){
-										KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
-										Triple<KBArgument,KBArgument,String> t = 
-												new Triple<>(kbarg1,kbArg2,rel);
-										dsRelations.add(t);
-										relationsFound.add(rel);
-									}
+							List<String> relations = KB.getRelationsBetweenArgumentIds(arg1Id,kbArg2.getKbId());
+							for(String rel : relations){
+								if(!relationsFound.contains(rel)){
+									KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
+									Triple<KBArgument,KBArgument,String> t = 
+											new Triple<>(kbarg1,kbArg2,rel);
+									dsRelations.add(t);
+									relationsFound.add(rel);
 								}
 							}
 						}

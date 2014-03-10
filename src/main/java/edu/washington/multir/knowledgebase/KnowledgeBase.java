@@ -13,6 +13,7 @@ import java.util.Set;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
 
+import edu.stanford.nlp.util.Pair;
 import edu.washington.multir.util.BufferedIOUtils;
 
 /**
@@ -36,10 +37,10 @@ public class KnowledgeBase {
 	//map from a name to a list of Ids
 	private Map<String,List<String>> entityMap;
 	//map from a string representation of an entity pair to a list of their relations
-	private Map<String,List<String>> entityPairRelationMap;
+	private Map<String,List<Pair<String,String>>> entityPairRelationMap;
 	
 	public Map<String,List<String>> getEntityMap() {return entityMap;}
-	public Map<String,List<String>> getEntityPairRelationMap() {return entityPairRelationMap;}
+	public Map<String,List<Pair<String,String>>> getEntityPairRelationMap() {return entityPairRelationMap;}
 
 	/**
 	 * The constructor reads over the whole relationKBFilePath
@@ -64,7 +65,7 @@ public class KnowledgeBase {
 		}
 		
 		
-		Map<String,List<String>> entityPairRelationMap = new HashMap<String,List<String>>();
+		Map<String,List<Pair<String,String>>> entityPairRelationMap = new HashMap<String,List<Pair<String,String>>>();
 		Set<String> relevantEntities = new HashSet<String>();
 		
 		//create a map of the filtered KB and silmultaneously
@@ -79,17 +80,18 @@ public class KnowledgeBase {
 			String e2 = lineValues[1];
 			String rel = lineValues[2];
 			//map key is the 2ids concatenated
-			String entityPairKey = e1+e2;
+			//String entityPairKey = e1+e2;
+			Pair<String,String> relPair = new Pair<>(rel,e2);
 			if(targetRelations.contains(rel)){
 				relevantEntities.add(e1);
 				relevantEntities.add(e2);
-				if(entityPairRelationMap.containsKey(entityPairKey)){
-					entityPairRelationMap.get(entityPairKey).add(rel);
+				if(entityPairRelationMap.containsKey(e1)){
+					entityPairRelationMap.get(e1).add(relPair);
 				}
 				else{
-					List<String> relations = new ArrayList<String>();
-					relations.add(rel);
-					entityPairRelationMap.put(entityPairKey,relations);
+					List<Pair<String,String>> relationPairs = new ArrayList<Pair<String,String>>();
+					relationPairs.add(relPair);
+					entityPairRelationMap.put(e1,relationPairs);
 				}
 			}
 			if(index % 1000000 == 0){
@@ -146,5 +148,76 @@ public class KnowledgeBase {
 		
 		this.entityMap = entityMap;
 		this.entityPairRelationMap = entityPairRelationMap;
+	}
+	public List<String> getRelationsBetweenArgumentIds(String arg1Id,
+			String arg2Id) {
+		
+		List<String> relations = new ArrayList<String>();
+		if(hasRelationWith(arg1Id,arg2Id)){
+			List<Pair<String,String>> relationPairs = entityPairRelationMap.get(arg1Id);
+			for(Pair<String,String> p : relationPairs){
+				if(p.second.equals(arg2Id)){
+					relations.add(p.first);
+				}
+			}
+		}
+		
+		return relations;
+	}
+	
+	public boolean participatesInRelationAsArg1(String arg1Id, String relation){
+		
+		if(entityPairRelationMap.containsKey(arg1Id)){
+			List<Pair<String,String>> relationPairs = entityPairRelationMap.get(arg1Id);
+			for(Pair<String,String> p : relationPairs){
+				if(p.first.equals(relation)){
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+	public boolean targetRelationHolds(String arg1Id, String arg2Id, String relation){
+		
+		if(entityPairRelationMap.containsKey(arg1Id)){
+			List<Pair<String,String>> relationPairs = entityPairRelationMap.get(arg1Id);
+			for(Pair<String,String> p : relationPairs){
+				if(p.first.equals(relation)){
+					if(p.second.equals(arg2Id)){
+					  return true;
+					}
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+	public boolean hasRelationWith(String arg1Id, String arg2Id) {
+		
+		if(entityPairRelationMap.containsKey(arg1Id)){
+			List<Pair<String,String>> relationPairs = entityPairRelationMap.get(arg1Id);
+			for(Pair<String,String> p : relationPairs){
+				if(p.second.equals(arg2Id)){
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+	public boolean noRelationsHold(List<String> arg1Ids, List<String> arg2Ids) {
+		
+		for(String arg1ID : arg1Ids){
+			for(String arg2ID: arg2Ids){
+				if(hasRelationWith(arg1ID, arg2ID)){
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 }

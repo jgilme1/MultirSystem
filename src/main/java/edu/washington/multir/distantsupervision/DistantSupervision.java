@@ -253,7 +253,6 @@ public class DistantSupervision {
 			KnowledgeBase KB, Integer sentGlobalID) {
 		
 		Map<String,List<String>> entityMap = KB.getEntityMap();
-		Map<String,List<String>> relationMap = KB.getEntityPairRelationMap();
 		List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> negativeExampleAnnotations = new ArrayList<>();
 		for(Pair<Argument,Argument> p : sententialInstances){
 			//check that at least one argument is not in distantSupervisionAnnotations
@@ -298,7 +297,7 @@ public class DistantSupervision {
 				if( (!arg1Ids.isEmpty()) && (!arg2Ids.isEmpty())){
 					//check that no pair of entities represented by these
 					//argument share a relation:
-					if(noRelationsHold(arg1Ids,arg2Ids,relationMap)){
+					if(KB.noRelationsHold(arg1Ids,arg2Ids)){
 						Collections.shuffle(arg1Ids);
 						Collections.shuffle(arg2Ids);
 						String arg1Id = arg1Ids.get(0);
@@ -317,19 +316,6 @@ public class DistantSupervision {
 		return negativeExampleAnnotations;
 	}
 	
-	private boolean noRelationsHold(List<String> arg1Ids, List<String> arg2Ids,
-			Map<String, List<String>> relationMap) {
-		
-		for(String arg1ID : arg1Ids){
-			for(String arg2ID: arg2Ids){
-				String key = arg1ID+arg2ID;
-				if(relationMap.containsKey(key)){
-					return false;
-				}
-			}
-		}
-		return true;
-	}
 	
 	protected static boolean containsNegativeAnnotation(
 			List<Pair<Triple<KBArgument, KBArgument, String>,Integer>> negativeExampleAnnotations,

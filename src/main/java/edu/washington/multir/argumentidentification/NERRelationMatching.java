@@ -37,7 +37,6 @@ public class NERRelationMatching implements RelationMatching {
 			KnowledgeBase KB, CoreMap sentence, Annotation doc) {
 		
 		Map<String,List<String>> entityMap =KB.getEntityMap();
-		Map<String,List<String>> relationMap = KB.getEntityPairRelationMap();
 		List<Triple<KBArgument,KBArgument,String>> distantSupervisionAnnotations = new ArrayList<>();
 		
 		for(Pair<Argument,Argument> si : sententialInstances){
@@ -53,18 +52,15 @@ public class NERRelationMatching implements RelationMatching {
 					List<String> arg2Ids = entityMap.get(arg2Name);
 					for(String arg1Id : arg1Ids){
 						for(String arg2Id: arg2Ids){
-							String key = arg1Id+arg2Id;
-							if(relationMap.containsKey(key)){
-								List<String> relations = relationMap.get(key);
-								for(String rel : relations){
-									if(!relationsFound.contains(rel)){
-										KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
-										KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
-										Triple<KBArgument,KBArgument,String> t = 
-												new Triple<>(kbarg1,kbarg2,rel);
-										distantSupervisionAnnotations.add(t);
-										relationsFound.add(rel);
-									}
+							List<String> relations = KB.getRelationsBetweenArgumentIds(arg1Id,arg2Id);
+							for(String rel : relations){
+								if(!relationsFound.contains(rel)){
+									KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
+									KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
+									Triple<KBArgument,KBArgument,String> t = 
+											new Triple<>(kbarg1,kbarg2,rel);
+									distantSupervisionAnnotations.add(t);
+									relationsFound.add(rel);
 								}
 							}
 						}
