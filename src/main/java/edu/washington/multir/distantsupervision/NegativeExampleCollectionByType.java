@@ -14,6 +14,7 @@ import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID;
 import edu.washington.multir.corpus.DefaultCorpusInformationSpecification.TokenOffsetInformation.SentenceRelativeCharacterOffsetEndAnnotation;
 import edu.washington.multir.data.KBArgument;
+import edu.washington.multir.data.NegativeAnnotation;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 
 public class NegativeExampleCollectionByType extends NegativeExampleCollection{
@@ -26,8 +27,8 @@ public class NegativeExampleCollectionByType extends NegativeExampleCollection{
 	}
 	
 	@Override
-	public List<Pair<Triple<KBArgument, KBArgument, String>, Integer>> filter(
-			List<Pair<Triple<KBArgument, KBArgument, String>, Integer>> negativeExamples,
+	public List<NegativeAnnotation> filter(
+			List<NegativeAnnotation> negativeExamples,
 			List<Pair<Triple<KBArgument, KBArgument, String>, Integer>> positiveExamples,
 			KnowledgeBase kb, List<CoreMap> sentences) {
 		
@@ -55,11 +56,11 @@ public class NegativeExampleCollectionByType extends NegativeExampleCollection{
 		
 		//shuffle negative examples
 		Collections.shuffle(negativeExamples);
-		List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> filtered = new ArrayList<>();
-		for(Pair<Triple<KBArgument,KBArgument,String>,Integer> anno : negativeExamples){
-			Integer globalID = anno.second;
-			KBArgument arg1 = anno.first.first;
-			KBArgument arg2 = anno.first.second;
+		List<NegativeAnnotation> filtered = new ArrayList<>();
+		for(NegativeAnnotation anno : negativeExamples){
+			Integer globalID = anno.getSentNum();
+			KBArgument arg1 = anno.getArg1();
+			KBArgument arg2 = anno.getArg2();
 			if(typeCount.size() == 0){
 				break;
 			}

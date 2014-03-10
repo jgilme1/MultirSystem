@@ -22,6 +22,8 @@ import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification.SentGlobalIDInformation.SentGlobalID;
 import edu.washington.multir.data.Argument;
 import edu.washington.multir.data.KBArgument;
+import edu.washington.multir.data.NegativeAnnotation;
+import edu.washington.multir.data.TypeSignatureRelationMap;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 import edu.washington.multir.util.BufferedIOUtils;
 import edu.washington.multir.util.TypeConstraintUtils;
@@ -68,7 +70,7 @@ public class MultiModelDistantSupervision {
 			for(int j =0; j < sigList.size(); j++){
 				SententialInstanceGeneration sig = sigList.get(j);
 		    	PrintWriter dsWriter = writers.get(j);
-				List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> documentNegativeExamples = new ArrayList<>();
+				List<NegativeAnnotation> documentNegativeExamples = new ArrayList<>();
 				List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> documentPositiveExamples = new ArrayList<>();
 				int sentIndex = 0;
 				for(CoreMap sentence : sentences){
@@ -89,16 +91,16 @@ public class MultiModelDistantSupervision {
 						dsAnnotationWithSentIDs.add(p);
 					}
 					//negative example annotations
-					List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> negativeExampleAnnotations =
-							findNegativeExampleAnnotations(sententialInstances,distantSupervisionAnnotations,
+					List<NegativeAnnotation> negativeExampleAnnotations =
+							findTrueNegativeExampleAnnotations(sententialInstances,distantSupervisionAnnotations,
 									kb,sentGlobalID, sentence, d, true);
 					
 					documentNegativeExamples.addAll(negativeExampleAnnotations);
 					documentPositiveExamples.addAll(dsAnnotationWithSentIDs);
 					sentIndex++;
 				}
-				writeDistantSupervisionAnnotations(documentPositiveExamples,dsWriter);
-				writeDistantSupervisionAnnotations(nec.filter(documentNegativeExamples,documentPositiveExamples,kb,sentences),dsWriter);
+				DistantSupervision.writeDistantSupervisionAnnotations(documentPositiveExamples,dsWriter);
+				DistantSupervision.writeNegativeExampleAnnotations(nec.filter(documentNegativeExamples,documentPositiveExamples,kb,sentences),dsWriter);
 				count++;
 				if( count % 1000 == 0){
 					long endms = System.currentTimeMillis();
@@ -211,8 +213,6 @@ public class MultiModelDistantSupervision {
 					//check that no pair of entities represented by these
 					//argument share a relation:
 					if(KB.noRelationsHold(arg1Ids,arg2Ids)){
-						Collections.shuffle(arg1Ids);
-						Collections.shuffle(arg2Ids);
 						String arg1Id = arg1Ids.get(0);
 						String arg2Id = arg2Ids.get(0);
 						if((!arg1Id.equals("null")) && (!arg2Id.equals("null"))){
@@ -228,6 +228,122 @@ public class MultiModelDistantSupervision {
 		}
 		return negativeExampleAnnotations;
 	}
+
+	private  List<NegativeAnnotation> findTrueNegativeExampleAnnotations(
+			List<Pair<Argument, Argument>> sententialInstances,
+			List<Triple<KBArgument, KBArgument, String>> distantSupervisionAnnotations,
+			KnowledgeBase KB, Integer sentGlobalID, CoreMap sentence, Annotation doc, boolean useTypeConstraints) {
+		
+		Map<String,List<String>> entityMap = KB.getEntityMap();
+		List<NegativeAnnotation> negativeExampleAnnotations = new ArrayList<>();
+		
+		
+		String arg1Type = "OTHER";
+		String arg2Type = "OTHER";
+		if(useTypeConstraints){
+			if(sententialInstances.size() > 0){
+				arg1Type = TypeConstraintUtils.getFigerOrNERType(sententialInstances.get(0).first,sentence,doc);
+				arg2Type = TypeConstraintUtils.getFigerOrNERType(sententialInstances.get(0).second,sentence,doc);		
+			}
+		}
+		
+		List<String> targetRelations = TypeSignatureRelationMap.getRelationsForTypeSignature(new Pair<String,String>(arg1Type,arg2Type));
+		if(targetRelations != null){
+			
+			for(Pair<Argument,Argument> p : sententialInstances){
+				//check that at least one argument is not in distantSupervisionAnnotations
+				Argument arg1 = p.first;
+				Argument arg2 = p.second;
+				boolean canBeNegativeExample = true;
+				for(Triple<KBArgument,KBArgument,String> t : distantSupervisionAnnotations){
+					Argument annotatedArg1 = t.first;
+					Argument annotatedArg2 = t.second;
+					
+					//if sententialInstance is a distance supervision annotation
+					//then it is not a negative example candidate
+					if( (arg1.getStartOffset() == annotatedArg1.getStartOffset()) &&
+						(arg1.getEndOffset() == annotatedArg1.getEndOffset()) &&
+						(arg2.getStartOffset() == annotatedArg2.getStartOffset()) &&
+						(arg2.getEndOffset() == annotatedArg2.getEndOffset())){
+						canBeNegativeExample = false;
+						break;
+					}
+				}
+				if(canBeNegativeExample){
+					//look for KBIDs, select a random pair
+					List<String> arg1Ids = new ArrayList<>();
+					if(arg1 instanceof KBArgument){
+						   arg1Ids.add(((KBArgument) arg1).getKbId());
+					}
+					else{
+						if(entityMap.containsKey(arg1.getArgName())){
+							List<String> candidateArg1Ids = entityMap.get(arg1.getArgName());
+							if(useTypeConstraints){
+								boolean add = true;
+								for(String candidateArg1Id : candidateArg1Ids){
+									if(!TypeConstraintUtils.meetsArgTypeConstraint(candidateArg1Id, arg1Type)){
+										add = false;
+									}
+								}
+								if(add){
+									arg1Ids = candidateArg1Ids;
+								}
+							}
+							else{
+								arg1Ids = candidateArg1Ids;
+							}
+						}
+					}
+	
+					List<String> arg2Ids = new ArrayList<>();
+					if(arg2 instanceof KBArgument){
+						arg2Ids.add(((KBArgument) arg2).getKbId());
+					}
+					else{
+						if(entityMap.containsKey(arg2.getArgName())){
+							List<String> candidateArg2Ids = entityMap.get(arg2.getArgName());
+							if(useTypeConstraints){
+								boolean add = true;
+								for(String candidateArg2Id : candidateArg2Ids){
+									if(!TypeConstraintUtils.meetsArgTypeConstraint(candidateArg2Id, arg2Type)){
+										add = false;
+									}
+								}
+								if(add){
+									arg2Ids = candidateArg2Ids;
+								}
+							}
+							else{
+								arg2Ids = candidateArg2Ids;
+							}
+							
+							
+						}
+					}
+					if( (!arg1Ids.isEmpty()) && (!arg2Ids.isEmpty())){
+						//check that no pair of entities represented by these
+						//argument share a relation:
+						List<String> trueNegativeRelations= KB.getTrueNegativeRelations(arg1Ids,arg2Ids,arg2Type,KB,targetRelations);
+						String arg1Id = arg1Ids.get(0);
+						String arg2Id = arg2Ids.get(0);
+						if((!arg1Id.equals("null")) && (!arg2Id.equals("null"))){
+							KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
+							KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
+							List<String> annoRels = new ArrayList<String>();
+							for(String relation: trueNegativeRelations){
+								annoRels.add("N-"+relation);
+							}
+							if(annoRels.size()>0){
+								NegativeAnnotation negAnno = new NegativeAnnotation(kbarg1,kbarg2,sentGlobalID,annoRels);
+								negativeExampleAnnotations.add(negAnno);
+							}
+						}
+					}
+				}
+			}
+		}
+		return negativeExampleAnnotations;
+	}	
 	
 	
 		
@@ -244,43 +360,6 @@ public class MultiModelDistantSupervision {
 			}
 		}	
 		return false;
-	}
-
-	/**
-	 * Write out distant supervision annotation information
-	 * @param distantSupervisionAnnotations
-	 * @param dsWriter
-	 * @param sentGlobalID
-	 */
-	private void writeDistantSupervisionAnnotations(
-			List<Pair<Triple<KBArgument, KBArgument, String>,Integer>> distantSupervisionAnnotations, PrintWriter dsWriter) {
-		for(Pair<Triple<KBArgument,KBArgument,String>,Integer> dsAnno : distantSupervisionAnnotations){
-			Triple<KBArgument,KBArgument,String> trip = dsAnno.first;
-			Integer sentGlobalID = dsAnno.second;
-			KBArgument arg1 = trip.first;
-			KBArgument arg2 = trip.second;
-			String rel = trip.third;
-			dsWriter.write(arg1.getKbId());
-			dsWriter.write("\t");
-			dsWriter.write(String.valueOf(arg1.getStartOffset()));
-			dsWriter.write("\t");
-			dsWriter.write(String.valueOf(arg1.getEndOffset()));
-			dsWriter.write("\t");
-			dsWriter.write(arg1.getArgName());
-			dsWriter.write("\t");
-			dsWriter.write(arg2.getKbId());
-			dsWriter.write("\t");
-			dsWriter.write(String.valueOf(arg2.getStartOffset()));
-			dsWriter.write("\t");
-			dsWriter.write(String.valueOf(arg2.getEndOffset()));
-			dsWriter.write("\t");
-			dsWriter.write(arg2.getArgName());
-			dsWriter.write("\t");
-			dsWriter.write(String.valueOf(sentGlobalID));
-			dsWriter.write("\t");
-			dsWriter.write(rel);
-			dsWriter.write("\n");
-		}
 	}
 	
 	public static class DistantSupervisionAnnotation{

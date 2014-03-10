@@ -13,6 +13,7 @@ import edu.washington.multir.argumentidentification.RelationMatching;
 import edu.washington.multir.argumentidentification.SententialInstanceGeneration;
 import edu.washington.multir.corpus.Corpus;
 import edu.washington.multir.corpus.CorpusInformationSpecification;
+import edu.washington.multir.data.TypeSignatureRelationMap;
 import edu.washington.multir.distantsupervision.MultiModelDistantSupervision;
 import edu.washington.multir.distantsupervision.NegativeExampleCollection;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
@@ -65,6 +66,8 @@ public class RunMultiModelDistantSupervision {
 		
 		MultiModelDistantSupervision ds = new MultiModelDistantSupervision(ai,paths,sigList,rm,nec);
 		FigerTypeUtils.init();
+		//init type signature relation map
+		TypeSignatureRelationMap.init(arguments.get(4));
 		ds.run(kb,c);
 		FigerTypeUtils.close();
 	}

@@ -7,6 +7,7 @@ import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.data.KBArgument;
+import edu.washington.multir.data.NegativeAnnotation;
 import edu.washington.multir.knowledgebase.KnowledgeBase;
 
 public class NegativeExampleCollectionByRatioAndByType extends NegativeExampleCollection{
@@ -25,16 +26,20 @@ public class NegativeExampleCollectionByRatioAndByType extends NegativeExampleCo
 	}
 	
 	@Override
-	public List<Pair<Triple<KBArgument, KBArgument, String>, Integer>> filter(
-			List<Pair<Triple<KBArgument, KBArgument, String>, Integer>> negativeExamples,
+	public List<NegativeAnnotation> filter(
+			List<NegativeAnnotation> negativeExamples,
 			List<Pair<Triple<KBArgument, KBArgument, String>, Integer>> positiveExamples,
 			KnowledgeBase kb, List<CoreMap> sentences) {
-		List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> combinedNegativeExamples = new ArrayList<>();
+		List<NegativeAnnotation> combinedNegativeExamples = new ArrayList<>();
 		combinedNegativeExamples.addAll(necbt.filter(negativeExamples, positiveExamples, kb, sentences));
-		List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> combinedNegativeExamplesByType = necbr.filter(negativeExamples, positiveExamples, kb, sentences);
-		for(Pair<Triple<KBArgument,KBArgument,String>,Integer> p : combinedNegativeExamplesByType){
-			if(!DistantSupervision.containsNegativeAnnotation(combinedNegativeExamples, p.first)){
-				combinedNegativeExamples.add(p);
+		List<NegativeAnnotation> combinedNegativeExamplesByType = necbr.filter(negativeExamples, positiveExamples, kb, sentences);
+		for(NegativeAnnotation anno : combinedNegativeExamplesByType){
+			List<String> negRels = anno.getNegativeRelations();
+			for(String negRel: negRels){
+				Triple<KBArgument,KBArgument,String> trip = new Triple<>(anno.getArg1(),anno.getArg2(),negRel);
+				if(!DistantSupervision.containsNegativeAnnotation(combinedNegativeExamples, trip)){
+					combinedNegativeExamples.add(anno);
+				}
 			}
 		}
 		return combinedNegativeExamples;
