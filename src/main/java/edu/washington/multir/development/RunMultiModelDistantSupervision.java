@@ -29,8 +29,16 @@ public class RunMultiModelDistantSupervision {
 	 * 		args[1] should be relationKBFilePath
 	 * 	    args[2] should be entityKBFielPath
 	 * 	    args[3] should be targetRelationsFilePath
-	 *      args[4] should be true / false for negative examples
-	 *      args[5] is optional, and is a ratio of positive to negative examples
+	 *      args[4] should be true / false for using the new negative example collection algorithm
+	 *      
+	 *      -ai defines ArgumentIdentification
+	 *      -siglist defines list of SententialInstanceGeneration algorithms
+	 *      -files defines list of output Distant Supervision files
+	 *      -rm defines RelationMatching algorithm
+	 *      
+	 *      -si defines SententialInformation in Corpus Representation
+	 *      -di defines documentInformation in Corpus Representation
+	 *      -ti defines TokenInformation in Corpus Representation
 	 * @throws SQLException
 	 * @throws IOException
 	 * @throws ClassNotFoundException 
@@ -63,8 +71,9 @@ public class RunMultiModelDistantSupervision {
 
 		Corpus c = new Corpus(arguments.get(0),cis,true);
 		KnowledgeBase kb = new KnowledgeBase(arguments.get(1),arguments.get(2),arguments.get(3));
+		Boolean newNegativeExampleCollection = Boolean.parseBoolean(arguments.get(4));
 		
-		MultiModelDistantSupervision ds = new MultiModelDistantSupervision(ai,paths,sigList,rm,nec);
+		MultiModelDistantSupervision ds = new MultiModelDistantSupervision(ai,paths,sigList,rm,nec,newNegativeExampleCollection);
 		FigerTypeUtils.init();
 		//init type signature relation map
 		TypeSignatureRelationMap.init(arguments.get(4));

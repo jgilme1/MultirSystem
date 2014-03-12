@@ -1,8 +1,11 @@
 package edu.washington.multir.data;
 
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import edu.stanford.nlp.util.Pair;
 
 public class Extraction {
 	Argument arg1;
@@ -13,6 +16,7 @@ public class Extraction {
 	Double score;
 	String senText;
 	Map<Integer,Double> featureScores;
+	List<Pair<String,Double>> featureScoreList;
 	
 	public Extraction(Argument arg1, Argument arg2, String docName, String relation, Integer sentNum, String senText){
 		this(arg1,arg2,docName,relation,sentNum,0.0,senText);
@@ -95,5 +99,11 @@ public class Extraction {
 	public Map<Integer,Double> getFeatureScores(){
 		return featureScores;
 	}
+	
+	public void setFeatureScoreList(List<Pair<String,Double>> featureScoreList){
+		this.featureScoreList = featureScoreList;
+	}
+	
+	public List<Pair<String,Double>>  getFeatureScoreList() {return featureScoreList;}
 
 }

@@ -24,7 +24,6 @@ import edu.washington.multir.multiralgorithm.Model;
 import edu.washington.multir.multiralgorithm.Parameters;
 import edu.washington.multir.multiralgorithm.Scorer;
 import edu.washington.multir.preprocess.CorpusPreprocessing;
-
 import edu.washington.multir.argumentidentification.ArgumentIdentification;
 import edu.washington.multir.argumentidentification.NELArgumentIdentification;
 import edu.washington.multir.argumentidentification.NERArgumentIdentification;
@@ -163,6 +162,24 @@ public class DocumentExtractor {
 		return p;
 	}
 	
+	public Pair<Triple<String,Double,Double>,Map<Integer,Map<Integer,Double>>> extractFromSententialInstanceWithAllFeatureScores(Argument arg1, Argument arg2, CoreMap sentence, Annotation doc){
+		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
+		String arg1ID = null;
+		String arg2ID = null;
+		if(arg1 instanceof KBArgument){
+			arg1ID = ((KBArgument)arg1).getKbId();
+		}
+		if(arg2 instanceof KBArgument){
+			arg2ID = ((KBArgument)arg2).getKbId();
+		}
+		List<String> features = 
+				fg.generateFeatures(arg1.getStartOffset(), 
+						arg1.getEndOffset(), arg2.getStartOffset(), arg2.getEndOffset(), 
+						arg1ID, arg2ID,sentence, doc);
+		Pair<Triple<String,Double,Double>,Map<Integer,Map<Integer,Double>>> p = getPredictionWithFeatureScoreMap(features,arg1,arg2,senText);
+		return p;
+	}
+	
 	public Map<Integer,Double> getFeatureScores(Argument arg1, Argument arg2, CoreMap sentence, Annotation doc, int rel){
 		String senText = sentence.get(CoreAnnotations.TextAnnotation.class);
 		String arg1ID = null;
@@ -271,6 +288,8 @@ public class DocumentExtractor {
 //			System.out.println("Num features in training = " + featuresInMap);
 		//}
 		
+
+		
 		sv.num = ftrset.size();
 		sv.ids = new int[sv.num];
 		
@@ -287,6 +306,8 @@ public class DocumentExtractor {
 		Map<Integer,Map<Integer,Double>> mentionFeatureScoreMap = new HashMap<>();
 		Parse parse = FullInference.infer(doc, scorer, params,mentionFeatureScoreMap);
 		
+		
+
 
 		//System.out.println(senText);
 		//System.out.println(arg1.getArgName() + "\t" + arg2.getArgName());
@@ -311,7 +332,11 @@ public class DocumentExtractor {
 			}
 			conf = confidence;
 		} else {
-			return null;
+			Map<Integer,Map<Integer,Double>> negMentionFeatureScoreMap = new HashMap<>();
+			Parse negParse = FullInference.infer(doc, scorer, params,negMentionFeatureScoreMap,0);
+			Triple<String,Double,Double> t = new Triple<>("NA",conf,parse.score);
+			Pair<Triple<String,Double,Double>,Map<Integer,Double>> p = new Pair<>(t,negMentionFeatureScoreMap.get(0));
+			return p;
 		}
 
 		Triple<String,Double,Double> t = new Triple<>(relation,conf,parse.score);
@@ -319,6 +344,81 @@ public class DocumentExtractor {
 		return p;
 	}
 	
+	/**
+	 * Conver features and args to MILDoc
+	 * and run Multir sentential extraction
+	 * algorithm, return null if no extraction
+	 * was predicted.
+	 * @param features
+	 * @param arg1
+	 * @param arg2
+	 * @return
+	 */
+	private Pair<Triple<String,Double,Double>,Map<Integer,Map<Integer,Double>>> getPredictionWithFeatureScoreMap(List<String> features, Argument arg1,
+			Argument arg2, String senText) {
+		
+		MILDocument doc = new MILDocument();
+		
+		doc.arg1 = arg1.getArgName();
+		doc.arg2 = arg2.getArgName();
+		doc.Y = new int[1];
+		doc.numMentions = 1;// sentence level prediction
+		doc.setCapacity(1);
+		SparseBinaryVector sv = doc.features[0] = new SparseBinaryVector();
+		
+		
+		SortedSet<Integer> ftrset = new TreeSet<Integer>();
+		for (String f : features) {
+			int ftrid = mapping.getFeatureID(f, false);
+			if (ftrid >= 0) {
+				ftrset.add(ftrid);
+			}
+		}
+
+		sv.num = ftrset.size();
+		sv.ids = new int[sv.num];
+		
+		int k = 0;
+		for (int f : ftrset) {
+			sv.ids[k++] = f;
+		}
+		
+		String relation = "";
+		Double conf = 0.0;
+		Map<Integer,Map<Integer,Map<Integer,Double>>> mentionFeatureScoreMap = new HashMap<>();
+		Parse parse = FullInference.inferWithFeatureScoreMap(doc, scorer, params,mentionFeatureScoreMap);
+
+		int[] Yp = parse.Y;
+		if (parse.Z[0] > 0) {
+			relation = relID2rel.get(parse.Z[0]);
+			Arrays.sort(parse.allScores[0]);
+
+			double combinedScore = parse.score;
+			
+			for(int i =0; i < parse.allScores[0].length-1; i++){
+				double s = parse.allScores[0][i];
+				if( s > 0.0){
+					combinedScore +=s;
+				}
+			}
+			double confidence = (combinedScore <= 0.0 || parse.score <= 0.0) ? .1 : (parse.score/combinedScore);
+			if(combinedScore == parse.score && parse.score > 0.0){
+				confidence = .001;
+			}
+			conf = confidence;
+		} else {
+			Triple<String,Double,Double> t = new Triple<>("NA",conf,parse.score);
+			Pair<Triple<String,Double,Double>,Map<Integer,Map<Integer,Double>>> p = new Pair<>(t,mentionFeatureScoreMap.get(0));
+			return p;
+		}
+
+		Triple<String,Double,Double> t = new Triple<>(relation,conf,parse.score);
+		Pair<Triple<String,Double,Double>,Map<Integer,Map<Integer,Double>>> p = new Pair<>(t,mentionFeatureScoreMap.get(0));
+		return p;
+	}
+	
+
+
 	public Mappings getMapping(){return mapping;}
 	
 	

@@ -35,13 +35,16 @@ public class MultiModelDistantSupervision {
 	private RelationMatching rm;
 	private NegativeExampleCollection nec;
 	private List<PrintWriter> writers;
+	private Boolean useNewNegativeExampleCollection;
 
-	public MultiModelDistantSupervision(ArgumentIdentification ai, List<String> outputPaths, List<SententialInstanceGeneration> sigList, RelationMatching rm, NegativeExampleCollection nec){
+	public MultiModelDistantSupervision(ArgumentIdentification ai, List<String> outputPaths, List<SententialInstanceGeneration> sigList, 
+			RelationMatching rm, NegativeExampleCollection nec, Boolean useNewNegativeExampleCollection){
 		this.sigList = sigList;
 		this.ai = ai;
 		this.rm =rm;
 		this.nec = nec;
 		this.outputPaths=outputPaths;
+		this.useNewNegativeExampleCollection = useNewNegativeExampleCollection;
 		
 		if(outputPaths.size()!=sigList.size()){
 			throw new IllegalArgumentException("Number of SentenceInstanceGeneration specifications must equal number of output paths");
@@ -59,7 +62,6 @@ public class MultiModelDistantSupervision {
 		Iterator<Annotation> di = c.getDocumentIterator();
 		int count =0;
 		long startms = System.currentTimeMillis();
-		long timeSpentInQueries = 0;
 		while(di.hasNext()){
 			Annotation d = di.next();
 			List<CoreMap> sentences = d.get(CoreAnnotations.SentencesAnnotation.class);
@@ -91,9 +93,17 @@ public class MultiModelDistantSupervision {
 						dsAnnotationWithSentIDs.add(p);
 					}
 					//negative example annotations
-					List<NegativeAnnotation> negativeExampleAnnotations =
-							findTrueNegativeExampleAnnotations(sententialInstances,distantSupervisionAnnotations,
-									kb,sentGlobalID, sentence, d, true);
+					List<NegativeAnnotation> negativeExampleAnnotations = null;
+					if(useNewNegativeExampleCollection){
+					  negativeExampleAnnotations =
+							  findTrueNegativeExampleAnnotations(sententialInstances,distantSupervisionAnnotations,
+									  kb,sentGlobalID, sentence, d, true);
+					}
+					else{
+					  negativeExampleAnnotations =
+							  findNegativeExampleAnnotations(sententialInstances,distantSupervisionAnnotations,
+									  kb,sentGlobalID, sentence, d, true);
+					}
 					
 					documentNegativeExamples.addAll(negativeExampleAnnotations);
 					documentPositiveExamples.addAll(dsAnnotationWithSentIDs);
@@ -106,9 +116,6 @@ public class MultiModelDistantSupervision {
 					long endms = System.currentTimeMillis();
 					System.out.println(count + " documents processed");
 					System.out.println("Time took = " + (endms-startms));
-					startms = endms;
-					System.out.println("Time spent in querying db = " + timeSpentInQueries);
-					timeSpentInQueries = 0;
 				}
 			}
 		}
@@ -120,13 +127,13 @@ public class MultiModelDistantSupervision {
     	System.out.println("Distant Supervision took " + (end-start) + " millisseconds");
 	}
 	
-	private  List<Pair<Triple<KBArgument, KBArgument, String>,Integer>> findNegativeExampleAnnotations(
+	private  List<NegativeAnnotation> findNegativeExampleAnnotations(
 			List<Pair<Argument, Argument>> sententialInstances,
 			List<Triple<KBArgument, KBArgument, String>> distantSupervisionAnnotations,
 			KnowledgeBase KB, Integer sentGlobalID, CoreMap sentence, Annotation doc, boolean useTypeConstraints) {
 		
 		Map<String,List<String>> entityMap = KB.getEntityMap();
-		List<Pair<Triple<KBArgument,KBArgument,String>,Integer>> negativeExampleAnnotations = new ArrayList<>();
+		List<NegativeAnnotation> negativeExampleAnnotations = new ArrayList<>();
 		
 		
 		String arg1Type = "OTHER";
@@ -218,9 +225,12 @@ public class MultiModelDistantSupervision {
 						if((!arg1Id.equals("null")) && (!arg2Id.equals("null"))){
 							KBArgument kbarg1 = new KBArgument(arg1,arg1Id);
 							KBArgument kbarg2 = new KBArgument(arg2,arg2Id);
-							Triple<KBArgument,KBArgument,String> t = new Triple<>(kbarg1,kbarg2,"NA");
-							Pair<Triple<KBArgument,KBArgument,String>,Integer> negativeAnnotationPair = new Pair<>(t,sentGlobalID);
-							if(!containsNegativeAnnotation(negativeExampleAnnotations,t)) negativeExampleAnnotations.add(negativeAnnotationPair);
+							List<String> annoRels = new ArrayList<String>();
+							annoRels.add("NA");
+							if(annoRels.size()>0){
+								NegativeAnnotation negAnno = new NegativeAnnotation(kbarg1,kbarg2,sentGlobalID,annoRels);
+								negativeExampleAnnotations.add(negAnno);
+							}
 						}
 					}
 				}
