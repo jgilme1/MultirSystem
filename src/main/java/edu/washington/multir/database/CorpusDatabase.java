@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -21,6 +22,8 @@ public final class CorpusDatabase {
 	private DerbyDb db;
 	private static final String sentenceInformationTableName = "SENTENCETABLE";
 	private static final String documentInformationTableName = "DOCUMENTTABLE";
+	
+	private static PreparedStatement bigSentenceQuery = null;
 	
 	private List<List<Object>> cachedSentenceValues;
 	private List<List<Object>> cachedDocumentValues;
@@ -93,15 +96,37 @@ public final class CorpusDatabase {
 		if(ids.size() == 0){
 			return null;
 		}
-		StringBuilder query = new StringBuilder();
-		query.append("SELECT * FROM " + sentenceInformationTableName + " WHERE ");
-		for(Integer id: ids){
-			query.append("SENTID" + "=");
-			query.append(String.valueOf(id));
-			query.append(" OR ");
+		
+		if(bigSentenceQuery == null){
+			StringBuilder query = new StringBuilder();
+			query.append("SELECT * FROM " + sentenceInformationTableName + " WHERE ");
+			for(int i =0; i < 1000; i++){
+				query.append("SENTID=? OR ");
+			}
+			query.setLength(query.length()-4);
+			bigSentenceQuery = db.connection.prepareStatement(query.toString());
 		}
-		String sqlCommand = query.substring(0, query.length()-4);
-		return issueQuery(sqlCommand);
+				
+		try{
+			bigSentenceQuery.clearParameters();
+			int j =1;
+			String firstId = String.valueOf(ids.get(0));
+			for(Integer id: ids){
+				bigSentenceQuery.setString(j, String.valueOf(id));
+				j++;
+			}
+			while(j <= 1000){
+				bigSentenceQuery.setString(j, firstId);
+				j++;
+			}
+			return bigSentenceQuery.executeQuery();
+		}
+		
+		catch(Exception e){
+			return null;
+		}
+
+
 	}
 	
 	public ResultSet issueQuery(String queryString) throws SQLException{

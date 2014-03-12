@@ -1,9 +1,13 @@
 package edu.washington.multir.argumentidentification;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.util.CoreMap;
 import edu.stanford.nlp.util.Pair;
 import edu.stanford.nlp.util.Triple;
 import edu.washington.multir.data.Argument;
@@ -26,12 +30,11 @@ public class NELRelationMatching implements RelationMatching {
 	
 	@Override
 	public List<Triple<KBArgument, KBArgument, String>> matchRelations(
-			List<Pair<Argument, Argument>> sententialInstances, KnowledgeBase KB) {
+			List<Pair<Argument, Argument>> sententialInstances, KnowledgeBase KB,
+			CoreMap sentence, Annotation doc) {
 
 		List<Triple<KBArgument,KBArgument,String>> dsRelations = new ArrayList<>();
-		
-		Map<String,List<String>> entityRelationMap =KB.getEntityPairRelationMap();
-		
+				
 		for(Pair<Argument,Argument> sententialInstance : sententialInstances){
 			Argument arg1 = sententialInstance.first;
 			Argument arg2 = sententialInstance.second;
@@ -40,15 +43,10 @@ public class NELRelationMatching implements RelationMatching {
 				//check if they have a relation
 				KBArgument kbArg1 = (KBArgument)arg1;
 				KBArgument kbArg2 = (KBArgument)arg2;
-				String key = kbArg1.getKbId()+kbArg2.getKbId();
-				//if the two KB entities participate in a relatoin
-				if(entityRelationMap.containsKey(key)){
-					//System.out.println("Adding annotation");
-					List<String> relations = entityRelationMap.get(key);
-					for(String rel: relations){
-						Triple<KBArgument,KBArgument,String> dsRelation = new Triple<>(kbArg1,kbArg2,rel);
-						dsRelations.add(dsRelation);
-					}
+				List<String> relations = KB.getRelationsBetweenArgumentIds(kbArg1.getKbId(), kbArg2.getKbId());
+				for(String rel: relations){
+					Triple<KBArgument,KBArgument,String> dsRelation = new Triple<>(kbArg1,kbArg2,rel);
+					dsRelations.add(dsRelation);
 				}
 			}
 		}

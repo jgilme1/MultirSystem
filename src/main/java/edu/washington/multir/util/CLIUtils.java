@@ -472,6 +472,124 @@ public class CLIUtils {
 		removeUsedArguments(remainingArguments,arguments);
 		return nec;
 	}
+
+	public static List<String> loadFilePaths(List<String> arguments) throws ParseException {
+		Options options = new Options();
+		OptionBuilder.hasArgs(10);
+		OptionBuilder.withDescription("List of All Paths for Each Argument Identification Class");
+		options.addOption(OptionBuilder.create("files"));
+		
+		List<Integer> relevantArgIndices = getContiguousArgumentsForMultiValueOptions(arguments,"files");
+		List<String> relevantArguments = new ArrayList<String>();
+		List<String> remainingArguments = new ArrayList<String>();
+		for(Integer i: relevantArgIndices){
+			relevantArguments.add(arguments.get(i));
+		}
+		for(Integer i =0; i < arguments.size(); i++){
+			if(!relevantArgIndices.contains(i)){
+				remainingArguments.add(arguments.get(i));
+			}
+		}
+		CommandLineParser parser = new BasicParser();
+		CommandLine cmd = parser.parse(options, relevantArguments.toArray(new String[relevantArguments.size()]));
+		
+		List<String> pathList = new ArrayList<>();
+		
+		String[] paths = cmd.getOptionValues("files");
+		for(String path: paths){
+			pathList.add(path);
+		}
+		removeUsedArguments(remainingArguments,arguments);
+		return pathList;
+	}
+
+	public static List<ArgumentIdentification> loadArgumentIdentificationList(
+			List<String> arguments) throws ClassNotFoundException, ParseException,
+			NoSuchMethodException, SecurityException, IllegalAccessException, 
+			IllegalArgumentException, InvocationTargetException {
+		Options options = new Options();
+		OptionBuilder.hasArgs(10);
+		OptionBuilder.withDescription("List of All Argument Identification algorithms");
+		options.addOption(OptionBuilder.create("ailist"));
+		
+		List<Integer> relevantArgIndices = getContiguousArgumentsForMultiValueOptions(arguments,"ailist");
+		List<String> relevantArguments = new ArrayList<String>();
+		List<String> remainingArguments = new ArrayList<String>();
+		for(Integer i: relevantArgIndices){
+			relevantArguments.add(arguments.get(i));
+		}
+		for(Integer i =0; i < arguments.size(); i++){
+			if(!relevantArgIndices.contains(i)){
+				remainingArguments.add(arguments.get(i));
+			}
+		}
+		
+		
+		
+		CommandLineParser parser = new BasicParser();
+		CommandLine cmd = parser.parse(options, relevantArguments.toArray(new String[relevantArguments.size()]));
+		
+		List<ArgumentIdentification> aiList = new ArrayList<>();
+		
+		String[] argumentIdentificationClasses = cmd.getOptionValues("ailist");
+		if(argumentIdentificationClasses != null){
+			for(String argumentIdentificationClass : argumentIdentificationClasses){
+				ClassLoader cl = ClassLoader.getSystemClassLoader();
+				String argumentIdentificationClassPrefix = "edu.washington.multir.argumentidentification.";
+				Class<?> sentInformationClass = cl.loadClass(argumentIdentificationClassPrefix+argumentIdentificationClass);
+				Method m = sentInformationClass.getMethod("getInstance");
+				aiList.add((ArgumentIdentification) m.invoke(null));
+			}
+		}
+		removeUsedArguments(remainingArguments,arguments);
+		
+		
+		return aiList;
+	}
+	
+	public static List<SententialInstanceGeneration> loadSententialInstanceGenerationList(
+			List<String> arguments) throws ClassNotFoundException, ParseException,
+			NoSuchMethodException, SecurityException, IllegalAccessException, 
+			IllegalArgumentException, InvocationTargetException {
+		Options options = new Options();
+		OptionBuilder.hasArgs(10);
+		OptionBuilder.withDescription("List of All Sentential Instance Generation algorithms");
+		options.addOption(OptionBuilder.create("siglist"));
+		
+		List<Integer> relevantArgIndices = getContiguousArgumentsForMultiValueOptions(arguments,"siglist");
+		List<String> relevantArguments = new ArrayList<String>();
+		List<String> remainingArguments = new ArrayList<String>();
+		for(Integer i: relevantArgIndices){
+			relevantArguments.add(arguments.get(i));
+		}
+		for(Integer i =0; i < arguments.size(); i++){
+			if(!relevantArgIndices.contains(i)){
+				remainingArguments.add(arguments.get(i));
+			}
+		}
+		
+		
+		
+		CommandLineParser parser = new BasicParser();
+		CommandLine cmd = parser.parse(options, relevantArguments.toArray(new String[relevantArguments.size()]));
+		
+		List<SententialInstanceGeneration> sigList = new ArrayList<>();
+		
+		String[] sententialInstanceGenerationCLasses = cmd.getOptionValues("siglist");
+		if(sententialInstanceGenerationCLasses != null){
+			for(String sententialInstanceGenerationCLass : sententialInstanceGenerationCLasses){
+				ClassLoader cl = ClassLoader.getSystemClassLoader();
+				String argumentIdentificationClassPrefix = "edu.washington.multir.argumentidentification.";
+				Class<?> sentInformationClass = cl.loadClass(argumentIdentificationClassPrefix+sententialInstanceGenerationCLass);
+				Method m = sentInformationClass.getMethod("getInstance");
+				sigList.add((SententialInstanceGeneration) m.invoke(null));
+			}
+		}
+		removeUsedArguments(remainingArguments,arguments);
+		
+		
+		return sigList;
+	}
 	
 	
 
